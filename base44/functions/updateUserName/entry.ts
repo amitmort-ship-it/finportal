@@ -15,36 +15,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Extract the auth token from the original request
-    const authToken = req.headers.get('authorization');
-    if (!authToken) {
-      return Response.json({ error: 'No authorization token' }, { status: 401 });
-    }
-
-    const appId = Deno.env.get('BASE44_APP_ID');
-
-    // Make direct API call to update User entity with admin token
-    const response = await fetch(`https://api.base44.io/apps/${appId}/data/User/${userId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authToken,
-      },
-      body: JSON.stringify({
-        full_name: full_name.trim(),
-      }),
+    // Update user directly through the authenticated SDK client
+    const updatedUser = await base44.entities.User.update(userId, {
+      full_name: full_name.trim(),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error response:', errorText);
-      return Response.json({ 
-        error: `Failed to update user: ${response.status}` 
-      }, { status: response.status });
-    }
-
-    const result = await response.json();
-    return Response.json({ success: true, user: result });
+    return Response.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error('Error:', error.message);
     return Response.json({ 
