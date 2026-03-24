@@ -9,11 +9,19 @@ export default function ClientFiles() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    if (!user?.email) return;
-    const data = await base44.entities.FileRequest.list('-created_date');
-    const pending = data.filter(r => r.client_email === user.email && r.status === 'pending');
-    setRequests(pending);
-    setLoading(false);
+    if (!user?.email) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const data = await base44.entities.FileRequest.list('-created_date');
+      const pending = data.filter(r => r.client_email === user.email);
+      setRequests(pending);
+    } catch (error) {
+      console.error('Error loading requests:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
