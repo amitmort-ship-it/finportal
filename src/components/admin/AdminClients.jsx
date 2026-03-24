@@ -55,14 +55,22 @@ export default function AdminClients() {
     }
     setSaving(true);
     try {
-      await base44.entities.User.update(clientId, {
+      // Invoke backend function with service role to update User
+      const response = await base44.functions.invoke('updateUserName', {
+        userId: clientId,
         full_name: editingName.trim(),
       });
-      toast.success('השם עודכן בהצלחה');
-      setEditingId(null);
-      loadClients();
+      
+      if (response.data.success) {
+        toast.success('השם עודכן בהצלחה');
+        setEditingId(null);
+        loadClients();
+      } else {
+        toast.error(response.data.error || 'שגיאה בעדכון השם');
+      }
     } catch (error) {
-      toast.error(error.message || 'שגיאה בעדכון השם');
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.error || error.message || 'שגיאה בעדכון השם');
     } finally {
       setSaving(false);
     }
