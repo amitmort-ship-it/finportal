@@ -9,6 +9,7 @@ import AdminBankApprovals from '../components/admin/AdminBankApprovals';
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminClients from '../components/admin/AdminClients';
 import AdminUpdates from '../components/admin/AdminUpdates';
+import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -59,7 +60,12 @@ export default function AdminPanel() {
 
         <TabsContent value="updates"><AdminUpdates selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="clients"><AdminClients /></TabsContent>
-        <TabsContent value="files"><AdminFileRequests selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="files">
+          <div className="space-y-6">
+            <AdminDocumentRequest selectedClient={selectedClient} />
+            <AdminFileRequests selectedClient={selectedClient} />
+          </div>
+        </TabsContent>
         <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
       </Tabs>
