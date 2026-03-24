@@ -37,7 +37,7 @@ export default function AdminPanel() {
       <div className="mb-6">
         <Select value={selectedClient} onValueChange={setSelectedClient}>
           <SelectTrigger className="w-full md:w-64">
-            <SelectValue placeholder="בחר לקוח לפי" />
+            <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={null}>כל הלקוחות</SelectItem>
@@ -47,3 +47,22 @@ export default function AdminPanel() {
           </SelectContent>
         </Select>
       </div>
+
+      <Tabs defaultValue="updates" dir="rtl">
+        <TabsList className="mb-6 flex-wrap h-auto gap-1">
+          <TabsTrigger value="updates">עדכונים</TabsTrigger>
+          <TabsTrigger value="clients">לקוחות</TabsTrigger>
+          <TabsTrigger value="files">בקשות מסמכים</TabsTrigger>
+          <TabsTrigger value="approvals">אישורי בנקים</TabsTrigger>
+          <TabsTrigger value="collaterals">בטחונות</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="updates"><AdminUpdates selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="clients"><AdminClients /></TabsContent>
+        <TabsContent value="files"><AdminFileRequests selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
