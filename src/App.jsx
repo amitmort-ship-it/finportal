@@ -5,7 +5,12 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import ResponsiveLayout from './components/ResponsiveLayout';
+import Dashboard from './pages/Dashboard';
+import FilesPage from './pages/FilesPage';
+import ApprovalsPage from './pages/ApprovalsPage';
+import CollateralsPage from './pages/CollateralsPage';
+import AdminPanel from './pages/AdminPanel';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +38,13 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<ResponsiveLayout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/files" element={<FilesPage />} />
+        <Route path="/approvals" element={<ApprovalsPage />} />
+        <Route path="/collaterals" element={<CollateralsPage />} />
+        <Route path="/admin" element={<AdminPanel />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
