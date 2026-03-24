@@ -110,10 +110,14 @@ export default function AdminFileRequests({ selectedClient }) {
                     'bg-amber-50 text-amber-600'
                   }`}>{req.status === 'pending' ? 'ממתין' : req.status === 'uploaded' ? 'הועלה' : req.status === 'approved' ? 'אושר' : 'נדחה'}</span>
                 </div>
-                {req.uploaded_file_url && (
-                  <a href={req.uploaded_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 block">
-                    {req.uploaded_file_name || 'צפה בקובץ'}
-                  </a>
+                {req.uploaded_files && req.uploaded_files.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {req.uploaded_files.map((file, idx) => (
+                      <a key={idx} href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline block">
+                        📎 {file.file_name}
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-1">
