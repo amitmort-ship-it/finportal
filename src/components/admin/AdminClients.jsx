@@ -55,9 +55,8 @@ export default function AdminClients() {
     }
     setSaving(true);
     try {
-      await base44.functions.invoke('updateUserName', {
-        userId: clientId,
-        full_name: editingName,
+      await base44.entities.User.update(clientId, {
+        full_name: editingName.trim(),
       });
       toast.success('השם עודכן בהצלחה');
       setEditingId(null);

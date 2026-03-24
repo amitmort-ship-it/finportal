@@ -15,12 +15,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const updated = await base44.asServiceRole.entities.User.update(userId, {
-      full_name,
+    // Update user via asServiceRole - this should work for admins
+    await base44.asServiceRole.entities.User.update(userId, {
+      full_name: full_name.trim(),
     });
 
-    return Response.json({ success: true, user: updated });
+    return Response.json({ success: true });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Error:', error.message);
+    return Response.json({ error: error.message || 'Failed to update user' }, { status: 500 });
   }
 });
