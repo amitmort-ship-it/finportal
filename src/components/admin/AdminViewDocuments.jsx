@@ -9,10 +9,10 @@ export default function AdminViewDocuments({ selectedClient }) {
   useEffect(() => {
     const load = async () => {
       const data = await base44.entities.FileRequest.list('-created_date');
-      console.log('All requests:', data);
       const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
-      console.log('Filtered requests:', filtered);
-      setRequests(filtered);
+      const withFiles = filtered.filter(r => r.uploaded_files && r.uploaded_files.length > 0);
+      console.log('Requests with files:', withFiles);
+      setRequests(withFiles);
       setLoading(false);
     };
     load();
@@ -31,7 +31,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       {requests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-          אין מסמכים שהועלו עדיין
+          אין מסמכים שהועלו
         </div>
       ) : (
         <div className="space-y-4">
@@ -55,25 +55,21 @@ export default function AdminViewDocuments({ selectedClient }) {
               {req.uploaded_files && req.uploaded_files.length > 0 ? (
                 <div className="space-y-2">
                   {req.uploaded_files.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+                    <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50">
                       <Download className="w-4 h-4 text-primary shrink-0" />
                       <a
                         href={file.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline truncate flex-1"
+                        className="text-sm font-medium text-primary hover:underline flex-1"
                       >
-                        {file.file_name || `קובץ ${idx + 1}`}
+                        {file.file_name}
                       </a>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-xs text-muted-foreground p-2 rounded-lg bg-muted/20">
-                  לא הועלו מסמכים עדיין
-                </div>
-              )}
-            </div>
+              ) : null}
+              </div>
           ))}
         </div>
       )}
