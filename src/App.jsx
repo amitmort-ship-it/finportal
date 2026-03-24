@@ -12,6 +12,7 @@ import PackagePage from './pages/PackagePage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import CollateralsPage from './pages/CollateralsPage';
 import AdminPanel from './pages/AdminPanel';
+import ProfilePage from './pages/ProfilePage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/package" element={<PackagePage />} />
         <Route path="/approvals" element={<ApprovalsPage />} />
         <Route path="/collaterals" element={<CollateralsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPanel />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

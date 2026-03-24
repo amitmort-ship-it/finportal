@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package } from 'lucide-react';
+import { LogOut, MessageCircle, Package, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link, useLocation } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/package', label: 'תמהיל נבחר', icon: Package },
   { path: '/approvals', label: 'אישורי בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },
+  { path: '/profile', label: 'פרופיל', icon: User },
 ];
 
 const adminItems = [
