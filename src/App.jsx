@@ -8,6 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ResponsiveLayout from './components/ResponsiveLayout';
 import Dashboard from './pages/Dashboard';
 import FilesPage from './pages/FilesPage';
+import PackagePage from './pages/PackagePage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import CollateralsPage from './pages/CollateralsPage';
 import AdminPanel from './pages/AdminPanel';
@@ -41,6 +42,7 @@ const AuthenticatedApp = () => {
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/files" element={<FilesPage />} />
+        <Route path="/package" element={<PackagePage />} />
         <Route path="/approvals" element={<ApprovalsPage />} />
         <Route path="/collaterals" element={<CollateralsPage />} />
         <Route path="/admin" element={<AdminPanel />} />
