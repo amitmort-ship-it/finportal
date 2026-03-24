@@ -1,25 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function AdminClients() {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '', full_name: '' });
 
-  const handleInvite = async () => {
-    if (!email) return;
-    setLoading(true);
-    await base44.users.inviteUser(email, 'user');
-    toast.success(`הזמנה נשלחה ל-${email}`);
-    setEmail('');
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const loadClients = async () => {
+    const users = await base44.entities.User.list();
+    setClients(users.filter(u => u.role !== 'admin'));
     setLoading(false);
-    setOpen(false);
+  };
+
+  const handleCreate = async () => {
+    if (!form.email || !form.password || !form.full_name) return;
+    setCreating(true);
+    try {
+      await base44.functions.invoke('createUser', {
+        email: form.email,
+        password: form.password,
+        full_name: form.full_name,
+      });
+      toast.success(`לקוח ${form.full_name} נוצר בהצלחה`);
+      setForm({ email: '', password: '', full_name: '' });
+      setOpen(false);
+      loadClients();
+    } catch (error) {
+      toast.error(error.message || 'שגיאה ביצירת לקוח');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    await base44.entities.User.delete(id);
+    toast.success('הלקוח נמחק');
+    loadClients();
   };
 
   return (
@@ -33,41 +61,81 @@ export default function AdminClients() {
           <DialogTrigger asChild>
             <Button className="gap-2">
               <UserPlus className="w-4 h-4" />
-              הזמן לקוח חדש
+              לקוח חדש
             </Button>
           </DialogTrigger>
           <DialogContent dir="rtl">
             <DialogHeader>
-              <DialogTitle>הזמנת לקוח חדש</DialogTitle>
+              <DialogTitle>הוספת לקוח חדש</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
+              <div>
+                <Label>שם מלא</Label>
+                <Input
+                  value={form.full_name}
+                  onChange={(e) => setForm({...form, full_name: e.target.value})}
+                  placeholder="שם הלקוח"
+                  className="mt-1"
+                />
+              </div>
               <div>
                 <Label>כתובת אימייל</Label>
                 <Input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={form.email}
+                  onChange={(e) => setForm({...form, email: e.target.value})}
                   placeholder="email@example.com"
                   dir="ltr"
                   className="mt-1"
                 />
               </div>
-              <Button onClick={handleInvite} disabled={loading || !email} className="w-full">
-                {loading ? 'שולח...' : 'שלח הזמנה'}
+              <div>
+                <Label>סיסמא</Label>
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({...form, password: e.target.value})}
+                  placeholder="סיסמא חזקה"
+                  dir="ltr"
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                onClick={handleCreate}
+                disabled={creating || !form.email || !form.password || !form.full_name}
+                className="w-full"
+              >
+                {creating ? 'יוצר...' : 'צור לקוח'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-8 text-center">
-        <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground">
-          לחץ על "הזמן לקוח חדש" כדי לשלוח הזמנה למייל של הלקוח.
-          <br />
-          הלקוח יקבל מייל עם קישור להרשמה.
-        </p>
-      </div>
+      {clients.length === 0 ? (
+        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+          אין לקוחות עדיין
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {clients.map(client => (
+            <div key={client.id} className="bg-card rounded-xl border border-border p-4 flex items-center justify-between">
+              <div>
+                <div className="font-semibold">{client.full_name || client.email}</div>
+                <div className="text-sm text-muted-foreground">{client.email}</div>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => handleDelete(client.id)}
+                className="text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
