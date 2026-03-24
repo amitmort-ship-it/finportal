@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut } from 'lucide-react';
+import { LogOut, MessageCircle, Package } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link, useLocation } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
@@ -9,6 +9,7 @@ import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-r
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
+  { path: '/package', label: 'תמהיל נבחר', icon: Package },
   { path: '/approvals', label: 'אישורי בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },
 ];
@@ -63,7 +64,13 @@ export default function ResponsiveLayout() {
             </>
           )}
         </nav>
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
+          <a href="https://wa.me/972502155910?text=שלום%20עמית%20-%20יש%20לי%20שאלה%20על%20התמהיל"
+            target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600 transition-all w-full">
+            <MessageCircle className="w-4 h-4" />
+            צור קשר עם עמית
+          </a>
           <button onClick={() => base44.auth.logout()}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full">
             <LogOut className="w-4 h-4" />
@@ -88,6 +95,13 @@ export default function ResponsiveLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Floating WhatsApp Button */}
+      <a href="https://wa.me/972502155910?text=שלום%20עמית%20-%20יש%20לי%20שאלה%20על%20התמהיל"
+        target="_blank" rel="noopener noreferrer"
+        className="fixed bottom-20 md:hidden left-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-3 shadow-lg transition-all">
+        <MessageCircle className="w-6 h-6" />
+      </a>
 
       {/* Mobile Bottom Nav */}
       <MobileNav />
