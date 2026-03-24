@@ -9,7 +9,7 @@ import { Plus, Building2, Trash2, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-export default function AdminBankApprovals() {
+export default function AdminBankApprovals({ selectedClient }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -24,12 +24,13 @@ export default function AdminBankApprovals() {
       base44.entities.BankApproval.list('-created_date'),
       base44.entities.User.list(),
     ]);
-    setApprovals(data);
+    const filtered = selectedClient ? data.filter(a => a.client_email === selectedClient) : data;
+    setApprovals(filtered);
     setUsers(userList.filter(u => u.role !== 'admin'));
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [selectedClient]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];

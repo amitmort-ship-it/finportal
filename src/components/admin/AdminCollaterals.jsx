@@ -9,7 +9,7 @@ import { Plus, Shield, Trash2, Upload, Loader2, ToggleRight } from 'lucide-react
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-export default function AdminCollaterals() {
+export default function AdminCollaterals({ selectedClient }) {
   const [collaterals, setCollaterals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -24,12 +24,13 @@ export default function AdminCollaterals() {
       base44.entities.Collateral.list('-created_date'),
       base44.entities.User.list(),
     ]);
-    setCollaterals(data);
+    const filtered = selectedClient ? data.filter(c => c.client_email === selectedClient) : data;
+    setCollaterals(filtered);
     setUsers(userList.filter(u => u.role !== 'admin'));
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [selectedClient]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];

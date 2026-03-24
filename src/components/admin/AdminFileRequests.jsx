@@ -9,7 +9,7 @@ import { Plus, FileText, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-export default function AdminFileRequests() {
+export default function AdminFileRequests({ selectedClient }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -21,12 +21,13 @@ export default function AdminFileRequests() {
       base44.entities.FileRequest.list('-created_date'),
       base44.entities.User.list(),
     ]);
-    setRequests(data);
+    const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
+    setRequests(filtered);
     setUsers(userList.filter(u => u.role !== 'admin'));
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [selectedClient]);
 
   const handleCreate = async () => {
     if (!form.client_email || !form.title) return;

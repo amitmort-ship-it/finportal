@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { FileText, Building2, Shield, Clock, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ClientUpdates from '../components/ClientUpdates';
 
 function StatCard({ icon: Icon, label, value, color, to }) {
   return (
@@ -64,36 +65,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">ברוך הבא לאיזור האישי שלך</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={FileText}
-          label="מסמכים נדרשים"
-          value={stats.files}
-          color="bg-blue-50 text-blue-600"
-          to="/files"
-        />
-        <StatCard
-          icon={Clock}
-          label="ממתינים להעלאה"
-          value={stats.pendingFiles}
-          color="bg-amber-50 text-amber-600"
-          to="/files"
-        />
-        <StatCard
-          icon={Building2}
-          label="אישורי בנקים"
-          value={stats.approvals}
-          color="bg-emerald-50 text-emerald-600"
-          to="/approvals"
-        />
-        <StatCard
-          icon={Shield}
-          label="בטחונות פעילים"
-          value={stats.collaterals}
-          color="bg-purple-50 text-purple-600"
-          to="/collaterals"
-        />
-      </div>
+      <ClientUpdates />
 
       {stats.pendingFiles > 0 && (
         <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5">
