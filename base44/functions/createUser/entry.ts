@@ -15,14 +15,29 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const result = await base44.asServiceRole.createUser({
-      email,
-      password,
-      full_name,
-      role: 'user'
+    const apiUrl = Deno.env.get('BASE44_API_URL') || 'https://api.base44.io';
+    const appId = Deno.env.get('BASE44_APP_ID');
+    
+    const response = await fetch(`${apiUrl}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        full_name,
+        app_id: appId,
+      }),
     });
 
-    return Response.json(result);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return Response.json({ error: data.message || 'Failed to create user' }, { status: response.status });
+    }
+
+    return Response.json({ success: true, user: data });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
