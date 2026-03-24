@@ -23,9 +23,30 @@ export default function AdminClients() {
 
   const loadClients = async () => {
     try {
+      // First, get all existing users
+      const users = await base44.entities.User.list();
+      const nonAdminUsers = users.filter(u => u.role !== 'admin');
+      
+      // Get existing profiles
       const profiles = await base44.entities.ClientProfile.list();
-      console.log('Loaded profiles:', profiles);
-      setClients(profiles);
+      const profileEmails = new Set(profiles.map(p => p.email));
+      
+      // Create profiles for users that don't have one yet
+      const missingProfiles = nonAdminUsers.filter(u => !profileEmails.has(u.email));
+      if (missingProfiles.length > 0) {
+        await Promise.all(
+          missingProfiles.map(u => 
+            base44.entities.ClientProfile.create({
+              email: u.email,
+              full_name: u.full_name || u.email
+            })
+          )
+        );
+      }
+      
+      // Load all profiles again
+      const allProfiles = await base44.entities.ClientProfile.list();
+      setClients(allProfiles);
     } catch (error) {
       console.error('Error loading profiles:', error);
       toast.error('שגיאה בטעינת הלקוחות');
