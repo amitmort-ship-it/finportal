@@ -10,7 +10,8 @@ export default function AdminViewDocuments({ selectedClient }) {
     const load = async () => {
       const data = await base44.entities.FileRequest.list('-created_date');
       const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
-      setRequests(filtered);
+      const withFiles = filtered.filter(r => r.uploaded_files && r.uploaded_files.length > 0);
+      setRequests(withFiles);
       setLoading(false);
     };
     load();
