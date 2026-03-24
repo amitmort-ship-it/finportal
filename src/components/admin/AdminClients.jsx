@@ -85,13 +85,16 @@ export default function AdminClients() {
     }
     setSaving(true);
     try {
+      console.log('Updating client:', clientId, editingName);
       await base44.entities.ClientProfile.update(clientId, {
         full_name: editingName.trim(),
       });
+      console.log('Update successful');
       toast.success('השם עודכן בהצלחה');
       setEditingId(null);
       loadClients();
     } catch (error) {
+      console.error('Update error:', error);
       toast.error(error.message || 'שגיאה בעדכון השם');
     } finally {
       setSaving(false);
