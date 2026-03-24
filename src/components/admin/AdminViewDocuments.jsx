@@ -10,9 +10,7 @@ export default function AdminViewDocuments({ selectedClient }) {
     const load = async () => {
       const data = await base44.entities.FileRequest.list('-created_date');
       const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
-      const withFiles = filtered.filter(r => r.uploaded_files && r.uploaded_files.length > 0);
-      console.log('Requests with files:', withFiles);
-      setRequests(withFiles);
+      setRequests(filtered);
       setLoading(false);
     };
     load();
@@ -31,7 +29,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       {requests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-          אין מסמכים שהועלו
+          אין בקשות מסמכים
         </div>
       ) : (
         <div className="space-y-4">
