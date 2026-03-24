@@ -1,11 +1,20 @@
 import { Building2, FileText, Download } from 'lucide-react';
 
+const bankColors = {
+  'בנק הפועלים': { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-600' },
+  'דיסקונט': { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-600' },
+  'הבינלאומי': { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: 'text-yellow-600' },
+  'טפחות': { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'text-orange-600' },
+  'לאומי': { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600' },
+};
+
 export default function BankApprovalCard({ approval }) {
+  const colors = bankColors[approval.bank_name] || { bg: 'bg-slate-50', border: 'border-slate-200', icon: 'text-slate-600' };
   return (
-    <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all duration-300">
+    <div className={`rounded-xl border p-5 hover:shadow-md transition-all duration-300 ${colors.bg} ${colors.border}`}>
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Building2 className="w-5 h-5 text-primary" />
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
+          <Building2 className={`w-5 h-5 ${colors.icon}`} />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground">{approval.bank_name}</h3>
