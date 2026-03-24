@@ -10,6 +10,7 @@ import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminClients from '../components/admin/AdminClients';
 import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
+import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -63,6 +64,7 @@ export default function AdminPanel() {
         <TabsContent value="files">
           <div className="space-y-6">
             <AdminDocumentRequest selectedClient={selectedClient} />
+            <AdminViewDocuments selectedClient={selectedClient} />
             <AdminFileRequests selectedClient={selectedClient} />
           </div>
         </TabsContent>
