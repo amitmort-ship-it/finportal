@@ -1,13 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Package } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Cloud } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
+  { path: '/my-files', label: 'שלי', icon: Cloud },
   { path: '/package', label: 'תמהיל', icon: Package },
   { path: '/approvals', label: 'בנקים', icon: Building2 },
-  { path: '/collaterals', label: 'בטחונות', icon: Shield },
 ];
 
 export default function MobileNav() {

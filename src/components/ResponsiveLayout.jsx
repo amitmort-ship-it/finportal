@@ -4,11 +4,12 @@ import MobileNav from './MobileNav';
 import { LogOut, MessageCircle, Package, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Cloud } from 'lucide-react';
 
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
+  { path: '/my-files', label: 'הקבצים שלי', icon: Cloud },
   { path: '/package', label: 'תמהיל נבחר', icon: Package },
   { path: '/approvals', label: 'אישורי בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },
