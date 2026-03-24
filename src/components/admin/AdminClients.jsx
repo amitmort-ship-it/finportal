@@ -22,8 +22,8 @@ export default function AdminClients() {
   }, []);
 
   const loadClients = async () => {
-    const users = await base44.entities.User.list();
-    setClients(users.filter(u => u.role !== 'admin'));
+    const profiles = await base44.entities.ClientProfile.list();
+    setClients(profiles);
     setLoading(false);
   };
 
@@ -32,6 +32,8 @@ export default function AdminClients() {
     setInviting(true);
     try {
       await base44.users.inviteUser(email, 'user');
+      // Create a profile entry for the new user
+      await base44.entities.ClientProfile.create({ email, full_name: '' });
       toast.success('הזמנה נשלחה למייל');
       setEmail('');
       setOpen(false);
@@ -55,29 +57,21 @@ export default function AdminClients() {
     }
     setSaving(true);
     try {
-      // Invoke backend function with service role to update User
-      const response = await base44.functions.invoke('updateUserName', {
-        userId: clientId,
+      await base44.entities.ClientProfile.update(clientId, {
         full_name: editingName.trim(),
       });
-      
-      if (response.data.success) {
-        toast.success('השם עודכן בהצלחה');
-        setEditingId(null);
-        loadClients();
-      } else {
-        toast.error(response.data.error || 'שגיאה בעדכון השם');
-      }
+      toast.success('השם עודכן בהצלחה');
+      setEditingId(null);
+      loadClients();
     } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error.response?.data?.error || error.message || 'שגיאה בעדכון השם');
+      toast.error(error.message || 'שגיאה בעדכון השם');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.User.delete(id);
+    await base44.entities.ClientProfile.delete(id);
     toast.success('הלקוח נמחק');
     loadClients();
   };
