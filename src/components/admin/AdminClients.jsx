@@ -22,9 +22,16 @@ export default function AdminClients() {
   }, []);
 
   const loadClients = async () => {
-    const profiles = await base44.entities.ClientProfile.list();
-    setClients(profiles);
-    setLoading(false);
+    try {
+      const profiles = await base44.entities.ClientProfile.list();
+      console.log('Loaded profiles:', profiles);
+      setClients(profiles);
+    } catch (error) {
+      console.error('Error loading profiles:', error);
+      toast.error('שגיאה בטעינת הלקוחות');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInvite = async () => {
