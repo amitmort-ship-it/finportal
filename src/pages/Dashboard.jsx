@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { FileText, Building2, Shield, Clock, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { FileText, Building2, Shield, Clock, CheckCircle2, ArrowLeft, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ClientUpdates from '../components/ClientUpdates';
 
@@ -27,21 +27,23 @@ function StatCard({ icon: Icon, label, value, color, to }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ files: 0, pendingFiles: 0, approvals: 0, collaterals: 0 });
+  const [stats, setStats] = useState({ files: 0, pendingFiles: 0, approvals: 0, collaterals: 0, packages: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [files, approvals, collaterals] = await Promise.all([
+      const [files, approvals, collaterals, packages] = await Promise.all([
         base44.entities.FileRequest.filter({ client_email: user.email }),
         base44.entities.BankApproval.filter({ client_email: user.email }),
         base44.entities.Collateral.filter({ client_email: user.email }),
+        base44.entities.SelectedPackage.filter({ client_email: user.email }),
       ]);
       setStats({
         files: files.length,
         pendingFiles: files.filter(f => f.status === 'pending').length,
         approvals: approvals.length,
         collaterals: collaterals.filter(c => c.status === 'active').length,
+        packages: packages.length,
       });
       setLoading(false);
     };
@@ -66,6 +68,13 @@ export default function Dashboard() {
       </div>
 
       <ClientUpdates />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        <StatCard icon={FileText} label="מסמכים" value={stats.files} color="bg-blue-100" to="/files" />
+        <StatCard icon={Building2} label="אישורי בנקים" value={stats.approvals} color="bg-emerald-100" to="/approvals" />
+        <StatCard icon={Shield} label="בטחונות" value={stats.collaterals} color="bg-orange-100" to="/collaterals" />
+        <StatCard icon={Package} label="תמהיל נבחר" value={stats.packages} color="bg-purple-100" to="/package" />
+      </div>
 
       {stats.pendingFiles > 0 && (
         <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5">
