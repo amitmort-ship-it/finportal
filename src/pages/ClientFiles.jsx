@@ -20,6 +20,14 @@ export default function ClientFiles() {
     load();
   }, [user?.email]);
 
+  useEffect(() => {
+    if (!user?.email) return;
+    const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
+      load();
+    });
+    return unsubscribe;
+  }, [user?.email]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
