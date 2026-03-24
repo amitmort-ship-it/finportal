@@ -9,7 +9,9 @@ export default function AdminViewDocuments({ selectedClient }) {
   useEffect(() => {
     const load = async () => {
       const data = await base44.entities.FileRequest.list('-created_date');
+      console.log('All requests:', data);
       const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
+      console.log('Filtered requests:', filtered);
       setRequests(filtered);
       setLoading(false);
     };
@@ -53,16 +55,17 @@ export default function AdminViewDocuments({ selectedClient }) {
               {req.uploaded_files && req.uploaded_files.length > 0 ? (
                 <div className="space-y-2">
                   {req.uploaded_files.map((file, idx) => (
-                    <a
-                      key={idx}
-                      href={file.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors"
-                    >
-                      <Download className="w-4 h-4 text-primary" />
-                      <span className="text-sm text-primary hover:underline truncate">{file.file_name}</span>
-                    </a>
+                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+                      <Download className="w-4 h-4 text-primary shrink-0" />
+                      <a
+                        href={file.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline truncate flex-1"
+                      >
+                        {file.file_name || `קובץ ${idx + 1}`}
+                      </a>
+                    </div>
                   ))}
                 </div>
               ) : (
