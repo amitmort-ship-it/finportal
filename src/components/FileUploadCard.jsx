@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, CheckCircle2, Clock, XCircle, FileText, Loader2 } from 'lucide-react';
+import { Upload, CheckCircle2, Clock, XCircle, FileText, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ export default function FileUploadCard({ request, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const config = statusConfig[request.status] || statusConfig.pending;
   const StatusIcon = config.icon;
+  const uploadedFiles = request.uploaded_files || [];
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -22,13 +23,22 @@ export default function FileUploadCard({ request, onUpdate }) {
 
     setUploading(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const newFiles = [...uploadedFiles, { file_url, file_name: file.name }];
     await base44.entities.FileRequest.update(request.id, {
-      uploaded_file_url: file_url,
-      uploaded_file_name: file.name,
+      uploaded_files: newFiles,
       status: 'uploaded',
     });
     toast.success('הקובץ הועלה בהצלחה');
     setUploading(false);
+    onUpdate?.();
+  };
+
+  const handleDeleteFile = async (index) => {
+    const newFiles = uploadedFiles.filter((_, i) => i !== index);
+    await base44.entities.FileRequest.update(request.id, {
+      uploaded_files: newFiles,
+    });
+    toast.success('הקובץ הוסר');
     onUpdate?.();
   };
 
@@ -53,21 +63,26 @@ export default function FileUploadCard({ request, onUpdate }) {
         </div>
       )}
 
-      {request.uploaded_file_url ? (
-        <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
-          <FileText className="w-4 h-4 text-primary" />
-          <a href={request.uploaded_file_url} target="_blank" rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline truncate flex-1">
-            {request.uploaded_file_name || 'הורדת קובץ'}
-          </a>
-          {request.status === 'pending' || request.status === 'rejected' ? (
-            <label className="cursor-pointer">
-              <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
-              <span className="text-xs text-primary hover:underline">החלף קובץ</span>
-            </label>
-          ) : null}
+      {uploadedFiles.length > 0 ? (
+        <div className="space-y-2 mb-3">
+          {uploadedFiles.map((file, idx) => (
+            <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+              <FileText className="w-4 h-4 text-primary shrink-0" />
+              <a href={file.file_url} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1">
+                {file.file_name}
+              </a>
+              {request.status === 'pending' || request.status === 'rejected' ? (
+                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0">
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              ) : null}
+            </div>
+          ))}
         </div>
-      ) : (
+      ) : null}
+
+      {request.status === 'pending' || request.status === 'rejected' && (
         <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
           <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           {uploading ? (
