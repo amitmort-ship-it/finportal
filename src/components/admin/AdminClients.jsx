@@ -10,9 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 export default function AdminClients() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', full_name: '' });
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
     loadClients();
@@ -24,23 +24,19 @@ export default function AdminClients() {
     setLoading(false);
   };
 
-  const handleCreate = async () => {
-    if (!form.email || !form.password || !form.full_name) return;
-    setCreating(true);
+  const handleInvite = async () => {
+    if (!email) return;
+    setInviting(true);
     try {
-      await base44.functions.invoke('createUser', {
-        email: form.email,
-        password: form.password,
-        full_name: form.full_name,
-      });
-      toast.success(`לקוח ${form.full_name} נוצר בהצלחה`);
-      setForm({ email: '', password: '', full_name: '' });
+      await base44.users.inviteUser(email, 'user');
+      toast.success('הזמנה נשלחה למייל');
+      setEmail('');
       setOpen(false);
       loadClients();
     } catch (error) {
-      toast.error(error.message || 'שגיאה ביצירת לקוח');
+      toast.error(error.message || 'שגיאה בשליחת הזמנה');
     } finally {
-      setCreating(false);
+      setInviting(false);
     }
   };
 
@@ -61,51 +57,31 @@ export default function AdminClients() {
           <DialogTrigger asChild>
             <Button className="gap-2">
               <UserPlus className="w-4 h-4" />
-              לקוח חדש
+              הזמן לקוח חדש
             </Button>
           </DialogTrigger>
           <DialogContent dir="rtl">
             <DialogHeader>
-              <DialogTitle>הוספת לקוח חדש</DialogTitle>
+              <DialogTitle>הזמן לקוח חדש</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <div>
-                <Label>שם מלא</Label>
-                <Input
-                  value={form.full_name}
-                  onChange={(e) => setForm({...form, full_name: e.target.value})}
-                  placeholder="שם הלקוח"
-                  className="mt-1"
-                />
-              </div>
               <div>
                 <Label>כתובת אימייל</Label>
                 <Input
                   type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({...form, email: e.target.value})}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
                   dir="ltr"
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label>סיסמא</Label>
-                <Input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm({...form, password: e.target.value})}
-                  placeholder="סיסמא חזקה"
-                  dir="ltr"
-                  className="mt-1"
-                />
-              </div>
               <Button
-                onClick={handleCreate}
-                disabled={creating || !form.email || !form.password || !form.full_name}
+                onClick={handleInvite}
+                disabled={inviting || !email}
                 className="w-full"
               >
-                {creating ? 'יוצר...' : 'צור לקוח'}
+                {inviting ? 'שולח...' : 'שלח הזמנה'}
               </Button>
             </div>
           </DialogContent>
