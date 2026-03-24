@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, Users, Trash2 } from 'lucide-react';
+import { UserPlus, Users, Trash2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -13,6 +13,9 @@ export default function AdminClients() {
   const [inviting, setInviting] = useState(false);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -37,6 +40,32 @@ export default function AdminClients() {
       toast.error(error.message || 'שגיאה בשליחת הזמנה');
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleEditName = (client) => {
+    setEditingId(client.id);
+    setEditingName(client.full_name || '');
+  };
+
+  const handleSaveName = async (clientId) => {
+    if (!editingName.trim()) {
+      toast.error('שם לא יכול להיות ריק');
+      return;
+    }
+    setSaving(true);
+    try {
+      await base44.functions.invoke('updateUserName', {
+        userId: clientId,
+        full_name: editingName,
+      });
+      toast.success('השם עודכן בהצלחה');
+      setEditingId(null);
+      loadClients();
+    } catch (error) {
+      toast.error(error.message || 'שגיאה בעדכון השם');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -95,19 +124,60 @@ export default function AdminClients() {
       ) : (
         <div className="space-y-3">
           {clients.map(client => (
-            <div key={client.id} className="bg-card rounded-xl border border-border p-4 flex items-center justify-between">
-              <div>
-                <div className="font-semibold">{client.full_name || client.email}</div>
-                <div className="text-sm text-muted-foreground">{client.email}</div>
+            <div key={client.id} className="bg-card rounded-xl border border-border p-4 flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                {editingId === client.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      placeholder="שם מלא"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveName(client.id)}
+                        disabled={saving}
+                      >
+                        {saving ? 'שומר...' : 'שמור'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingId(null)}
+                      >
+                        ביטול
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="font-semibold">{client.full_name || 'ללא שם'}</div>
+                    <div className="text-sm text-muted-foreground">{client.email}</div>
+                  </>
+                )}
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleDelete(client.id)}
-                className="text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {editingId !== client.id && (
+                <div className="flex gap-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleEditName(client)}
+                    title="ערוך שם"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleDelete(client.id)}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
