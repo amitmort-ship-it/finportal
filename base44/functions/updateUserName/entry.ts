@@ -15,14 +15,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Update user directly through the authenticated SDK client
-    const updatedUser = await base44.entities.User.update(userId, {
+    // Use service role to bypass RLS restrictions
+    const updatedUser = await base44.asServiceRole.entities.User.update(userId, {
       full_name: full_name.trim(),
     });
 
     return Response.json({ success: true, user: updatedUser });
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error updating user:', error.message);
     return Response.json({ 
       success: false,
       error: error.message || 'Failed to update user'
