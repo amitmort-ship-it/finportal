@@ -50,9 +50,12 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
 
   useEffect(() => {
     const load = async () => {
-      const res = await base44.functions.invoke('getAllClients', {});
-      const profiles = res.data?.profiles || [];
-      setUsers(profiles);
+      const [, clientRes] = await Promise.all([
+        base44.entities.FileRequest.filter({}, '-created_date'),
+        base44.functions.invoke('getAllClients', {}),
+      ]);
+      const userList = clientRes.data?.profiles || [];
+      setUsers(userList);
     };
     load();
   }, []);
