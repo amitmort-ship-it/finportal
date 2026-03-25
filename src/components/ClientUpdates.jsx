@@ -38,7 +38,7 @@ export default function ClientUpdates() {
         <Bell className="w-5 h-5 text-blue-600" />
         <h2 className="font-semibold text-blue-900">עדכונים חדשים</h2>
       </div>
-      <div className="overflow-y-auto space-y-3 flex-1 min-h-0">
+      <div className="overflow-y-auto space-y-3 flex-1 min-h-0 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-blue-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-blue-500">
         {updates.map((update) => (
           <div key={update.id} className="bg-white rounded-lg p-3 border border-blue-100">
             <p className="text-sm text-foreground">{update.message}</p>

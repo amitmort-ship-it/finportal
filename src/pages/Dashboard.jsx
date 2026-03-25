@@ -76,14 +76,14 @@ export default function Dashboard() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 mt-6 md:h-[400px]">
+        <div className="flex-1">
+          <ClientUpdates />
+        </div>
         <div className="md:w-72 shrink-0">
           <ProcessTracker
             currentStage={processStage?.current_stage || 'איסוף מסמכים'}
             notes={processStage?.notes}
           />
-        </div>
-        <div className="flex-1">
-          <ClientUpdates />
         </div>
       </div>
 
