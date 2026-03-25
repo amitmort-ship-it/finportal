@@ -1,5 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
+async function createDriveFolder(name, parentId, authHeader) {
+  const body = { name, mimeType: 'application/vnd.google-apps.folder' };
+  if (parentId) body.parents = [parentId];
+  const res = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { ...authHeader, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  return data.id;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -14,52 +26,54 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
     const authHeader = { Authorization: `Bearer ${accessToken}` };
 
-    // Get or create client folder
+    // Get or create client folder record
     const folders = await base44.asServiceRole.entities.DriveFolder.filter({ client_email });
-    let folderId;
+    let record = folders[0];
+    let clientFolderId;
 
-    if (folders.length > 0) {
-      folderId = folders[0].folder_id;
-    } else {
-      // Create new folder for this client
-      const folderRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: { ...authHeader, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: client_email,
-          mimeType: 'application/vnd.google-apps.folder',
-        }),
-      });
-      const folder = await folderRes.json();
-      folderId = folder.id;
-      await base44.asServiceRole.entities.DriveFolder.create({
+    if (!record) {
+      clientFolderId = await createDriveFolder(client_email, null, authHeader);
+      record = await base44.asServiceRole.entities.DriveFolder.create({
         client_email,
-        folder_id: folderId,
+        folder_id: clientFolderId,
         folder_name: client_email,
+        category_folders: {},
       });
+    } else {
+      clientFolderId = record.folder_id;
     }
 
-    // Download the file from base44 storage
+    // Get or create category sub-folder
+    let targetFolderId = clientFolderId;
+    if (category) {
+      const categoryFolders = record.category_folders || {};
+      if (categoryFolders[category]) {
+        targetFolderId = categoryFolders[category];
+      } else {
+        const catFolderId = await createDriveFolder(category, clientFolderId, authHeader);
+        categoryFolders[category] = catFolderId;
+        await base44.asServiceRole.entities.DriveFolder.update(record.id, { category_folders: categoryFolders });
+        targetFolderId = catFolderId;
+      }
+    }
+
+    // Download file from base44 storage
     const fileRes = await fetch(file_url);
     const fileBlob = await fileRes.blob();
     const mimeType = fileBlob.type || 'application/octet-stream';
 
     // Upload to Drive using multipart upload
-    const metadata = {
-      name: category ? `[${category}] ${file_name}` : file_name,
-      parents: [folderId],
-    };
-
+    const metadata = { name: file_name, parents: [targetFolderId] };
     const boundary = 'boundary_' + Date.now();
     const metadataPart = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n`;
     const filePart = `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`;
     const endPart = `\r\n--${boundary}--`;
 
-    const metaBytes = new TextEncoder().encode(metadataPart);
-    const filePartBytes = new TextEncoder().encode(filePart);
-    const endBytes = new TextEncoder().encode(endPart);
-    const fileArrayBuffer = await fileBlob.arrayBuffer();
-    const fileBytes = new Uint8Array(fileArrayBuffer);
+    const enc = new TextEncoder();
+    const metaBytes = enc.encode(metadataPart);
+    const filePartBytes = enc.encode(filePart);
+    const endBytes = enc.encode(endPart);
+    const fileBytes = new Uint8Array(await fileBlob.arrayBuffer());
 
     const body = new Uint8Array(metaBytes.length + filePartBytes.length + fileBytes.length + endBytes.length);
     let offset = 0;
@@ -70,10 +84,7 @@ Deno.serve(async (req) => {
 
     const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
       method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': `multipart/related; boundary=${boundary}`,
-      },
+      headers: { ...authHeader, 'Content-Type': `multipart/related; boundary=${boundary}` },
       body,
     });
 
