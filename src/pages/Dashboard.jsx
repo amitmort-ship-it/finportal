@@ -71,7 +71,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">ברוך הבא לאיזור האישי שלך</p>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-stretch gap-6 mt-6">
+      <div className="flex flex-col md:flex-row gap-6 mt-6 md:h-[400px]">
         <div className="md:w-72 shrink-0">
           <ProcessTracker
             currentStage={processStage?.current_stage || 'איסוף מסמכים'}
