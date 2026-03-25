@@ -20,7 +20,6 @@ export default function FilesPage() {
       if (!user?.email) return [];
       return base44.entities.FileRequest.filter({ client_email: user.email }, '-created_date');
     },
-    staleTime: 60000,
     enabled: !!user?.email,
   });
 
@@ -57,7 +56,6 @@ export default function FilesPage() {
     acc[cat] = requests.filter(r => r.category === cat);
     return acc;
   }, {});
-  const uncategorized = requests.filter(r => !r.category);
 
   return (
     <div>
@@ -65,14 +63,14 @@ export default function FilesPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">מסמכים נדרשים</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {CATEGORIES.map(cat => (
           <div key={cat} className={`rounded-2xl border p-5 ${CATEGORY_STYLES[cat].bg}`}>
             <h2 className={`font-bold text-base mb-4 text-center ${CATEGORY_STYLES[cat].title}`}>{cat}</h2>
             {grouped[cat]?.length > 0 ? (
               <div className="space-y-3">
                 {grouped[cat].map(request => (
-                  <FileUploadCard key={request.id} request={request} onUpdate={() => window.location.reload()} />
+                  <FileUploadCard key={request.id} request={request} />
                 ))}
               </div>
             ) : (
@@ -81,14 +79,6 @@ export default function FilesPage() {
           </div>
         ))}
       </div>
-
-      {uncategorized.length > 0 && (
-        <div className="mt-4 space-y-3">
-          {uncategorized.map(r => (
-            <FileUploadCard key={r.id} request={r} onUpdate={() => window.location.reload()} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
