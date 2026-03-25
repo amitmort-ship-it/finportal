@@ -17,13 +17,14 @@ export default function AdminFileRequests({ selectedClient }) {
   const [users, setUsers] = useState([]);
 
   const load = async () => {
-    const [data, userList] = await Promise.all([
+    const [data, clientRes] = await Promise.all([
       base44.entities.FileRequest.filter({}, '-created_date'),
-      base44.entities.User.filter({}),
+      base44.functions.invoke('getAllClients', {}),
     ]);
     const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
     setRequests(filtered);
-    setUsers(userList.filter(u => u.role !== 'admin') || []);
+    const userList = clientRes.data?.profiles || [];
+    setUsers(userList || []);
     setLoading(false);
   };
 

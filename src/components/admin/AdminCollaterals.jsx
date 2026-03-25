@@ -26,10 +26,7 @@ export default function AdminCollaterals({ selectedClient }) {
   const [form, setForm] = useState({ ...emptyForm });
 
   const load = async () => {
-    const [data, userList] = await Promise.all([
-      base44.entities.Collateral.filter({}, '-created_date'),
-      base44.entities.User.filter({}),
-    ]);
+    const data = await base44.entities.Collateral.filter({}, '-created_date');
     const filtered = selectedClient ? data.filter(c => c.client_email === selectedClient) : data;
     setCollaterals(filtered);
     setUsers(userList.filter(u => u.role !== 'admin'));
@@ -38,6 +35,14 @@ export default function AdminCollaterals({ selectedClient }) {
 
   useEffect(() => { load(); }, [selectedClient]);
   useEffect(() => { if (selectedClient) setForm(f => ({ ...f, client_email: selectedClient })); }, [selectedClient]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const res = await base44.functions.invoke('getAllClients', {});
+      setUsers((res.data?.profiles || []).filter(p => p.email));
+    };
+    loadUsers();
+  }, []);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];

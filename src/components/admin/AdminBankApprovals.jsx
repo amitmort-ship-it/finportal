@@ -25,10 +25,11 @@ export default function AdminBankApprovals({ selectedClient }) {
   const [editUploading, setEditUploading] = useState(false);
 
   const load = async () => {
-    const [data, userList] = await Promise.all([
+    const [data, clientRes] = await Promise.all([
       base44.entities.BankApproval.filter({}, '-created_date'),
-      base44.entities.User.filter({}),
+      base44.functions.invoke('getAllClients', {}),
     ]);
+    const userList = clientRes.data?.profiles || [];
     const filtered = selectedClient ? data.filter(a => a.client_email === selectedClient) : data;
     setApprovals(filtered);
     setUsers(userList.filter(u => u.role !== 'admin'));

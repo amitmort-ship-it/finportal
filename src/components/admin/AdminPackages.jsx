@@ -20,10 +20,11 @@ export default function AdminPackages({ selectedClient }) {
 
   useEffect(() => {
     const load = async () => {
-      const [pkgs, userList] = await Promise.all([
+      const [pkgs, clientRes] = await Promise.all([
         base44.entities.SelectedPackage.filter({}, '-created_date'),
-        base44.entities.User.filter({}),
+        base44.functions.invoke('getAllClients', {}),
       ]);
+      const userList = clientRes.data?.profiles || [];
       setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
       setUsers(userList.filter(u => u.role !== 'admin'));
       setLoading(false);
