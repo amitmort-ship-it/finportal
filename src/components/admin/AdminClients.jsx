@@ -42,7 +42,7 @@ export default function AdminClients() {
         );
       }
 
-      const allProfiles = await base44.entities.ClientProfile.list('-created_date');
+      const allProfiles = await base44.entities.ClientProfile.filter({}, '-created_date');
       setClients(allProfiles);
     } catch (error) {
       toast.error('שגיאה בטעינת הלקוחות');
