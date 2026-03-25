@@ -1,4 +1,4 @@
-import { Package, FileText, Download } from 'lucide-react';
+import { Package, FileText, Download, Image } from 'lucide-react';
 
 export default function PackageCard({ pkg }) {
   return (
@@ -31,6 +31,22 @@ export default function PackageCard({ pkg }) {
               <Download className="w-3.5 h-3.5" />
               {pkg.file_name || 'הורד תמהיל'}
             </a>
+          )}
+
+          {pkg.screenshots?.length > 0 && (
+            <div className="mt-4">
+              <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                <Image className="w-3.5 h-3.5" /> צילומי מסלולים וריביות
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {pkg.screenshots.map((sc, i) => (
+                  <a key={i} href={sc.url} target="_blank" rel="noopener noreferrer"
+                    className="block rounded-lg overflow-hidden border border-border hover:opacity-90 transition-opacity">
+                    <img src={sc.url} alt={sc.name || `צילום ${i + 1}`} className="w-full h-32 object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>

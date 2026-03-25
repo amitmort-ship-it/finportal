@@ -11,6 +11,7 @@ import AdminClients from '../components/admin/AdminClients';
 import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
+import AdminPackages from '../components/admin/AdminPackages';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -55,6 +56,7 @@ export default function AdminPanel() {
           <TabsTrigger value="updates">עדכונים</TabsTrigger>
           <TabsTrigger value="clients">לקוחות</TabsTrigger>
           <TabsTrigger value="files">בקשות מסמכים</TabsTrigger>
+          <TabsTrigger value="packages">תמהיל</TabsTrigger>
           <TabsTrigger value="approvals">אישורי בנקים</TabsTrigger>
           <TabsTrigger value="collaterals">בטחונות</TabsTrigger>
         </TabsList>
@@ -68,6 +70,7 @@ export default function AdminPanel() {
             <AdminFileRequests selectedClient={selectedClient} />
           </div>
         </TabsContent>
+        <TabsContent value="packages"><AdminPackages selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
       </Tabs>
