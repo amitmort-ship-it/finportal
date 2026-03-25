@@ -22,7 +22,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     const load = async () => {
-      const userList = await base44.asServiceRole.entities.User.filter({});
+      const userList = await base44.entities.User.filter({});
       setUsers(userList.filter(u => u.role !== 'admin'));
     };
     load();
