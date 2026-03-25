@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import { Shield, Download, Upload, Loader2, FileText } from 'lucide-react';
+import { Shield, Download, Upload, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
-const statusConfig = {
-  pending: { label: 'ממתין לחתימה', color: 'bg-amber-50 text-amber-600 border-amber-200' },
-  signed: { label: 'הוחזר חתום', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-  completed: { label: 'הושלם', color: 'bg-blue-50 text-blue-600 border-blue-200' },
-};
-
 export default function CollateralCard({ collateral, onUpdate }) {
   const [uploading, setUploading] = useState(false);
-  const sc = statusConfig[collateral.status] || statusConfig.pending;
+  const isDone = collateral.status === 'signed' || collateral.status === 'completed';
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -29,14 +23,16 @@ export default function CollateralCard({ collateral, onUpdate }) {
   };
 
   return (
-    <div className={`bg-card rounded-xl border overflow-hidden ${sc.color.includes('amber') ? 'border-amber-200' : sc.color.includes('emerald') ? 'border-emerald-200' : 'border-blue-200'}`}>
+    <div className={`bg-card rounded-xl border overflow-hidden ${isDone ? 'border-emerald-200' : 'border-amber-200'}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-3">
           <Shield className="w-4 h-4 text-primary" />
           <span className="font-semibold text-foreground">{collateral.title}</span>
         </div>
-        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${sc.color}`}>{sc.label}</span>
+        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${isDone ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+          {isDone ? 'בוצע' : 'לא בוצע'}
+        </span>
       </div>
 
       {/* Split body */}
@@ -76,13 +72,11 @@ export default function CollateralCard({ collateral, onUpdate }) {
                 <Download className="w-4 h-4" />
                 {collateral.client_file_name || 'המסמך החתום'}
               </a>
-              <div>
-                <label className="flex items-center gap-2 mt-2 text-xs text-muted-foreground cursor-pointer hover:text-primary">
-                  <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-                  <Upload className="w-3.5 h-3.5" />
-                  החלף מסמך
-                </label>
-              </div>
+              <label className="flex items-center gap-2 mt-2 text-xs text-muted-foreground cursor-pointer hover:text-primary">
+                <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                <Upload className="w-3.5 h-3.5" />
+                החלף מסמך
+              </label>
             </div>
           ) : (
             <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-5 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">

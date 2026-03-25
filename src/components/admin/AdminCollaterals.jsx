@@ -12,9 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 const emptyForm = { client_email: '', title: '', description: '', handler: '', notes: '', admin_file_url: '', admin_file_name: '' };
 
 const statusConfig = {
-  pending: { label: 'ממתין לחתימה', color: 'bg-amber-50 text-amber-600' },
-  signed: { label: 'הוחזר חתום', color: 'bg-emerald-50 text-emerald-600' },
-  completed: { label: 'הושלם', color: 'bg-blue-50 text-blue-600' },
+  pending: { label: 'לא בוצע', color: 'bg-amber-50 text-amber-600' },
+  signed: { label: 'בוצע', color: 'bg-emerald-50 text-emerald-600' },
+  completed: { label: 'בוצע', color: 'bg-emerald-50 text-emerald-600' },
 };
 
 export default function AdminCollaterals({ selectedClient }) {
