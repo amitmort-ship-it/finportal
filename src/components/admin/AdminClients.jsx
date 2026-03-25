@@ -23,7 +23,7 @@ export default function AdminClients() {
 
   const loadClients = async () => {
     try {
-      const users = await base44.entities.User.filter({});
+      const users = await base44.asServiceRole.entities.User.filter({});
       const nonAdminUsers = users.filter(u => u.role !== 'admin');
       const profiles = await base44.asServiceRole.entities.ClientProfile.filter({});
       const profileEmails = new Set(profiles.map(p => p.email));
