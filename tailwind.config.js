@@ -2,6 +2,13 @@
 module.exports = {
     darkMode: ["class"],
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
+    safelist: [
+      'bg-red-50', 'border-red-200', 'text-red-600',
+      'bg-blue-50', 'border-blue-200', 'text-blue-600',
+      'bg-yellow-50', 'border-yellow-300', 'text-yellow-600',
+      'bg-orange-50', 'border-orange-200', 'text-orange-600',
+      'bg-slate-50', 'border-slate-200', 'text-slate-500',
+    ],
   theme: {
   	extend: {
   		fontFamily: {
