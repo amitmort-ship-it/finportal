@@ -13,7 +13,7 @@ export default function ProcessTracker({ currentStage, notes }) {
   const currentIndex = STAGES.indexOf(currentStage);
 
   return (
-    <div className="bg-card rounded-xl border border-border p-5">
+    <div className="bg-card rounded-xl border border-border p-5 h-full">
       <h2 className="text-base font-bold mb-5">שלבי התהליך</h2>
       <div className="relative">
         {/* Vertical line */}
