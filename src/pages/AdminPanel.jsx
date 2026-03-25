@@ -21,7 +21,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     const load = async () => {
-      const list = await base44.entities.ClientProfile.list();
+      const list = await base44.entities.ClientProfile.filter({}, '-created_date');
       setUsers(list);
     };
     load();
