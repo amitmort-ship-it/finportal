@@ -28,6 +28,15 @@ export default function FileUploadCard({ request, onUpdate }) {
       uploaded_files: newFiles,
       status: 'uploaded',
     });
+
+    // Upload to Google Drive in background
+    base44.functions.invoke('uploadToDrive', {
+      file_url,
+      file_name: file.name,
+      client_email: request.client_email,
+      category: request.category,
+    }).catch(err => console.error('Drive upload failed:', err));
+
     toast.success('הקובץ הועלה בהצלחה');
     setUploading(false);
     onUpdate?.();
