@@ -28,7 +28,7 @@ export default function AdminUpdates({ selectedClient }) {
   };
 
   useEffect(() => {
-    setClient(selectedClient);
+    setClient(selectedClient && selectedClient !== '_all' ? selectedClient : '');
   }, [selectedClient]);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function AdminUpdates({ selectedClient }) {
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">📢 כל הלקוחות</SelectItem>
+            <SelectItem value="_all">📢 כל הלקוחות</SelectItem>
             {users.map(u => (
               <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
             ))}

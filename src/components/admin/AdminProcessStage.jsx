@@ -25,7 +25,7 @@ export default function AdminProcessStage({ selectedClient }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!selectedClient) { setRecord(null); return; }
+    if (!selectedClient || selectedClient === '_all') { setRecord(null); return; }
     const load = async () => {
       setLoading(true);
       const list = await base44.entities.ProcessStage.filter({ client_email: selectedClient });

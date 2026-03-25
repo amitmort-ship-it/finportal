@@ -88,8 +88,8 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
   const totalSelected = Object.values(selectedDocs).filter(Boolean).length;
 
   const handleSend = async () => {
-    if (!selectedUser || totalSelected === 0) {
-      toast.error('בחר לקוח ולפחות מסמך אחד');
+    if (!selectedUser || selectedUser === '_all' || totalSelected === 0) {
+      toast.error('בחר לקוח ולפחות מסמכים');
       return;
     }
 
@@ -121,6 +121,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="_all">בחר לכל הלקוחות</SelectItem>
             {users.map(u => (
               <SelectItem key={u.id} value={u.email}>
                 {u.full_name || u.email}

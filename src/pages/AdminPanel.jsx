@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminClients from '../components/admin/AdminClients';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
@@ -15,6 +18,15 @@ import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const userList = await base44.entities.User.filter({});
+      setUsers(userList.filter(u => u.role !== 'admin'));
+    };
+    load();
+  }, []);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
@@ -25,6 +37,17 @@ export default function AdminPanel() {
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
         <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-4 mb-6">
+        <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
+        <Select value={selectedClient || ''} onValueChange={v => setSelectedClient(v || null)}>
+          <SelectTrigger className="w-full md:w-80"><SelectValue placeholder="כל הלקוחות" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">כל הלקוחות</SelectItem>
+            {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <Tabs defaultValue="clients" className="w-full">
