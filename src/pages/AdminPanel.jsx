@@ -44,7 +44,7 @@ export default function AdminPanel() {
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={null}>כל הלקוחות</SelectItem>
+           <SelectItem value={null}>כל הלקוחות</SelectItem>
             {users.map(u => (
               <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}{!u.invited ? ' ⏳' : ''}</SelectItem>
             ))}
