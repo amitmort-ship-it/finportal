@@ -51,9 +51,10 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
   useEffect(() => {
     const load = async () => {
       try {
+        console.log('Invoking getAllClients...');
         const res = await base44.functions.invoke('getAllClients', {});
         console.log('response:', res);
-        const profiles = res.data?.profiles || [];
+        const profiles = res.data?.profiles || res.profiles || [];
         console.log('profiles loaded:', profiles.length);
         setUsers(profiles);
       } catch (err) {
