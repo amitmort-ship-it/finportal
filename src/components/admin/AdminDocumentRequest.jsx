@@ -50,7 +50,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
 
   useEffect(() => {
     const load = async () => {
-      const profiles = await base44.entities.ClientProfile.list();
+      const profiles = await base44.entities.ClientProfile.filter({});
       // Deduplicate by email
       const seen = new Set();
       const unique = profiles.filter(p => {
