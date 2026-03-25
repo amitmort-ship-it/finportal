@@ -91,7 +91,7 @@ export default function FileUploadCard({ request, onUpdate }) {
         </div>
       ) : null}
 
-      {request.status === 'pending' || request.status === 'rejected' && (
+      {(request.status === 'pending' || request.status === 'rejected') && (
         <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
           <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           {uploading ? (
