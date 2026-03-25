@@ -8,7 +8,6 @@ import AdminFileRequests from '../components/admin/AdminFileRequests';
 import AdminBankApprovals from '../components/admin/AdminBankApprovals';
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminClients from '../components/admin/AdminClients';
-import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 import AdminPackages from '../components/admin/AdminPackages';
@@ -58,9 +57,8 @@ export default function AdminPanel() {
         </Select>
       </div>
 
-      <Tabs defaultValue="updates" dir="rtl">
+      <Tabs defaultValue="clients" dir="rtl">
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
-          <TabsTrigger value="updates">עדכונים</TabsTrigger>
           <TabsTrigger value="clients">לקוחות</TabsTrigger>
           <TabsTrigger value="files">בקשות מסמכים</TabsTrigger>
           <TabsTrigger value="packages">תמהיל</TabsTrigger>
@@ -69,9 +67,6 @@ export default function AdminPanel() {
           <TabsTrigger value="process">שלבי תהליך</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="updates">
-          <AdminUpdates selectedClient={selectedClient} />
-        </TabsContent>
         <TabsContent value="clients">
           <AdminClients />
         </TabsContent>
