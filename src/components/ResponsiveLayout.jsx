@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
@@ -25,6 +25,15 @@ export default function ResponsiveLayout() {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const mainRef = useRef(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const handleScroll = () => {
+    if (!mainRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = mainRef.current;
+    const progress = scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * 100 : 0;
+    setScrollProgress(progress);
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -107,11 +116,22 @@ export default function ResponsiveLayout() {
       </header>
 
       {/* Main Content */}
-      <main className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto" ref={(el) => el && location.pathname && el.scrollTo(0, 0)}>
+      <main 
+        className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto relative" 
+        ref={mainRef}
+        onScroll={handleScroll}
+      >
+        {/* Scroll Indicator */}
+        <div className="fixed right-0 top-0 bottom-0 w-1 bg-border/30 z-30 md:right-64">
+          <div 
+            className="w-full bg-primary/60 transition-all" 
+            style={{ height: '20%', transform: `translateY(${scrollProgress}%)` }}
+          />
+        </div>
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
           <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="" className="w-96 h-96 object-contain" loading="lazy" />
         </div>
-        <div className="p-4 md:p-8 max-w-5xl mx-auto relative z-10">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto relative z-10 pr-2 md:pr-4">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <Outlet />
