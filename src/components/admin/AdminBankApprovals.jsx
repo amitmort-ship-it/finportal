@@ -102,70 +102,83 @@ export default function AdminBankApprovals({ selectedClient }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">אישורי בנקים</h2>
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold">אישורי בנקים</h2>
+          </div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2"><Plus className="w-4 h-4" />אישור חדש</Button>
+            </DialogTrigger>
+            <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>הוספת אישור בנק</DialogTitle></DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <Label>לקוח</Label>
+                  <Select value={form.client_email} onValueChange={(v) => setForm({ ...form, client_email: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
+                    <SelectContent>
+                      {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>שם הבנק</Label>
+                  <Select value={form.bank_name} onValueChange={v => setForm({ ...form, bank_name: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
+                    <SelectContent>
+                      {BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>כותרת האישור</Label>
+                  <Input value={form.approval_title} onChange={e => setForm({ ...form, approval_title: e.target.value })} placeholder="למשל: אישור עקרוני למשכנתא" className="mt-1" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>סכום (₪)</Label>
+                    <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
+                  </div>
+                  <div>
+                    <Label>החזר חודשי (₪)</Label>
+                    <Input type="number" value={form.monthly_payment} onChange={e => setForm({ ...form, monthly_payment: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
+                  </div>
+                  <div>
+                    <Label>שנות משכנתא</Label>
+                    <Input type="number" value={form.mortgage_years} onChange={e => setForm({ ...form, mortgage_years: e.target.value })} placeholder="30" className="mt-1" dir="ltr" />
+                  </div>
+                </div>
+                <div>
+                  <Label>הערות</Label>
+                  <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="הוסף פרטים..." className="mt-1" />
+                </div>
+                <div>
+                  <Label>מסמך</Label>
+                  <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
+                    <input type="file" className="hidden" onChange={e => handleFileUpload(e, false)} disabled={uploading} />
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
+                    <span className="text-sm text-muted-foreground">{form.file_name || 'העלה מסמך'}</span>
+                  </label>
+                </div>
+                <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">הוסף אישור</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="w-4 h-4" />אישור חדש</Button>
-          </DialogTrigger>
-          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>הוספת אישור בנק</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div>
-                <Label>לקוח</Label>
-                <Select value={form.client_email} onValueChange={(v) => setForm({ ...form, client_email: v })}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-                  <SelectContent>
-                    {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>שם הבנק</Label>
-                <Select value={form.bank_name} onValueChange={v => setForm({ ...form, bank_name: v })}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
-                  <SelectContent>
-                    {BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>כותרת האישור</Label>
-                <Input value={form.approval_title} onChange={e => setForm({ ...form, approval_title: e.target.value })} placeholder="למשל: אישור עקרוני למשכנתא" className="mt-1" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label>סכום (₪)</Label>
-                  <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
-                </div>
-                <div>
-                  <Label>החזר חודשי (₪)</Label>
-                  <Input type="number" value={form.monthly_payment} onChange={e => setForm({ ...form, monthly_payment: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
-                </div>
-                <div>
-                  <Label>שנות משכנתא</Label>
-                  <Input type="number" value={form.mortgage_years} onChange={e => setForm({ ...form, mortgage_years: e.target.value })} placeholder="30" className="mt-1" dir="ltr" />
-                </div>
-              </div>
-              <div>
-                <Label>הערות</Label>
-                <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="הוסף פרטים..." className="mt-1" />
-              </div>
-              <div>
-                <Label>מסמך</Label>
-                <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
-                  <input type="file" className="hidden" onChange={e => handleFileUpload(e, false)} disabled={uploading} />
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
-                  <span className="text-sm text-muted-foreground">{form.file_name || 'העלה מסמך'}</span>
-                </label>
-              </div>
-              <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">הוסף אישור</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {users.length > 0 && (
+          <div className="bg-muted/50 rounded-lg p-3">
+            <Label className="text-sm mb-1 block">סנן לפי לקוח</Label>
+            <Select value={selectedClient || ''} onValueChange={() => {}}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="כל הלקוחות" /></SelectTrigger>
+              <SelectContent>
+                {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {approvals.length === 0 ? (
