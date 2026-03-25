@@ -2,10 +2,10 @@ import { Building2, FileText, Download } from 'lucide-react';
 
 const bankColors = {
   'בנק הפועלים': { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-600' },
-  'דיסקונט': { bg: 'bg-emerald-50', border: 'border-emerald-200', icon: 'text-emerald-600' },
-  'הבינלאומי': { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: 'text-yellow-600' },
-  'טפחות': { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'text-orange-600' },
-  'לאומי': { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600' },
+  'בנק לאומי': { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600' },
+  'בנק דיסקונט': { bg: 'bg-yellow-50', border: 'border-yellow-300', icon: 'text-yellow-600' },
+  'בנק טפחות': { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'text-orange-600' },
+  'חוץ בנקאי': { bg: 'bg-slate-50', border: 'border-slate-200', icon: 'text-slate-500' },
 };
 
 export default function BankApprovalCard({ approval }) {

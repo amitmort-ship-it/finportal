@@ -9,6 +9,8 @@ import { Plus, Building2, Trash2, Upload, Loader2, Edit2, Check, X, Download } f
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
+const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'חוץ בנקאי'];
+
 const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', file_url: '', file_name: '' };
 
 export default function AdminBankApprovals({ selectedClient }) {
@@ -123,7 +125,12 @@ export default function AdminBankApprovals({ selectedClient }) {
               </div>
               <div>
                 <Label>שם הבנק</Label>
-                <Input value={form.bank_name} onChange={e => setForm({ ...form, bank_name: e.target.value })} placeholder="למשל: בנק הפועלים" className="mt-1" />
+                <Select value={form.bank_name} onValueChange={v => setForm({ ...form, bank_name: v })}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
+                  <SelectContent>
+                    {BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>כותרת האישור</Label>
