@@ -10,7 +10,7 @@ const STAGES = [
 ];
 
 export default function ProcessTracker({ currentStage, notes }) {
-  const currentIndex = STAGES.indexOf(currentStage);
+  const currentIndex = currentStage ? STAGES.indexOf(currentStage) : 0;
 
   return (
     <div className="bg-card rounded-xl border border-border p-5 h-full overflow-y-auto">
