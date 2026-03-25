@@ -13,13 +13,7 @@ export default function PackageCard({ pkg }) {
             <p className="text-sm text-muted-foreground mt-1">{pkg.description}</p>
           )}
           
-          <div className="mt-3">
-            <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-medium ${
-              pkg.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-            }`}>
-              {pkg.status === 'confirmed' ? '✓ אושר' : 'ממתין לאישור'}
-            </span>
-          </div>
+
 
           {pkg.notes && (
             <p className="text-sm text-muted-foreground mt-2">{pkg.notes}</p>
