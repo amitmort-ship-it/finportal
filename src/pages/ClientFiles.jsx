@@ -71,24 +71,21 @@ export default function ClientFiles() {
           אין מסמכים נדרשים כרגע
         </div>
       ) : (
-        <div className="space-y-6">
-          {CATEGORIES.map(cat => grouped[cat]?.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {CATEGORIES.map(cat => (
             <div key={cat} className={`rounded-xl border p-5 ${CATEGORY_COLORS[cat]}`}>
               <h2 className={`font-bold text-base mb-4 ${CATEGORY_TITLE_COLORS[cat]}`}>{cat}</h2>
-              <div className="space-y-3">
-                {grouped[cat].map(request => (
-                  <FileUploadCard key={request.id} request={request} onUpdate={load} />
-                ))}
-              </div>
+              {grouped[cat]?.length > 0 ? (
+                <div className="space-y-3">
+                  {grouped[cat].map(request => (
+                    <FileUploadCard key={request.id} request={request} onUpdate={load} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground text-center py-4">אין מסמכים בקטגוריה זו</div>
+              )}
             </div>
           ))}
-          {uncategorized.length > 0 && (
-            <div className="space-y-3">
-              {uncategorized.map(request => (
-                <FileUploadCard key={request.id} request={request} onUpdate={load} />
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>
