@@ -50,9 +50,17 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
 
   useEffect(() => {
     const load = async () => {
-      const profiles = await base44.entities.ClientProfile.filter({}, '-created_date', 1000);
-      setUsers(profiles);
-      setLoading(false);
+      try {
+        const res = await base44.functions.invoke('getAllClients', {});
+        console.log('response:', res);
+        const profiles = res.data?.profiles || [];
+        console.log('profiles loaded:', profiles.length);
+        setUsers(profiles);
+      } catch (err) {
+        console.error('Error loading clients:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
