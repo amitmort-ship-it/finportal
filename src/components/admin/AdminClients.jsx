@@ -33,7 +33,7 @@ export default function AdminClients() {
       if (missingProfiles.length > 0) {
         await Promise.all(
           missingProfiles.map(u =>
-            base44.entities.ClientProfile.create({
+            base44.asServiceRole.entities.ClientProfile.create({
               email: u.email,
               full_name: u.full_name || u.email,
               invited: true,
@@ -55,7 +55,7 @@ export default function AdminClients() {
     if (!newEmail || !newName) return;
     setCreating(true);
     try {
-      await base44.entities.ClientProfile.create({
+      await base44.asServiceRole.entities.ClientProfile.create({
         email: newEmail.trim().toLowerCase(),
         full_name: newName.trim(),
         invited: false,
@@ -90,7 +90,7 @@ export default function AdminClients() {
     if (!editingName.trim()) { toast.error('שם לא יכול להיות ריק'); return; }
     setSaving(true);
     try {
-      await base44.entities.ClientProfile.update(clientId, { full_name: editingName.trim() });
+      await base44.asServiceRole.entities.ClientProfile.update(clientId, { full_name: editingName.trim() });
       toast.success('השם עודכן');
       setEditingId(null);
       loadClients();
@@ -102,7 +102,7 @@ export default function AdminClients() {
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.ClientProfile.delete(id);
+    await base44.asServiceRole.entities.ClientProfile.delete(id);
     toast.success('הלקוח נמחק');
     loadClients();
   };
