@@ -9,7 +9,6 @@ import { FileText, Building2, Shield, LayoutDashboard, Settings, Cloud } from 'l
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
-  { path: '/my-files', label: 'הקבצים שלי', icon: Cloud },
   { path: '/package', label: 'תמהיל נבחר', icon: Package },
   { path: '/approvals', label: 'אישורי בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },

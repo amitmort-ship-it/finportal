@@ -4,6 +4,13 @@ import { useAuth } from '@/lib/AuthContext';
 import FileUploadCard from '../components/FileUploadCard';
 import { FileText } from 'lucide-react';
 
+const CATEGORIES = ['לווה 1', 'לווה 2', 'משותף'];
+const CATEGORY_STYLES = {
+  'לווה 1': { bg: 'bg-blue-50 border-blue-200', title: 'text-blue-600' },
+  'לווה 2': { bg: 'bg-purple-50 border-purple-200', title: 'text-purple-600' },
+  'משותף':  { bg: 'bg-emerald-50 border-emerald-200', title: 'text-emerald-600' },
+};
+
 export default function FilesPage() {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
@@ -17,6 +24,8 @@ export default function FilesPage() {
 
   useEffect(() => {
     loadRequests();
+    const unsubscribe = base44.entities.FileRequest.subscribe(() => loadRequests());
+    return unsubscribe;
   }, [user.email]);
 
   if (loading) {
@@ -27,11 +36,16 @@ export default function FilesPage() {
     );
   }
 
+  const grouped = CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = requests.filter(r => r.category === cat);
+    return acc;
+  }, {});
+  const uncategorized = requests.filter(r => !r.category);
+
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">מסמכים נדרשים</h1>
-        <p className="text-muted-foreground mt-1">העלה את המסמכים המבוקשים</p>
       </div>
 
       {requests.length === 0 ? (
@@ -41,9 +55,28 @@ export default function FilesPage() {
           <p className="text-sm text-muted-foreground mt-1">כאשר יהיו מסמכים להעלאה, הם יופיעו כאן</p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {requests.map((req) => (
-            <FileUploadCard key={req.id} request={req} onUpdate={loadRequests} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {CATEGORIES.map(cat => (
+            <div key={cat} className={`rounded-2xl border p-5 ${CATEGORY_STYLES[cat].bg}`}>
+              <h2 className={`font-bold text-base mb-4 text-center ${CATEGORY_STYLES[cat].title}`}>{cat}</h2>
+              {grouped[cat]?.length > 0 ? (
+                <div className="space-y-3">
+                  {grouped[cat].map(request => (
+                    <FileUploadCard key={request.id} request={request} onUpdate={loadRequests} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground text-center py-6">אין מסמכים בקטגוריה זו</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {uncategorized.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {uncategorized.map(r => (
+            <FileUploadCard key={r.id} request={r} onUpdate={loadRequests} />
           ))}
         </div>
       )}
