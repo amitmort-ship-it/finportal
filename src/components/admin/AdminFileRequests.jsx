@@ -24,7 +24,7 @@ export default function AdminFileRequests({ selectedClient }) {
     const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
     setRequests(filtered);
     const userList = clientRes.data?.profiles || [];
-    setUsers(userList || []);
+    setUsers(userList);
     setLoading(false);
   };
 

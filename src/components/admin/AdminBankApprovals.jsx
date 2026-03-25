@@ -32,7 +32,7 @@ export default function AdminBankApprovals({ selectedClient }) {
     const userList = clientRes.data?.profiles || [];
     const filtered = selectedClient ? data.filter(a => a.client_email === selectedClient) : data;
     setApprovals(filtered);
-    setUsers(userList.filter(u => u.role !== 'admin'));
+    setUsers(userList);
     setLoading(false);
   };
 
@@ -103,7 +103,7 @@ export default function AdminBankApprovals({ selectedClient }) {
 
   return (
     <div>
-      <div className="mb-6 space-y-4">
+      <div className="mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />

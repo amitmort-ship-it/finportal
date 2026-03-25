@@ -26,7 +26,7 @@ export default function AdminPackages({ selectedClient }) {
       ]);
       const userList = clientRes.data?.profiles || [];
       setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
-      setUsers(userList.filter(u => u.role !== 'admin'));
+      setUsers(userList);
       setLoading(false);
     };
     load();
