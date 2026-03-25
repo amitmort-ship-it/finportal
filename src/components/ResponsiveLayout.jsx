@@ -1,10 +1,12 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package, User } from 'lucide-react';
+import { LogOut, MessageCircle, Package } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Cloud } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
 
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
@@ -85,22 +87,38 @@ export default function ResponsiveLayout() {
         </div>
       </aside>
 
-      {/* Mobile Header - hidden, replaced by top nav */}
+      {/* Mobile Top Header */}
+      <header
+        className="md:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-40"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <div className="flex items-center gap-2 px-4 py-2">
+          <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="לוגו" className="h-8 w-auto object-contain" />
+          <div>
+            <h1 className="text-sm font-bold text-foreground leading-tight">עמית ייעוץ ופיננסים</h1>
+            <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
+          </div>
+        </div>
+      </header>
 
       {/* Main Content */}
-      <main className="md:mr-64 pt-24 md:pt-0 relative">
+      <main className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 relative">
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
           <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="" className="w-96 h-96 object-contain" />
         </div>
         <div className="p-4 md:p-8 max-w-5xl mx-auto relative z-10">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
         </div>
       </main>
 
       {/* Floating WhatsApp Button */}
       <a href="https://wa.me/972502155910?text=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A2%D7%9E%D7%99%D7%AA%20-%20%D7%99%D7%A9%20%D7%9C%D7%99%20%D7%A9%D7%90%D7%9C%D7%94%20%D7%A2%D7%9C%20%D7%94%D7%AA%D7%9E%D7%94%D7%99%D7%9C"
         target="_blank" rel="noopener noreferrer"
-        className="fixed bottom-6 md:hidden left-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-3 shadow-lg transition-all z-50">
+        className="fixed bottom-24 md:hidden left-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-3 shadow-lg transition-all z-50">
         <MessageCircle className="w-6 h-6" />
       </a>
 

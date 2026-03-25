@@ -85,4 +85,9 @@
   body {
     @apply bg-background text-foreground font-heebo;
   }
+  button, a, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
 }

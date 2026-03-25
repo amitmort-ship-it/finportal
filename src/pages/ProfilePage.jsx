@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User } from 'lucide-react';
+import { User, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
@@ -78,6 +78,23 @@ export default function ProfilePage() {
             {loading ? 'שומר...' : 'שמור שינויים'}
           </Button>
         </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-destructive/30 p-6 max-w-md mt-6">
+        <div className="flex items-center gap-3 mb-3">
+          <Trash2 className="w-5 h-5 text-destructive" />
+          <h3 className="font-semibold text-destructive">מחיקת חשבון</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">פעולה זו אינה הפיכה. פנייה אל עמית לבקשה זו.</p>
+        <Button
+          variant="destructive"
+          className="w-full"
+          onClick={() => {
+            toast.error('למחיקת חשבון פנה ישירות לעמית בוואצאפ או בטלפון: 0502155910');
+          }}
+        >
+          בקש מחיקת חשבון
+        </Button>
       </div>
     </div>
   );
