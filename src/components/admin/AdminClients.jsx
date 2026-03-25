@@ -23,9 +23,9 @@ export default function AdminClients() {
 
   const loadClients = async () => {
     try {
-      const users = await base44.asServiceRole.entities.User.filter({});
+      const users = await base44.entities.User.filter({});
       const nonAdminUsers = users.filter(u => u.role !== 'admin');
-      const profiles = await base44.asServiceRole.entities.ClientProfile.filter({});
+      const profiles = await base44.entities.ClientProfile.filter({});
       const profileEmails = new Set(profiles.map(p => p.email));
 
       // Auto-create profiles for existing users that don't have one
@@ -42,7 +42,7 @@ export default function AdminClients() {
         );
       }
 
-      const allProfiles = await base44.asServiceRole.entities.ClientProfile.filter({}, '-created_date');
+      const allProfiles = await base44.entities.ClientProfile.filter({}, '-created_date');
       setClients(allProfiles);
     } catch (error) {
       toast.error('שגיאה בטעינת הלקוחות');
