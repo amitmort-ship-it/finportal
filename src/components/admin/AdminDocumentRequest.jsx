@@ -46,16 +46,14 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
   const [selectedUser, setSelectedUser] = useState(selectedClient || '');
   const [selectedDocs, setSelectedDocs] = useState({});
   const [customDocs, setCustomDocs] = useState({ 'לווה 1': '', 'לווה 2': '', 'משותף': '' });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [, clientRes] = await Promise.all([
-        base44.entities.FileRequest.filter({}, '-created_date'),
-        base44.functions.invoke('getAllClients', {}),
-      ]);
+      const clientRes = await base44.functions.invoke('getAllClients', {});
       const userList = clientRes.data?.profiles || [];
       setUsers(userList);
+      setLoading(false);
     };
     load();
   }, []);
