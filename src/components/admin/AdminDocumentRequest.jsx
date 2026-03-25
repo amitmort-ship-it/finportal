@@ -50,8 +50,8 @@ export default function AdminDocumentRequest({ selectedClient }) {
 
   useEffect(() => {
     const load = async () => {
-      const userList = await base44.entities.User.list();
-      setUsers(userList.filter(u => u.role !== 'admin'));
+      const profiles = await base44.entities.ClientProfile.list();
+      setUsers(profiles);
     };
     load();
   }, []);
