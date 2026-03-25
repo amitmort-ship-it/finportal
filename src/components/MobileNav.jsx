@@ -18,8 +18,14 @@ export default function MobileNav() {
   const items = isAdmin ? [...navItems, { path: '/admin', label: 'ניהול', icon: Settings }] : navItems;
 
   return (
-    <div dir="rtl" className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 md:hidden">
-      <div className="flex justify-start py-2 overflow-x-auto">
+    <div dir="rtl" className="fixed top-0 left-0 right-0 bg-card border-b border-border z-40 md:hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+        <div className="flex items-center gap-2">
+          <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="לוגו" className="h-8 w-auto object-contain" />
+          <span className="text-sm font-bold text-foreground">עמית ייעוץ ופיננסים</span>
+        </div>
+      </div>
+      <div className="flex justify-start py-1 overflow-x-auto">
         {items.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;

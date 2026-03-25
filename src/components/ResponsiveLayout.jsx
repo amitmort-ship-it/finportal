@@ -85,21 +85,10 @@ export default function ResponsiveLayout() {
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <header className="md:hidden bg-card border-b border-border p-3 sticky top-0 z-30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="לוגו" className="h-8 w-auto object-contain" />
-            <span className="text-sm font-bold text-foreground">עמית ייעוץ ופיננסים</span>
-          </div>
-          <button onClick={() => base44.auth.logout()} className="text-muted-foreground hover:text-destructive">
-            <LogOut className="w-5 h-5" />
-          </button>
-        </div>
-      </header>
+      {/* Mobile Header - hidden, replaced by top nav */}
 
       {/* Main Content */}
-      <main className="md:mr-64 pb-20 md:pb-0 relative">
+      <main className="md:mr-64 pt-24 md:pt-0 relative">
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
           <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="" className="w-96 h-96 object-contain" />
         </div>
@@ -109,9 +98,9 @@ export default function ResponsiveLayout() {
       </main>
 
       {/* Floating WhatsApp Button */}
-      <a href="https://wa.me/972502155910?text=שלום%20עמית%20-%20יש%20לי%20שאלה%20על%20התמהיל"
+      <a href="https://wa.me/972502155910?text=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A2%D7%9E%D7%99%D7%AA%20-%20%D7%99%D7%A9%20%D7%9C%D7%99%20%D7%A9%D7%90%D7%9C%D7%94%20%D7%A2%D7%9C%20%D7%94%D7%AA%D7%9E%D7%94%D7%99%D7%9C"
         target="_blank" rel="noopener noreferrer"
-        className="fixed bottom-20 md:hidden left-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-3 shadow-lg transition-all">
+        className="fixed bottom-6 md:hidden left-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-3 shadow-lg transition-all z-50">
         <MessageCircle className="w-6 h-6" />
       </a>
 
