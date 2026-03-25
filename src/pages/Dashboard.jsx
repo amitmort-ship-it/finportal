@@ -28,8 +28,9 @@ function StatCard({ icon: Icon, label, value, color, to }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+
   const { data: stats = { files: 0, pendingFiles: 0, approvals: 0, collaterals: 0, packages: 0 }, isLoading: loading } = useQuery({
-    queryKey: ['dashboard-stats', user.email],
+    queryKey: ['dashboard-stats', user?.email],
     queryFn: async () => {
       const [files, approvals, collaterals, packages] = await Promise.all([
         base44.entities.FileRequest.filter({ client_email: user.email }),
@@ -37,11 +38,13 @@ export default function Dashboard() {
         base44.entities.Collateral.filter({ client_email: user.email }),
         base44.entities.SelectedPackage.filter({ client_email: user.email }),
       ]);
+      const pendingCount = files.filter(f => f.status === 'pending').length;
+      const collateralCount = collaterals.filter(c => c.status === 'pending').length;
       return {
         files: files.length,
-        pendingFiles: files.filter(f => f.status === 'pending').length,
+        pendingFiles: pendingCount,
         approvals: approvals.length,
-        collaterals: collaterals.filter(c => c.status === 'pending').length,
+        collaterals: collateralCount,
         packages: packages.length,
       };
     },
@@ -49,7 +52,7 @@ export default function Dashboard() {
   });
 
   const { data: processStage = null } = useQuery({
-    queryKey: ['process-stage', user.email],
+    queryKey: ['process-stage', user?.email],
     queryFn: async () => {
       const stages = await base44.entities.ProcessStage.filter({ client_email: user.email });
       return stages.length > 0 ? stages[0] : null;
@@ -69,7 +72,7 @@ export default function Dashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-          שלום, {user.full_name || 'לקוח יקר'} 👋
+          שלום, {user?.full_name || 'לקוח יקר'} 👋
         </h1>
         <p className="text-muted-foreground mt-1">ברוך הבא לאיזור האישי שלך</p>
       </div>
