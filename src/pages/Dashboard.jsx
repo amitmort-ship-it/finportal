@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { FileText, Building2, Shield, Clock, CheckCircle2, ArrowLeft, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ClientUpdates from '../components/ClientUpdates';
+import ProcessTracker from '../components/ProcessTracker';
 
 function StatCard({ icon: Icon, label, value, color, to }) {
   return (
@@ -28,15 +29,17 @@ function StatCard({ icon: Icon, label, value, color, to }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ files: 0, pendingFiles: 0, approvals: 0, collaterals: 0, packages: 0 });
+  const [processStage, setProcessStage] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [files, approvals, collaterals, packages] = await Promise.all([
+      const [files, approvals, collaterals, packages, stages] = await Promise.all([
         base44.entities.FileRequest.filter({ client_email: user.email }),
         base44.entities.BankApproval.filter({ client_email: user.email }),
         base44.entities.Collateral.filter({ client_email: user.email }),
         base44.entities.SelectedPackage.filter({ client_email: user.email }),
+        base44.entities.ProcessStage.filter({ client_email: user.email }),
       ]);
       setStats({
         files: files.length,
@@ -45,6 +48,7 @@ export default function Dashboard() {
         collaterals: collaterals.filter(c => c.status === 'active').length,
         packages: packages.length,
       });
+      if (stages.length > 0) setProcessStage(stages[0]);
       setLoading(false);
     };
     load();
@@ -68,6 +72,12 @@ export default function Dashboard() {
       </div>
 
       <ClientUpdates />
+
+      {processStage && (
+        <div className="mt-6">
+          <ProcessTracker currentStage={processStage.current_stage} notes={processStage.notes} />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         <StatCard icon={FileText} label="מסמכים" value={stats.files} color="bg-blue-100" to="/files" />

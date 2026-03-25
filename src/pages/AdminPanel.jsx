@@ -12,6 +12,7 @@ import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 import AdminPackages from '../components/admin/AdminPackages';
+import AdminProcessStage from '../components/admin/AdminProcessStage';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -59,6 +60,7 @@ export default function AdminPanel() {
           <TabsTrigger value="packages">תמהיל</TabsTrigger>
           <TabsTrigger value="approvals">אישורי בנקים</TabsTrigger>
           <TabsTrigger value="collaterals">בטחונות</TabsTrigger>
+          <TabsTrigger value="process">שלבי תהליך</TabsTrigger>
         </TabsList>
 
         <TabsContent value="updates"><AdminUpdates selectedClient={selectedClient} /></TabsContent>
@@ -73,6 +75,7 @@ export default function AdminPanel() {
         <TabsContent value="packages"><AdminPackages selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="process"><AdminProcessStage selectedClient={selectedClient} /></TabsContent>
       </Tabs>
     </div>
   );
