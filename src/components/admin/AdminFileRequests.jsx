@@ -18,7 +18,7 @@ export default function AdminFileRequests({ selectedClient }) {
 
   const load = async () => {
     const [data, userList] = await Promise.all([
-      base44.entities.FileRequest.list('-created_date'),
+      base44.entities.FileRequest.filter({}, '-created_date'),
       base44.entities.User.filter({}),
     ]);
     const filtered = selectedClient ? data.filter(r => r.client_email === selectedClient) : data;
