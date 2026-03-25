@@ -29,7 +29,6 @@ export default function AdminCollaterals({ selectedClient }) {
     const data = await base44.entities.Collateral.filter({}, '-created_date');
     const filtered = selectedClient ? data.filter(c => c.client_email === selectedClient) : data;
     setCollaterals(filtered);
-    setUsers(userList.filter(u => u.role !== 'admin'));
     setLoading(false);
   };
 
