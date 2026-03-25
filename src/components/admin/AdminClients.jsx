@@ -23,9 +23,9 @@ export default function AdminClients() {
 
   const loadClients = async () => {
     try {
-      const users = await base44.entities.User.list();
+      const users = await base44.entities.User.filter({});
       const nonAdminUsers = users.filter(u => u.role !== 'admin');
-      const profiles = await base44.entities.ClientProfile.list();
+      const profiles = await base44.entities.ClientProfile.filter({});
       const profileEmails = new Set(profiles.map(p => p.email));
 
       // Auto-create profiles for existing users that don't have one
