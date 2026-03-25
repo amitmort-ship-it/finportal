@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { FileText, Building2, Shield, Clock, CheckCircle2, ArrowLeft, Package } from 'lucide-react';
+import { FileText, Building2, Shield, Clock, ArrowLeft, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ClientUpdates from '../components/ClientUpdates';
 import ProcessTracker from '../components/ProcessTracker';
