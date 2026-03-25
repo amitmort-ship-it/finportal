@@ -20,11 +20,15 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    const load = async () => {
-      const list = await base44.entities.ClientProfile.filter({}, '-created_date');
-      setUsers(list);
+    const loadUsers = async () => {
+      try {
+        const list = await base44.entities.ClientProfile.filter({}, '-created_date');
+        setUsers(list || []);
+      } catch (error) {
+        console.error('Failed to load users:', error);
+      }
     };
-    load();
+    loadUsers();
   }, []);
 
   if (user?.role !== 'admin') {
@@ -46,7 +50,9 @@ export default function AdminPanel() {
           <SelectContent>
             <SelectItem value={null}>כל הלקוחות</SelectItem>
             {users.map(u => (
-              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}{!u.invited ? ' ⏳' : ''}</SelectItem>
+              <SelectItem key={u.id} value={u.email}>
+                {u.full_name || u.email}{!u.invited ? ' ⏳' : ''}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -63,8 +69,12 @@ export default function AdminPanel() {
           <TabsTrigger value="process">שלבי תהליך</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="updates"><AdminUpdates selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="clients"><AdminClients /></TabsContent>
+        <TabsContent value="updates">
+          <AdminUpdates selectedClient={selectedClient} />
+        </TabsContent>
+        <TabsContent value="clients">
+          <AdminClients />
+        </TabsContent>
         <TabsContent value="files">
           <div className="space-y-6">
             <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
@@ -72,10 +82,18 @@ export default function AdminPanel() {
             <AdminFileRequests selectedClient={selectedClient} />
           </div>
         </TabsContent>
-        <TabsContent value="packages"><AdminPackages selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="process"><AdminProcessStage selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="packages">
+          <AdminPackages selectedClient={selectedClient} />
+        </TabsContent>
+        <TabsContent value="approvals">
+          <AdminBankApprovals selectedClient={selectedClient} />
+        </TabsContent>
+        <TabsContent value="collaterals">
+          <AdminCollaterals selectedClient={selectedClient} />
+        </TabsContent>
+        <TabsContent value="process">
+          <AdminProcessStage selectedClient={selectedClient} />
+        </TabsContent>
       </Tabs>
     </div>
   );
