@@ -27,9 +27,15 @@ export default function ResponsiveLayout() {
     <div dir="rtl" className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-30 shadow-sm">
-        <div className="p-6 border-b border-border">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">האיזור האישי</h1>
-          <p className="text-xs text-muted-foreground mt-1 truncate">{user?.full_name || user?.email}</p>
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="לוגו" className="h-10 w-auto object-contain" />
+            <div>
+              <h1 className="text-sm font-bold text-foreground leading-tight">עמית ייעוץ ופיננסים</h1>
+              <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
@@ -80,9 +86,12 @@ export default function ResponsiveLayout() {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden bg-card border-b border-border p-4 sticky top-0 z-30">
+      <header className="md:hidden bg-card border-b border-border p-3 sticky top-0 z-30">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-foreground">האיזור האישי</h1>
+          <div className="flex items-center gap-2">
+            <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="לוגו" className="h-8 w-auto object-contain" />
+            <span className="text-sm font-bold text-foreground">עמית ייעוץ ופיננסים</span>
+          </div>
           <button onClick={() => base44.auth.logout()} className="text-muted-foreground hover:text-destructive">
             <LogOut className="w-5 h-5" />
           </button>
