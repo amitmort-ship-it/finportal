@@ -42,7 +42,7 @@ export default function Dashboard() {
         files: files.length,
         pendingFiles: files.filter(f => f.status === 'pending').length,
         approvals: approvals.length,
-        collaterals: collaterals.filter(c => c.status === 'active').length,
+        collaterals: collaterals.filter(c => c.status === 'pending').length,
         packages: packages.length,
       };
     },
