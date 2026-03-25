@@ -3,98 +3,98 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, Users, Trash2, Edit2 } from 'lucide-react';
+import { UserPlus, Users, Trash2, Edit2, Send, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function AdminClients() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [inviting, setInviting] = useState(false);
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [invitingId, setInvitingId] = useState(null);
 
-  useEffect(() => {
-    loadClients();
-  }, []);
+  useEffect(() => { loadClients(); }, []);
 
   const loadClients = async () => {
     try {
-      // First, get all existing users
       const users = await base44.entities.User.list();
       const nonAdminUsers = users.filter(u => u.role !== 'admin');
-      
-      // Get existing profiles
       const profiles = await base44.entities.ClientProfile.list();
       const profileEmails = new Set(profiles.map(p => p.email));
-      
-      // Create profiles for users that don't have one yet
+
+      // Auto-create profiles for existing users that don't have one
       const missingProfiles = nonAdminUsers.filter(u => !profileEmails.has(u.email));
       if (missingProfiles.length > 0) {
         await Promise.all(
-          missingProfiles.map(u => 
+          missingProfiles.map(u =>
             base44.entities.ClientProfile.create({
               email: u.email,
-              full_name: u.full_name || u.email
+              full_name: u.full_name || u.email,
+              invited: true,
             })
           )
         );
       }
-      
-      // Load all profiles again
-      const allProfiles = await base44.entities.ClientProfile.list();
+
+      const allProfiles = await base44.entities.ClientProfile.list('-created_date');
       setClients(allProfiles);
     } catch (error) {
-      console.error('Error loading profiles:', error);
       toast.error('שגיאה בטעינת הלקוחות');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInvite = async () => {
-    if (!email) return;
-    setInviting(true);
+  const handleCreateProfile = async () => {
+    if (!newEmail || !newName) return;
+    setCreating(true);
     try {
-      await base44.users.inviteUser(email, 'user');
-      // Create a profile entry for the new user
-      await base44.entities.ClientProfile.create({ email, full_name: '' });
-      toast.success('הזמנה נשלחה למייל');
-      setEmail('');
+      await base44.entities.ClientProfile.create({
+        email: newEmail.trim().toLowerCase(),
+        full_name: newName.trim(),
+        invited: false,
+      });
+      toast.success('פרופיל לקוח נוצר — תוכל לשלוח הזמנה מאוחר יותר');
+      setNewEmail('');
+      setNewName('');
       setOpen(false);
+      loadClients();
+    } catch (error) {
+      toast.error(error.message || 'שגיאה ביצירת הפרופיל');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleInvite = async (client) => {
+    setInvitingId(client.id);
+    try {
+      await base44.users.inviteUser(client.email, 'user');
+      await base44.entities.ClientProfile.update(client.id, { invited: true });
+      toast.success(`הזמנה נשלחה ל-${client.email}`);
       loadClients();
     } catch (error) {
       toast.error(error.message || 'שגיאה בשליחת הזמנה');
     } finally {
-      setInviting(false);
+      setInvitingId(null);
     }
-  };
-
-  const handleEditName = (client) => {
-    setEditingId(client.id);
-    setEditingName(client.full_name || '');
   };
 
   const handleSaveName = async (clientId) => {
-    if (!editingName.trim()) {
-      toast.error('שם לא יכול להיות ריק');
-      return;
-    }
+    if (!editingName.trim()) { toast.error('שם לא יכול להיות ריק'); return; }
     setSaving(true);
     try {
-      console.log('Updating client:', clientId, editingName);
-      await base44.entities.ClientProfile.update(clientId, {
-        full_name: editingName.trim(),
-      });
-      console.log('Update successful');
-      toast.success('השם עודכן בהצלחה');
+      await base44.entities.ClientProfile.update(clientId, { full_name: editingName.trim() });
+      toast.success('השם עודכן');
       setEditingId(null);
       loadClients();
     } catch (error) {
-      console.error('Update error:', error);
       toast.error(error.message || 'שגיאה בעדכון השם');
     } finally {
       setSaving(false);
@@ -118,38 +118,54 @@ export default function AdminClients() {
           <DialogTrigger asChild>
             <Button className="gap-2">
               <UserPlus className="w-4 h-4" />
-              הזמן לקוח חדש
+              לקוח חדש
             </Button>
           </DialogTrigger>
           <DialogContent dir="rtl">
             <DialogHeader>
-              <DialogTitle>הזמן לקוח חדש</DialogTitle>
+              <DialogTitle>יצירת פרופיל לקוח</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              צור פרופיל עכשיו, הוסף מסמכים ותוכן — ורק כשתהיה מוכן שלח הזמנה ללקוח.
+            </p>
+            <div className="space-y-4 pt-2">
+              <div>
+                <Label>שם מלא</Label>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="ישראל ישראלי"
+                  className="mt-1"
+                />
+              </div>
               <div>
                 <Label>כתובת אימייל</Label>
                 <Input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="email@example.com"
                   dir="ltr"
                   className="mt-1"
                 />
               </div>
               <Button
-                onClick={handleInvite}
-                disabled={inviting || !email}
+                onClick={handleCreateProfile}
+                disabled={creating || !newEmail || !newName}
                 className="w-full"
               >
-                {inviting ? 'שולח...' : 'שלח הזמנה'}
+                {creating ? 'יוצר...' : 'צור פרופיל (ללא הזמנה)'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {clients.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+        </div>
+      ) : clients.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
           אין לקוחות עדיין
         </div>
@@ -167,45 +183,52 @@ export default function AdminClients() {
                       autoFocus
                     />
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveName(client.id)}
-                        disabled={saving}
-                      >
+                      <Button size="sm" onClick={() => handleSaveName(client.id)} disabled={saving}>
                         {saving ? 'שומר...' : 'שמור'}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingId(null)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
                         ביטול
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <div className="font-semibold">{client.full_name || 'ללא שם'}</div>
-                    <div className="text-sm text-muted-foreground">{client.email}</div>
-                  </>
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="font-semibold">{client.full_name || 'ללא שם'}</div>
+                      <div className="text-sm text-muted-foreground">{client.email}</div>
+                    </div>
+                    {client.invited ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3" />
+                        הוזמן
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                        <Clock className="w-3 h-3" />
+                        טרם הוזמן
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
               {editingId !== client.id && (
-                <div className="flex gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleEditName(client)}
-                    title="ערוך שם"
-                  >
+                <div className="flex gap-1 shrink-0">
+                  {!client.invited && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+                      onClick={() => handleInvite(client)}
+                      disabled={invitingId === client.id}
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {invitingId === client.id ? 'שולח...' : 'שלח הזמנה'}
+                    </Button>
+                  )}
+                  <Button size="icon" variant="ghost" onClick={() => { setEditingId(client.id); setEditingName(client.full_name || ''); }}>
                     <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleDelete(client.id)}
-                    className="text-destructive hover:bg-destructive/10"
-                  >
+                  <Button size="icon" variant="ghost" onClick={() => handleDelete(client.id)} className="text-destructive hover:bg-destructive/10">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
