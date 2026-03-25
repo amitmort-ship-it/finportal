@@ -59,7 +59,7 @@ export default function FilesPage() {
               {grouped[cat]?.length > 0 ? (
                 <div className="space-y-3">
                   {grouped[cat].map(request => (
-                    <FileUploadCard key={request.id} request={request} onUpdate={loadRequests} />
+                    <FileUploadCard key={request.id} request={request} />
                   ))}
                 </div>
               ) : (
@@ -73,7 +73,7 @@ export default function FilesPage() {
       {uncategorized.length > 0 && (
         <div className="mt-4 space-y-3">
           {uncategorized.map(r => (
-            <FileUploadCard key={r.id} request={r} onUpdate={loadRequests} />
+            <FileUploadCard key={r.id} request={r} />
           ))}
         </div>
       )}
