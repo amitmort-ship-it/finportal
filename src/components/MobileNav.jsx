@@ -7,6 +7,7 @@ const navItems = [
   { path: '/files', label: 'מסמכים', icon: FileText },
   { path: '/package', label: 'תמהיל', icon: Package },
   { path: '/approvals', label: 'בנקים', icon: Building2 },
+  { path: '/collaterals', label: 'בטחונות', icon: Shield },
 ];
 
 export default function MobileNav() {

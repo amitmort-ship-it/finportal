@@ -12,7 +12,6 @@ const navItems = [
   { path: '/package', label: 'תמהיל נבחר', icon: Package },
   { path: '/approvals', label: 'אישורי בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },
-  { path: '/profile', label: 'פרופיל', icon: User },
 ];
 
 const adminItems = [
@@ -68,7 +67,7 @@ export default function ResponsiveLayout() {
         <div className="p-4 border-t border-border space-y-2">
           <a href="https://wa.me/972502155910?text=שלום%20עמית%20-%20יש%20לי%20שאלה%20על%20התמהיל"
             target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600 transition-all w-full">
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition-all w-full shadow-sm">
             <MessageCircle className="w-4 h-4" />
             צור קשר עם עמית
           </a>
