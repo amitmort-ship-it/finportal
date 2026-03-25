@@ -45,7 +45,7 @@ export default function AdminPanel() {
           <SelectContent>
             <SelectItem value={null}>כל הלקוחות</SelectItem>
             {users.map(u => (
-              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
+              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}{!u.invited ? ' ⏳' : ''}</SelectItem>
             ))}
           </SelectContent>
         </Select>
