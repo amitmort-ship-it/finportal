@@ -7,6 +7,7 @@ module.exports = {
       'bg-blue-50', 'border-blue-200', 'text-blue-600',
       'bg-yellow-50', 'border-yellow-300', 'text-yellow-600',
       'bg-orange-50', 'border-orange-200', 'text-orange-600',
+      'bg-green-50', 'border-green-200', 'text-green-600',
       'bg-slate-50', 'border-slate-200', 'text-slate-500',
     ],
   theme: {
