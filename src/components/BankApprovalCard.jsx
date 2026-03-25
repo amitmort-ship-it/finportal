@@ -28,9 +28,14 @@ export default function BankApprovalCard({ approval }) {
                 ₪{approval.amount.toLocaleString()}
               </span>
             )}
-            {approval.interest_rate && (
+            {approval.monthly_payment && (
               <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
-                ריבית: {approval.interest_rate}
+                החזר חודשי: ₪{approval.monthly_payment.toLocaleString()}
+              </span>
+            )}
+            {approval.mortgage_years && (
+              <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-medium">
+                {approval.mortgage_years} שנות משכנתא
               </span>
             )}
           </div>
