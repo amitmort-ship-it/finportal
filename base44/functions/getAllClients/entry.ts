@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const profiles = await base44.asServiceRole.entities.ClientProfile.filter({});
+    const profiles = await base44.asServiceRole.entities.ClientProfile.filter({}, '-created_date', 1000);
     return Response.json({ profiles });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
