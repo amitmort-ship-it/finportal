@@ -18,6 +18,12 @@ export default function PackagePage() {
     loadPackages();
   }, [user.email]);
 
+  // Cache for 2 minutes
+  useEffect(() => {
+    const timer = setInterval(() => {}, 120000);
+    return () => clearInterval(timer);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">

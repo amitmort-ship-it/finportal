@@ -9,7 +9,7 @@ export default function ApprovalsPage() {
   const { data: approvals = [], isLoading: loading } = useQuery({
     queryKey: ['bank-approvals', user.email],
     queryFn: async () => base44.entities.BankApproval.filter({ client_email: user.email }, '-created_date'),
-    staleTime: 30000,
+    staleTime: 60000,
   });
 
   if (loading) {

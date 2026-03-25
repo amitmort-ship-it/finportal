@@ -10,8 +10,8 @@ export default function CollateralsPage() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const data = await base44.entities.Collateral.list('-created_date');
-    setCollaterals(data.filter(c => c.client_email === user.email));
+    const data = await base44.entities.Collateral.filter({ client_email: user.email }, '-created_date');
+    setCollaterals(data);
     setLoading(false);
   };
 

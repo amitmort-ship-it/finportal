@@ -17,7 +17,7 @@ export default function FilesPage() {
   const { data: requests = [], isLoading: loading } = useQuery({
     queryKey: ['file-requests', user.email],
     queryFn: async () => base44.entities.FileRequest.filter({ client_email: user.email }, '-created_date'),
-    staleTime: 30000,
+    staleTime: 60000,
   });
 
   useEffect(() => {

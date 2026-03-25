@@ -46,7 +46,7 @@ export default function Dashboard() {
         packages: packages.length,
       };
     },
-    staleTime: 30000,
+    staleTime: 60000,
   });
 
   const { data: processStage = null } = useQuery({
@@ -55,7 +55,7 @@ export default function Dashboard() {
       const stages = await base44.entities.ProcessStage.filter({ client_email: user.email });
       return stages.length > 0 ? stages[0] : null;
     },
-    staleTime: 60000,
+    staleTime: 120000,
   });
 
   if (loading) {
