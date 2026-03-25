@@ -33,7 +33,7 @@ export default function ClientUpdates() {
   if (loading || updates.length === 0) return null;
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col h-full">
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col md:h-full h-56">
       <div className="flex items-center gap-2 mb-4">
         <Bell className="w-5 h-5 text-blue-600" />
         <h2 className="font-semibold text-blue-900">עדכונים חדשים</h2>

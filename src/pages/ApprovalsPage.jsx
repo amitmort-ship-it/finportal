@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import BankApprovalCard from '../components/BankApprovalCard';
@@ -6,17 +6,11 @@ import { Building2 } from 'lucide-react';
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      const data = await base44.entities.BankApproval.filter({ client_email: user.email }, '-created_date');
-      setApprovals(data);
-      setLoading(false);
-    };
-    load();
-  }, [user.email]);
+  const { data: approvals = [], isLoading: loading } = useQuery({
+    queryKey: ['bank-approvals', user.email],
+    queryFn: async () => base44.entities.BankApproval.filter({ client_email: user.email }, '-created_date'),
+    staleTime: 30000,
+  });
 
   if (loading) {
     return (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { FileText, Building2, Shield, Clock, CheckCircle2, ArrowLeft, Package } from 'lucide-react';
@@ -28,31 +29,34 @@ function StatCard({ icon: Icon, label, value, color, to }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ files: 0, pendingFiles: 0, approvals: 0, collaterals: 0, packages: 0 });
-  const [processStage, setProcessStage] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      const [files, approvals, collaterals, packages, stages] = await Promise.all([
+  const { data: stats = { files: 0, pendingFiles: 0, approvals: 0, collaterals: 0, packages: 0 }, isLoading: loading } = useQuery({
+    queryKey: ['dashboard-stats', user.email],
+    queryFn: async () => {
+      const [files, approvals, collaterals, packages] = await Promise.all([
         base44.entities.FileRequest.filter({ client_email: user.email }),
         base44.entities.BankApproval.filter({ client_email: user.email }),
         base44.entities.Collateral.filter({ client_email: user.email }),
         base44.entities.SelectedPackage.filter({ client_email: user.email }),
-        base44.entities.ProcessStage.filter({ client_email: user.email }),
       ]);
-      setStats({
+      return {
         files: files.length,
         pendingFiles: files.filter(f => f.status === 'pending').length,
         approvals: approvals.length,
         collaterals: collaterals.filter(c => c.status === 'active').length,
         packages: packages.length,
-      });
-      if (stages.length > 0) setProcessStage(stages[0]);
-      setLoading(false);
-    };
-    load();
-  }, [user.email]);
+      };
+    },
+    staleTime: 30000,
+  });
+
+  const { data: processStage = null } = useQuery({
+    queryKey: ['process-stage', user.email],
+    queryFn: async () => {
+      const stages = await base44.entities.ProcessStage.filter({ client_email: user.email });
+      return stages.length > 0 ? stages[0] : null;
+    },
+    staleTime: 60000,
+  });
 
   if (loading) {
     return (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import FileUploadCard from '../components/FileUploadCard';
@@ -13,18 +14,14 @@ const CATEGORY_STYLES = {
 
 export default function FilesPage() {
   const { user } = useAuth();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadRequests = async () => {
-    const data = await base44.entities.FileRequest.filter({ client_email: user.email }, '-created_date');
-    setRequests(data);
-    setLoading(false);
-  };
+  const { data: requests = [], isLoading: loading } = useQuery({
+    queryKey: ['file-requests', user.email],
+    queryFn: async () => base44.entities.FileRequest.filter({ client_email: user.email }, '-created_date'),
+    staleTime: 30000,
+  });
 
   useEffect(() => {
-    loadRequests();
-    const unsubscribe = base44.entities.FileRequest.subscribe(() => loadRequests());
+    const unsubscribe = base44.entities.FileRequest.subscribe(() => {});
     return unsubscribe;
   }, [user.email]);
 
