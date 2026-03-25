@@ -5,6 +5,7 @@ const bankColors = {
   'בנק לאומי': { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600' },
   'בנק דיסקונט': { bg: 'bg-yellow-50', border: 'border-yellow-300', icon: 'text-yellow-600' },
   'בנק טפחות': { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'text-orange-600' },
+  'הבינלאומי': { bg: 'bg-yellow-50', border: 'border-yellow-300', icon: 'text-yellow-600' },
   'חוץ בנקאי': { bg: 'bg-slate-50', border: 'border-slate-200', icon: 'text-slate-500' },
 };
 
