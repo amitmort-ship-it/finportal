@@ -36,13 +36,18 @@ export default function AdminUpdates({ selectedClient }) {
   }, [client]);
 
   const handleSend = async () => {
-    if (!client || !message.trim()) return;
+    if (!message.trim()) return;
     setSending(true);
-    await base44.entities.ClientUpdate.create({
-      client_email: client,
-      message: message.trim(),
-    });
-    toast.success('עדכון נשלח ללקוח');
+    if (client === 'all') {
+      await Promise.all(
+        users.map(u => base44.entities.ClientUpdate.create({ client_email: u.email, message: message.trim() }))
+      );
+      toast.success('עדכון נשלח לכל הלקוחות');
+    } else {
+      if (!client) { setSending(false); return; }
+      await base44.entities.ClientUpdate.create({ client_email: client, message: message.trim() });
+      toast.success('עדכון נשלח ללקוח');
+    }
     setMessage('');
     setSending(false);
     load();
@@ -65,6 +70,7 @@ export default function AdminUpdates({ selectedClient }) {
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">📢 כל הלקוחות</SelectItem>
             {users.map(u => (
               <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
             ))}
@@ -76,7 +82,7 @@ export default function AdminUpdates({ selectedClient }) {
         <div className="bg-card rounded-xl border border-border p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <MessageSquare className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">שלח עדכון</h3>
+            <h3 className="font-semibold">{client === 'all' ? 'שלח עדכון לכל הלקוחות' : 'שלח עדכון'}</h3>
           </div>
           <Textarea
             value={message}
