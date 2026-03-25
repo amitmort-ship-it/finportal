@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
@@ -24,6 +25,10 @@ export default function ResponsiveLayout() {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div dir="rtl" className="min-h-screen bg-background">

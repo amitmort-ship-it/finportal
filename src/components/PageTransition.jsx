@@ -1,6 +1,11 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 export default function PageTransition({ children }) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [children]);
+  
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
