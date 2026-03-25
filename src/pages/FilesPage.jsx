@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -72,7 +72,7 @@ export default function FilesPage() {
             {grouped[cat]?.length > 0 ? (
               <div className="space-y-3">
                 {grouped[cat].map(request => (
-                  <FileUploadCard key={request.id} request={request} />
+                  <FileUploadCard key={request.id} request={request} onUpdate={() => window.location.reload()} />
                 ))}
               </div>
             ) : (
@@ -85,7 +85,7 @@ export default function FilesPage() {
       {uncategorized.length > 0 && (
         <div className="mt-4 space-y-3">
           {uncategorized.map(r => (
-            <FileUploadCard key={r.id} request={r} />
+            <FileUploadCard key={r.id} request={r} onUpdate={() => window.location.reload()} />
           ))}
         </div>
       )}
