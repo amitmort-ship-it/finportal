@@ -21,8 +21,8 @@ export default function AdminPackages({ selectedClient }) {
   useEffect(() => {
     const load = async () => {
       const [pkgs, userList] = await Promise.all([
-        base44.entities.SelectedPackage.list('-created_date'),
-        base44.entities.User.list(),
+        base44.entities.SelectedPackage.filter({}, '-created_date'),
+        base44.entities.User.filter({}),
       ]);
       setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
       setUsers(userList.filter(u => u.role !== 'admin'));
@@ -69,7 +69,7 @@ export default function AdminPackages({ selectedClient }) {
     setScreenshots([]);
     setUploading(false);
 
-    const pkgs = await base44.entities.SelectedPackage.list('-created_date');
+    const pkgs = await base44.entities.SelectedPackage.filter({}, '-created_date');
     setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
   };
 

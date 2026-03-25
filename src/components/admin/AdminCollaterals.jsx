@@ -27,8 +27,8 @@ export default function AdminCollaterals({ selectedClient }) {
 
   const load = async () => {
     const [data, userList] = await Promise.all([
-      base44.entities.Collateral.list('-created_date'),
-      base44.entities.User.list(),
+      base44.entities.Collateral.filter({}, '-created_date'),
+      base44.entities.User.filter({}),
     ]);
     const filtered = selectedClient ? data.filter(c => c.client_email === selectedClient) : data;
     setCollaterals(filtered);

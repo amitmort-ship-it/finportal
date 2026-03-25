@@ -26,8 +26,8 @@ export default function AdminBankApprovals({ selectedClient }) {
 
   const load = async () => {
     const [data, userList] = await Promise.all([
-      base44.entities.BankApproval.list('-created_date'),
-      base44.entities.User.list(),
+      base44.entities.BankApproval.filter({}, '-created_date'),
+      base44.entities.User.filter({}),
     ]);
     const filtered = selectedClient ? data.filter(a => a.client_email === selectedClient) : data;
     setApprovals(filtered);

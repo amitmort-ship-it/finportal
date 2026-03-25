@@ -18,8 +18,8 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     const [data, userList] = await Promise.all([
-      base44.entities.ClientUpdate.list('-created_date'),
-      base44.entities.User.list(),
+      base44.entities.ClientUpdate.filter({}, '-created_date'),
+      base44.entities.User.filter({}),
     ]);
     const filtered = client ? data.filter(u => u.client_email === client) : data;
     setUpdates(filtered);
