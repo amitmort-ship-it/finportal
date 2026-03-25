@@ -11,6 +11,8 @@ export default function ClientUpdates() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.email) return;
+
     const load = async () => {
       const data = await base44.entities.ClientUpdate.filter(
         { client_email: user.email },
@@ -28,8 +30,9 @@ export default function ClientUpdates() {
     });
 
     return unsubscribe;
-  }, [user.email]);
+  }, [user?.email]);
 
+  if (!user) return null;
   if (loading || updates.length === 0) return null;
 
   return (
