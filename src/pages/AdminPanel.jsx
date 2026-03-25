@@ -1,8 +1,20 @@
+import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminClients from '../components/admin/AdminClients';
+import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
+import AdminFileRequests from '../components/admin/AdminFileRequests';
+import AdminCollaterals from '../components/admin/AdminCollaterals';
+import AdminPackages from '../components/admin/AdminPackages';
+import AdminBankApprovals from '../components/admin/AdminBankApprovals';
+import AdminProcessStage from '../components/admin/AdminProcessStage';
+import AdminUpdates from '../components/admin/AdminUpdates';
+import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 
 export default function AdminPanel() {
   const { user } = useAuth();
+  const [selectedClient, setSelectedClient] = useState(null);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
@@ -14,9 +26,56 @@ export default function AdminPanel() {
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
         <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
       </div>
-      <div className="bg-card rounded-xl border border-border p-6">
-        <p className="text-muted-foreground">לוח הניהול עומד לעדכון...</p>
-      </div>
+
+      <Tabs defaultValue="clients" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9 mb-6 h-auto">
+          <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
+          <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
+          <TabsTrigger value="file-requests" className="text-xs md:text-sm">בקשות</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
+          <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
+          <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
+          <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
+          <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
+          <TabsTrigger value="updates" className="text-xs md:text-sm">עדכונים</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="clients">
+          <AdminClients />
+        </TabsContent>
+
+        <TabsContent value="document-request">
+          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
+        </TabsContent>
+
+        <TabsContent value="file-requests">
+          <AdminFileRequests selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <AdminViewDocuments selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="collaterals">
+          <AdminCollaterals selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="packages">
+          <AdminPackages selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="approvals">
+          <AdminBankApprovals selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="process">
+          <AdminProcessStage selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="updates">
+          <AdminUpdates selectedClient={selectedClient} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
