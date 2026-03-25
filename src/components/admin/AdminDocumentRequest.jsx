@@ -41,7 +41,7 @@ const CATEGORY_COLORS = {
   'משותף': 'bg-emerald-50 border-emerald-200 text-emerald-700',
 };
 
-export default function AdminDocumentRequest({ selectedClient }) {
+export default function AdminDocumentRequest({ selectedClient, onClientChange }) {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(selectedClient || '');
   const [selectedDocs, setSelectedDocs] = useState({});
@@ -66,6 +66,11 @@ export default function AdminDocumentRequest({ selectedClient }) {
   useEffect(() => {
     if (selectedClient) setSelectedUser(selectedClient);
   }, [selectedClient]);
+
+  const handleUserChange = (val) => {
+    setSelectedUser(val);
+    onClientChange?.(val);
+  };
 
   const toggleDoc = (category, doc) => {
     const key = `${category}::${doc}`;
@@ -111,7 +116,7 @@ export default function AdminDocumentRequest({ selectedClient }) {
 
       <div className="mb-6">
         <Label className="mb-2 block">בחר לקוח</Label>
-        <Select value={selectedUser} onValueChange={setSelectedUser}>
+        <Select value={selectedUser} onValueChange={handleUserChange}>
           <SelectTrigger>
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>

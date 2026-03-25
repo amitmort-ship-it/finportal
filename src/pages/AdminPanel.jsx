@@ -65,7 +65,7 @@ export default function AdminPanel() {
         <TabsContent value="clients"><AdminClients /></TabsContent>
         <TabsContent value="files">
           <div className="space-y-6">
-            <AdminDocumentRequest selectedClient={selectedClient} />
+            <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
             <AdminViewDocuments selectedClient={selectedClient} />
             <AdminFileRequests selectedClient={selectedClient} />
           </div>
