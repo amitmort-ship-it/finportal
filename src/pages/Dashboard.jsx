@@ -71,13 +71,16 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">ברוך הבא לאיזור האישי שלך</p>
       </div>
 
-      <ClientUpdates />
-
-      {processStage && (
-        <div className="mt-6">
-          <ProcessTracker currentStage={processStage.current_stage} notes={processStage.notes} />
+      <div className="flex flex-col md:flex-row gap-6 mt-6">
+        {processStage && (
+          <div className="md:w-72 shrink-0">
+            <ProcessTracker currentStage={processStage.current_stage} notes={processStage.notes} />
+          </div>
+        )}
+        <div className="flex-1">
+          <ClientUpdates />
         </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         <StatCard icon={FileText} label="מסמכים" value={stats.files} color="bg-blue-100" to="/files" />
