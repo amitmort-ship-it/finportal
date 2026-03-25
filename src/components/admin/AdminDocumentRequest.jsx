@@ -52,14 +52,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
     const load = async () => {
       const res = await base44.functions.invoke('getAllClients', {});
       const profiles = res.data?.profiles || [];
-      // Deduplicate by email
-      const seen = new Set();
-      const unique = profiles.filter(p => {
-        if (seen.has(p.email)) return false;
-        seen.add(p.email);
-        return true;
-      });
-      setUsers(unique);
+      setUsers(profiles);
     };
     load();
   }, []);
