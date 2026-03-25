@@ -107,11 +107,11 @@ export default function ResponsiveLayout() {
       </header>
 
       {/* Main Content */}
-      <main className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 relative overflow-y-auto">
+      <main className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto" ref={(el) => el && location.pathname && el.scrollTo(0, 0)}>
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
           <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="" className="w-96 h-96 object-contain" />
         </div>
-        <div className="p-4 md:p-8 max-w-5xl mx-auto relative z-10 scroll-mt-24">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto relative z-10">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <Outlet />
