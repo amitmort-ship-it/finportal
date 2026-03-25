@@ -33,7 +33,7 @@ export default function ResponsiveLayout() {
   return (
     <div dir="rtl" className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-30 shadow-sm">
+      <aside className="hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-50 shadow-sm h-screen overflow-y-auto">
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
             <img src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png" alt="לוגו" className="h-10 w-auto object-contain" />
