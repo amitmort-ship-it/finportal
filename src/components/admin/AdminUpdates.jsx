@@ -43,14 +43,13 @@ export default function AdminUpdates({ selectedClient }) {
         await Promise.all(
           users.map(async (u) => {
             const update = await base44.entities.ClientUpdate.create({ client_email: u.email, message: message.trim() });
-            await base44.functions.invoke('sendUpdateEmail', { data: update });
-          })
+await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: window.location.origin } });          })
         );
         toast.success('עדכון נשלח לכל הלקוחות');
       } else {
         if (!client) { setSending(false); return; }
         const update = await base44.entities.ClientUpdate.create({ client_email: client, message: message.trim() });
-        await base44.functions.invoke('sendUpdateEmail', { data: update });
+await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: window.location.origin } });
         toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
       }
       setMessage('');
