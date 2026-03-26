@@ -14,13 +14,19 @@ export default function ClientUpdates() {
     if (!user?.email) return;
 
     const load = async () => {
-      const data = await base44.entities.ClientUpdate.filter(
-        { client_email: user.email },
-        '-created_date'
-      );
-      setUpdates(data);
-      setLoading(false);
+      try {
+        const data = await base44.entities.ClientUpdate.filter(
+          { client_email: user.email },
+          '-created_date'
+        );
+        setUpdates(data);
+      } catch (err) {
+        console.error("Error loading updates:", err);
+      } finally {
+        setLoading(false);
+      }
     };
+    
     load();
 
     const unsubscribe = base44.entities.ClientUpdate.subscribe((event) => {
@@ -29,11 +35,13 @@ export default function ClientUpdates() {
       }
     });
 
-    return unsubscribe;
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user?.email]);
 
   if (!user) return null;
-<div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col h-72">
+
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col md:h-full h-56">
       <div className="flex items-center gap-2 mb-4">
@@ -53,7 +61,7 @@ export default function ClientUpdates() {
           <div key={update.id} className="bg-white rounded-lg p-3 border border-blue-100">
             <p className="text-sm text-foreground">{update.message}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {format(new Date(update.created_date), 'dd.MM.yyyy HH:mm', { locale: he })}
+              {update.created_date ? format(new Date(update.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
             </p>
           </div>
         ))}
