@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, CheckCircle2, Clock, XCircle, FileText, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -13,7 +13,15 @@ const statusConfig = {
 
 export default function FileUploadCard({ request, onUpdate }) {
   const [uploading, setUploading] = useState(false);
-  const config = statusConfig[request.status] || statusConfig.pending;
+  // הוספת State פנימי לסטטוס כדי שהעדכון יהיה מיידי ב-UI
+  const [localStatus, setLocalStatus] = useState(request.status);
+  
+  // סנכרון הסטטוס המקומי אם ה-Prop מבחוץ משתנה (למשל בטעינה ראשונית)
+  useEffect(() => {
+    setLocalStatus(request.status);
+  }, [request.status]);
+
+  const config = statusConfig[localStatus] || statusConfig.pending;
   const StatusIcon = config.icon;
   const uploadedFiles = request.uploaded_files || [];
 
@@ -22,33 +30,49 @@ export default function FileUploadCard({ request, onUpdate }) {
     if (!file) return;
 
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const newFiles = [...uploadedFiles, { file_url, file_name: file.name }];
-    await base44.entities.FileRequest.update(request.id, {
-      uploaded_files: newFiles,
-      status: 'uploaded',
-    });
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const newFiles = [...uploadedFiles, { file_url, file_name: file.name }];
+      
+      // עדכון ה-API
+      await base44.entities.FileRequest.update(request.id, {
+        uploaded_files: newFiles,
+        status: 'uploaded',
+      });
 
-    // Upload to Google Drive in background (fire and forget)
-    setTimeout(() => {
-      base44.functions.invoke('uploadToDrive', {
-        file_url,
-        file_name: file.name,
-        client_email: request.client_email,
-        category: request.category,
-      }).catch(err => console.error('Drive upload failed:', err));
-    }, 100);
+      // עדכון ה-UI המקומי מיד!
+      setLocalStatus('uploaded');
 
-    toast.success('הקובץ הועלה בהצלחה');
-    setUploading(false);
-    onUpdate?.();
+      // העלאה לדרייב ברקע
+      setTimeout(() => {
+        base44.functions.invoke('uploadToDrive', {
+          file_url,
+          file_name: file.name,
+          client_email: request.client_email,
+          category: request.category,
+        }).catch(err => console.error('Drive upload failed:', err));
+      }, 100);
+
+      toast.success('הקובץ הועלה בהצלחה');
+      onUpdate?.(); // קריאה לעדכון הנתונים הכללי בדאשבורד
+    } catch (err) {
+      console.error(err);
+      toast.error('שגיאה בהעלאה');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDeleteFile = async (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
+    const newStatus = newFiles.length === 0 ? 'pending' : localStatus;
+    
     await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
+      status: newStatus
     });
+    
+    setLocalStatus(newStatus);
     toast.success('הקובץ הוסר');
     onUpdate?.();
   };
@@ -83,17 +107,18 @@ export default function FileUploadCard({ request, onUpdate }) {
                 className="text-sm text-primary hover:underline truncate flex-1">
                 {file.file_name}
               </a>
-              {request.status === 'pending' || request.status === 'rejected' ? (
+              {/* מאפשר מחיקה גם אם הסטטוס הוא כבר 'uploaded' כדי שיוכלו לתקן טעויות */}
+              {(localStatus === 'pending' || localStatus === 'rejected' || localStatus === 'uploaded') && (
                 <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0">
                   <Trash2 className="w-3 h-3" />
                 </Button>
-              ) : null}
+              )}
             </div>
           ))}
         </div>
       ) : null}
 
-      {(request.status === 'pending' || request.status === 'rejected') && (
+      {(localStatus === 'pending' || localStatus === 'rejected') && (
         <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
           <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           {uploading ? (
