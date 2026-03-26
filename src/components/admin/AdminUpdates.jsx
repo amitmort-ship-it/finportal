@@ -38,19 +38,29 @@ export default function AdminUpdates({ selectedClient }) {
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
-    if (client === 'all') {
-      await Promise.all(
-        users.map(u => base44.entities.ClientUpdate.create({ client_email: u.email, message: message.trim() }))
-      );
-      toast.success('עדכון נשלח לכל הלקוחות');
-    } else {
-      if (!client) { setSending(false); return; }
-      await base44.entities.ClientUpdate.create({ client_email: client, message: message.trim() });
-      toast.success('עדכון נשלח ללקוח');
+    try {
+      if (client === 'all') {
+        await Promise.all(
+          users.map(async (u) => {
+            const update = await base44.entities.ClientUpdate.create({ client_email: u.email, message: message.trim() });
+            await base44.functions.invoke('sendUpdateEmail', { data: update });
+          })
+        );
+        toast.success('עדכון נשלח לכל הלקוחות');
+      } else {
+        if (!client) { setSending(false); return; }
+        const update = await base44.entities.ClientUpdate.create({ client_email: client, message: message.trim() });
+        await base44.functions.invoke('sendUpdateEmail', { data: update });
+        toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
+      }
+      setMessage('');
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error('העדכון נשמר אך שליחת המייל נכשלה');
+    } finally {
+      setSending(false);
     }
-    setMessage('');
-    setSending(false);
-    load();
   };
 
   const handleDelete = async (id) => {
