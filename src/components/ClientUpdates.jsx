@@ -33,7 +33,7 @@ export default function ClientUpdates() {
   }, [user?.email]);
 
   if (!user) return null;
-
+<div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col h-72">
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col md:h-full h-56">
       <div className="flex items-center gap-2 mb-4">
