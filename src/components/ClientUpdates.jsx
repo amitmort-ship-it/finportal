@@ -19,14 +19,13 @@ export default function ClientUpdates() {
           { client_email: user.email },
           '-created_date'
         );
-        setUpdates(data);
+        setUpdates(data || []);
       } catch (err) {
-        console.error("Error loading updates:", err);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
     };
-    
     load();
 
     const unsubscribe = base44.entities.ClientUpdate.subscribe((event) => {
@@ -36,7 +35,7 @@ export default function ClientUpdates() {
     });
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, [user?.email]);
 
@@ -48,23 +47,23 @@ export default function ClientUpdates() {
         <Bell className="w-5 h-5 text-blue-600" />
         <h2 className="font-semibold text-blue-900">עדכונים חדשים</h2>
       </div>
-      <div className="overflow-y-auto space-y-3 flex-1 min-h-0 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-blue-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-blue-500">
-        {loading && (
+      <div className="overflow-y-auto space-y-3 flex-1 min-h-0 pr-2">
+        {loading ? (
           <div className="flex justify-center py-6">
             <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
           </div>
-        )}
-        {!loading && updates.length === 0 && (
+        ) : updates.length === 0 ? (
           <p className="text-sm text-blue-400 text-center py-6">אין עדכונים חדשים</p>
+        ) : (
+          updates.map((update) => (
+            <div key={update.id} className="bg-white rounded-lg p-3 border border-blue-100">
+              <p className="text-sm text-foreground">{update.message}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {update.created_date ? format(new Date(update.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+              </p>
+            </div>
+          ))
         )}
-        {updates.map((update) => (
-          <div key={update.id} className="bg-white rounded-lg p-3 border border-blue-100">
-            <p className="text-sm text-foreground">{update.message}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {update.created_date ? format(new Date(update.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
-            </p>
-          </div>
-        ))}
       </div>
     </div>
   );
