@@ -13,24 +13,38 @@ export default function AdminUpdates({ selectedClient }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [client, setClient] = useState(selectedClient || '');
+  const [client, setClient] = useState(selectedClient === '_all' ? 'all' : selectedClient || '');
   const [sending, setSending] = useState(false);
 
   const load = async () => {
-    const [data, userList] = await Promise.all([
-      base44.entities.ClientUpdate.filter({}, '-created_date'),
-      base44.entities.User.filter({}),
-    ]);
-    const filtered = client ? data.filter(u => u.client_email === client) : data;
-    setUpdates(filtered);
-    setUsers(userList.filter(u => u.role !== 'admin'));
-    setLoading(false);
+    try {
+      const [data, userList] = await Promise.all([
+        base44.entities.ClientUpdate.filter({}, '-created_date'),
+        base44.entities.User.filter({}),
+      ]);
+      
+      // אם נבחר "כל הלקוחות" (all) או שלא נבחר כלום - מציגים הכל. אחרת מסננים לפי אימייל.
+      const filtered = (client === 'all' || !client) 
+        ? data 
+        : data.filter(u => u.client_email === client);
+        
+      setUpdates(filtered);
+      setUsers(userList.filter(u => u.role !== 'admin'));
+    } catch (err) {
+      console.error("Failed to load data:", err);
+      toast.error("שגיאה בטעינת הנתונים");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // עדכון ה-State כשה-Prop מבחוץ משתנה
   useEffect(() => {
-    setClient(selectedClient && selectedClient !== '_all' ? selectedClient : '');
+    const val = selectedClient && selectedClient !== '_all' ? selectedClient : 'all';
+    setClient(val);
   }, [selectedClient]);
 
+  // טעינת נתונים בכל פעם שהלקוח הנבחר משתנה
   useEffect(() => {
     load();
   }, [client]);
@@ -40,16 +54,31 @@ export default function AdminUpdates({ selectedClient }) {
     setSending(true);
     try {
       if (client === 'all') {
+        // שליחה לכל המשתמשים ברשימה
         await Promise.all(
           users.map(async (u) => {
-            const update = await base44.entities.ClientUpdate.create({ client_email: u.email, message: message.trim() });
-await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: window.location.origin } });          })
+            const update = await base44.entities.ClientUpdate.create({ 
+              client_email: u.email, 
+              message: message.trim() 
+            });
+            return base44.functions.invoke('sendUpdateEmail', { 
+              data: { ...update, app_url: window.location.origin } 
+            });
+          })
         );
         toast.success('עדכון נשלח לכל הלקוחות');
       } else {
-        if (!client) { setSending(false); return; }
-        const update = await base44.entities.ClientUpdate.create({ client_email: client, message: message.trim() });
-await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: window.location.origin } });
+        if (!client) {
+          setSending(false);
+          return;
+        }
+        const update = await base44.entities.ClientUpdate.create({ 
+          client_email: client, 
+          message: message.trim() 
+        });
+        await base44.functions.invoke('sendUpdateEmail', { 
+          data: { ...update, app_url: window.location.origin } 
+        });
         toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
       }
       setMessage('');
@@ -63,12 +92,20 @@ await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: w
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.ClientUpdate.delete(id);
-    toast.success('העדכון נמחק');
-    load();
+    try {
+      await base44.entities.ClientUpdate.delete(id);
+      toast.success('העדכון נמחק');
+      load();
+    } catch (err) {
+      toast.error('מחיקה נכשלה');
+    }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
+  if (loading) return (
+    <div className="flex justify-center py-12">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div>
@@ -79,7 +116,8 @@ await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: w
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="_all">📢 כל הלקוחות</SelectItem>
+            {/* שינוי הערך ל-all כדי שיהיה תואם ללוגיקה */}
+            <SelectItem value="all">📢 כל הלקוחות</SelectItem>
             {users.map(u => (
               <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
             ))}
@@ -112,7 +150,7 @@ await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: w
         </div>
       ) : updates.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-          אין עדכונים לקוח זה
+          אין עדכונים ללקוח זה
         </div>
       ) : (
         <div className="space-y-3">
@@ -122,7 +160,7 @@ await base44.functions.invoke('sendUpdateEmail', { data: { ...update, app_url: w
                 <div className="flex-1 min-w-0">
                   <p className="text-foreground break-words">{u.message}</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he })}
+                    {u.created_date ? format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
                   </p>
                 </div>
                 <Button size="icon" variant="ghost" onClick={() => handleDelete(u.id)} className="text-destructive hover:bg-destructive/10 shrink-0">
