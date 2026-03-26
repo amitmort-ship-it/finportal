@@ -41,7 +41,7 @@ export default function AdminPanel() {
 
       <div className="bg-card rounded-xl border border-border p-4 mb-6">
         <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
-        <Select value={selectedClient || ''} onValueChange={v => setSelectedClient(v || null)}>
+        <Select value={selectedClient || '_all'} onValueChange={v => setSelectedClient(v === '_all' ? null : v)}>
           <SelectTrigger className="w-full md:w-80"><SelectValue placeholder="כל הלקוחות" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="_all">כל הלקוחות</SelectItem>
@@ -63,41 +63,15 @@ export default function AdminPanel() {
           <TabsTrigger value="updates" className="text-xs md:text-sm">עדכונים</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="clients">
-          <AdminClients />
-        </TabsContent>
-
-        <TabsContent value="document-request">
-          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
-        </TabsContent>
-
-        <TabsContent value="file-requests">
-          <AdminFileRequests selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <AdminViewDocuments selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="collaterals">
-          <AdminCollaterals selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="packages">
-          <AdminPackages selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="approvals">
-          <AdminBankApprovals selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="process">
-          <AdminProcessStage selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="updates">
-          <AdminUpdates selectedClient={selectedClient} />
-        </TabsContent>
+        <TabsContent value="clients"><AdminClients /></TabsContent>
+        <TabsContent value="document-request"><AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} /></TabsContent>
+        <TabsContent value="file-requests"><AdminFileRequests selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="documents"><AdminViewDocuments selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="packages"><AdminPackages selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="process"><AdminProcessStage selectedClient={selectedClient} /></TabsContent>
+        <TabsContent value="updates"><AdminUpdates selectedClient={selectedClient} /></TabsContent>
       </Tabs>
     </div>
   );
