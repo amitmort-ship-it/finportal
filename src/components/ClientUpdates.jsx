@@ -33,7 +33,6 @@ export default function ClientUpdates() {
   }, [user?.email]);
 
   if (!user) return null;
-  if (loading || updates.length === 0) return null;
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col md:h-full h-56">
@@ -42,6 +41,14 @@ export default function ClientUpdates() {
         <h2 className="font-semibold text-blue-900">עדכונים חדשים</h2>
       </div>
       <div className="overflow-y-auto space-y-3 flex-1 min-h-0 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-blue-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-blue-500">
+        {loading && (
+          <div className="flex justify-center py-6">
+            <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        )}
+        {!loading && updates.length === 0 && (
+          <p className="text-sm text-blue-400 text-center py-6">אין עדכונים חדשים</p>
+        )}
         {updates.map((update) => (
           <div key={update.id} className="bg-white rounded-lg p-3 border border-blue-100">
             <p className="text-sm text-foreground">{update.message}</p>
