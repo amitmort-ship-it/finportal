@@ -11,17 +11,30 @@ const statusConfig = {
   rejected: { label: 'נדחה', icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 };
 
-export default function FileUploadCard({ request, onUpdate }) {
+export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const [uploading, setUploading] = useState(false);
-  // הוספת State פנימי לסטטוס כדי שהעדכון יהיה מיידי ב-UI
-  const [localStatus, setLocalStatus] = useState(request.status);
-  
-  // סנכרון הסטטוס המקומי אם ה-Prop מבחוץ משתנה (למשל בטעינה ראשונית)
-  useEffect(() => {
-    setLocalStatus(request.status);
-  }, [request.status]);
+  // ניהול ה-request ב-State פנימי כדי לאפשר עדכון חי
+  const [request, setRequest] = useState(initialRequest);
 
-  const config = statusConfig[localStatus] || statusConfig.pending;
+  // סנכרון אם ה-Props משתנים
+  useEffect(() => {
+    setRequest(initialRequest);
+  }, [initialRequest]);
+
+  // האזנה לשינויים במסד הנתונים בזמן אמת (Realtime)
+  useEffect(() => {
+    const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
+      // אם בוצע עדכון לרשומה הספציפית הזו
+      if (event.type === 'update' && event.data.id === request.id) {
+        setRequest(event.data);
+      }
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [request.id]);
+
+  const config = statusConfig[request.status] || statusConfig.pending;
   const StatusIcon = config.icon;
   const uploadedFiles = request.uploaded_files || [];
 
@@ -31,30 +44,29 @@ export default function FileUploadCard({ request, onUpdate }) {
 
     setUploading(true);
     try {
+      // 1. העלאת הקובץ הפיזי
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const newFiles = [...uploadedFiles, { file_url, file_name: file.name }];
       
-      // עדכון ה-API
-      await base44.entities.FileRequest.update(request.id, {
+      // 2. עדכון הרשומה ב-Database (ה-Subscription למעלה יתפוס את זה ויעדכן את ה-UI)
+      const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
         status: 'uploaded',
       });
 
-      // עדכון ה-UI המקומי מיד!
-      setLocalStatus('uploaded');
+      // עדכון מקומי מהיר לגיבוי
+      setRequest(updatedDoc);
 
-      // העלאה לדרייב ברקע
-      setTimeout(() => {
-        base44.functions.invoke('uploadToDrive', {
-          file_url,
-          file_name: file.name,
-          client_email: request.client_email,
-          category: request.category,
-        }).catch(err => console.error('Drive upload failed:', err));
-      }, 100);
+      // 3. פונקציית ענן ברקע
+      base44.functions.invoke('uploadToDrive', {
+        file_url,
+        file_name: file.name,
+        client_email: request.client_email,
+        category: request.category,
+      }).catch(err => console.error('Drive upload failed:', err));
 
       toast.success('הקובץ הועלה בהצלחה');
-      onUpdate?.(); // קריאה לעדכון הנתונים הכללי בדאשבורד
+      onUpdate?.(); 
     } catch (err) {
       console.error(err);
       toast.error('שגיאה בהעלאה');
@@ -65,14 +77,14 @@ export default function FileUploadCard({ request, onUpdate }) {
 
   const handleDeleteFile = async (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
-    const newStatus = newFiles.length === 0 ? 'pending' : localStatus;
+    const newStatus = newFiles.length === 0 ? 'pending' : request.status;
     
-    await base44.entities.FileRequest.update(request.id, {
+    const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
       status: newStatus
     });
     
-    setLocalStatus(newStatus);
+    setRequest(updatedDoc);
     toast.success('הקובץ הוסר');
     onUpdate?.();
   };
@@ -92,13 +104,7 @@ export default function FileUploadCard({ request, onUpdate }) {
         </span>
       </div>
 
-      {request.admin_notes && (
-        <div className="bg-muted rounded-lg p-3 mb-3 text-sm text-muted-foreground">
-          {request.admin_notes}
-        </div>
-      )}
-
-      {uploadedFiles.length > 0 ? (
+      {uploadedFiles.length > 0 && (
         <div className="space-y-2 mb-3">
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
@@ -107,18 +113,17 @@ export default function FileUploadCard({ request, onUpdate }) {
                 className="text-sm text-primary hover:underline truncate flex-1">
                 {file.file_name}
               </a>
-              {/* מאפשר מחיקה גם אם הסטטוס הוא כבר 'uploaded' כדי שיוכלו לתקן טעויות */}
-              {(localStatus === 'pending' || localStatus === 'rejected' || localStatus === 'uploaded') && (
-                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0">
+              {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
+                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive h-6 w-6">
                   <Trash2 className="w-3 h-3" />
                 </Button>
               )}
             </div>
           ))}
         </div>
-      ) : null}
+      )}
 
-      {(localStatus === 'pending' || localStatus === 'rejected') && (
+      {(request.status === 'pending' || request.status === 'rejected') && (
         <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
           <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           {uploading ? (
