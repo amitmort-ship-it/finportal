@@ -169,15 +169,9 @@ export default function AdminBankApprovals({ selectedClient }) {
             </DialogContent>
           </Dialog>
         </div>
-        {users.length > 0 && (
-          <div className="bg-muted/50 rounded-lg p-3">
-            <Label className="text-sm mb-1 block">סנן לפי לקוח</Label>
-            <Select value={selectedClient || ''} onValueChange={() => {}}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="כל הלקוחות" /></SelectTrigger>
-              <SelectContent>
-                {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        {users.length > 0 && selectedClient && (
+          <div className="bg-muted/30 rounded-lg px-3 py-2 text-sm text-muted-foreground mt-3">
+            מציג אישורים עבור: <span className="font-medium text-foreground">{users.find(u => u.email === selectedClient)?.full_name || selectedClient}</span>
           </div>
         )}
       </div>
