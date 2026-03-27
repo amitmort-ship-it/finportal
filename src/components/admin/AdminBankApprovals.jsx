@@ -8,10 +8,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Building2, Trash2, Upload, Loader2, Edit2, Check, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import ApprovalsComparisonTable from '@/components/ApprovalsComparisonTable';
+import { parseApprovalText } from '@/lib/approvalAnalysis';
+import { extractPdfText } from '@/lib/pdfTextExtractor';
 
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
 
-const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', file_url: '', file_name: '' };
+const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', file_url: '', file_name: '', ai_data: null };
+
+const mergeParsedIntoForm = (currentForm, parsedResult) => {
+  if (!parsedResult?.ai_data) return currentForm;
+
+  return {
+    ...currentForm,
+    ai_data: parsedResult.ai_data,
+    amount: currentForm.amount || parsedResult.amount || '',
+    monthly_payment: currentForm.monthly_payment || parsedResult.monthly_payment || '',
+    mortgage_years: currentForm.mortgage_years || parsedResult.mortgage_years || '',
+  };
+};
 
 export default function AdminBankApprovals({ selectedClient }) {
   const [approvals, setApprovals] = useState([]);
@@ -42,16 +57,38 @@ export default function AdminBankApprovals({ selectedClient }) {
   const handleFileUpload = async (e, isEdit = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (isEdit) {
-      setEditUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setEditForm(f => ({ ...f, file_url, file_name: file.name }));
-      setEditUploading(false);
-    } else {
-      setUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setForm(f => ({ ...f, file_url, file_name: file.name }));
-      setUploading(false);
+
+    const setLoader = isEdit ? setEditUploading : setUploading;
+    const setTargetForm = isEdit ? setEditForm : setForm;
+    const currentBankName = isEdit ? editForm.bank_name : form.bank_name;
+
+    setLoader(true);
+
+    try {
+      const [{ file_url }, extractedText] = await Promise.all([
+        base44.integrations.Core.UploadFile({ file }),
+        extractPdfText(file).catch(() => ''),
+      ]);
+
+      const parsedResult = extractedText
+        ? parseApprovalText(extractedText, { bank_name: currentBankName })
+        : null;
+
+      setTargetForm((prev) => mergeParsedIntoForm({
+        ...prev,
+        file_url,
+        file_name: file.name,
+      }, parsedResult));
+
+      if (parsedResult?.ai_data?.tracks?.length) {
+        toast.success(`המסמך נותח ונמצאו ${parsedResult.ai_data.tracks.length} מסלולים לתמהיל המוצע`);
+      } else if (extractedText) {
+        toast.info('המסמך הועלה, אבל זוהו רק נתוני סיכום חלקיים');
+      } else {
+        toast.info('המסמך הועלה. אם ה-PDF כולל שכבת טקסט, המערכת תמלא את נתוני ההצעה אוטומטית');
+      }
+    } finally {
+      setLoader(false);
     }
   };
 
@@ -85,6 +122,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       mortgage_years: a.mortgage_years || '',
       file_url: a.file_url || '',
       file_name: a.file_name || '',
+      ai_data: a.ai_data || null,
     });
   };
 
@@ -163,6 +201,9 @@ export default function AdminBankApprovals({ selectedClient }) {
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
                     <span className="text-sm text-muted-foreground">{form.file_name || 'העלה מסמך'}</span>
                   </label>
+                  {form.ai_data?.tracks?.length ? (
+                    <p className="mt-2 text-xs text-emerald-600">זוהה תמהיל מוצע של {form.ai_data.tracks.length} מסלולים מהמסמך.</p>
+                  ) : null}
                 </div>
                 <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">הוסף אישור</Button>
               </div>
@@ -175,6 +216,12 @@ export default function AdminBankApprovals({ selectedClient }) {
           </div>
         )}
       </div>
+
+      {approvals.length > 0 && (
+        <div className="mb-6">
+          <ApprovalsComparisonTable approvals={approvals} title="השוואת הצעות בממשק הניהול" />
+        </div>
+      )}
 
       {approvals.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">אין אישורי בנקים</div>
@@ -224,6 +271,9 @@ export default function AdminBankApprovals({ selectedClient }) {
                         <Download className="w-3 h-3" />{editForm.file_name || 'הורד מסמך'}
                       </a>
                     )}
+                    {editForm.ai_data?.tracks?.length ? (
+                      <p className="mt-2 text-xs text-emerald-600">זוהה תמהיל מוצע של {editForm.ai_data.tracks.length} מסלולים מהמסמך.</p>
+                    ) : null}
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleSaveEdit} className="gap-1"><Check className="w-3 h-3" />שמור</Button>
