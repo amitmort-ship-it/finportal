@@ -5,6 +5,10 @@ const formatCurrency = (value) => (
   value || value === 0 ? `₪${Number(value).toLocaleString('he-IL')}` : '-'
 );
 
+const formatPercent = (value) => (
+  value || value === 0 ? `${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%` : '-'
+);
+
 const formatDate = (value) => {
   if (!value) return '-';
   const date = new Date(value);
@@ -145,7 +149,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
                           <div className="font-semibold text-foreground">{track.name}</div>
                           <div>{formatCurrency(track.amount)}</div>
                           <div>{track.years ? `${track.years} שנים` : '-'}</div>
-                          <div>{track.interest_rate || track.interest_rate === 0 ? `${Number(track.interest_rate).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%` : '-'}</div>
+                          <div>{formatPercent(track.interest_rate)}</div>
                           <div>{formatCurrency(track.monthly_payment)}</div>
                         </div>
                       ) : (
