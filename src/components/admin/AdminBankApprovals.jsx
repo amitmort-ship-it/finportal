@@ -22,19 +22,36 @@ const emptyForm = {
   amount: '',
   monthly_payment: '',
   mortgage_years: '',
-  offer_expiry_date: '',
+  manual_expiry_date: '',
   file_url: '',
   file_name: '',
   ai_data: null,
 };
 
+const normalizeDateInput = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+};
+
+const injectManualExpiryIntoAiData = (aiData, expiryDate) => {
+  if (!expiryDate) return aiData || null;
+
+  return {
+    ...(aiData || {}),
+    offer_metadata: {
+      ...(aiData?.offer_metadata || {}),
+      expiry_date: expiryDate,
+      source: aiData?.offer_metadata?.source || 'manual',
+    },
+  };
+};
+
 const mergeParsedIntoForm = (currentForm, parsedResult) => {
   if (!parsedResult?.ai_data) return currentForm;
 
-  const parsedExpiryDate = parsedResult.ai_data?.offer_metadata?.expiry_date;
-  const normalizedExpiryDate = parsedExpiryDate
-    ? new Date(parsedExpiryDate).toISOString().slice(0, 10)
-    : '';
+  const parsedExpiry = normalizeDateInput(parsedResult.ai_data?.offer_metadata?.expiry_date);
 
   return {
     ...currentForm,
@@ -42,25 +59,7 @@ const mergeParsedIntoForm = (currentForm, parsedResult) => {
     amount: currentForm.amount || parsedResult.amount || '',
     monthly_payment: currentForm.monthly_payment || parsedResult.monthly_payment || '',
     mortgage_years: currentForm.mortgage_years || parsedResult.mortgage_years || '',
-    offer_expiry_date: currentForm.offer_expiry_date || normalizedExpiryDate || '',
-  };
-};
-
-const mergeManualExpiryIntoAiData = (formData) => {
-  const { offer_expiry_date, ai_data, ...rest } = formData;
-
-  const nextAiData = {
-    ...(ai_data || {}),
-    offer_metadata: {
-      ...(ai_data?.offer_metadata || {}),
-      expiry_date: offer_expiry_date || ai_data?.offer_metadata?.expiry_date || null,
-      source: ai_data?.offer_metadata?.source || 'manual',
-    },
-  };
-
-  return {
-    ...rest,
-    ai_data: nextAiData,
+    manual_expiry_date: currentForm.manual_expiry_date || parsedExpiry || '',
   };
 };
 
@@ -126,17 +125,11 @@ export default function AdminBankApprovals({ selectedClient }) {
             mortgage_years: analysis.tracks?.[0]?.years || null,
           };
         }
-      } catch (analysisError) {
+      } catch {
         const extractedText = await extractPdfText(file).catch(() => '');
         parsedResult = extractedText
           ? parseApprovalText(extractedText, { bank_name: currentBankName })
           : null;
-
-        if (!parsedResult) {
-          toast.info('המסמך הועלה, אבל ניתוח ה-AI לא הצליח כרגע. אפשר להשלים ידנית.');
-        } else {
-          toast.info('ניתוח ה-AI לא הצליח, בוצע חילוץ חלקי מתוך שכבת הטקסט של ה-PDF.');
-        }
       }
 
       setTargetForm((prev) =>
@@ -155,27 +148,35 @@ export default function AdminBankApprovals({ selectedClient }) {
       } else if (parsedResult?.ai_data) {
         toast.info('המסמך הועלה וזוהו נתוני סיכום, אך לא כל המסלולים זוהו במלואם');
       } else {
-        toast.info('המסמך הועלה. אם ה-PDF כולל שכבת טקסט, המערכת תמלא את נתוני ההצעה אוטומטית');
+        toast.info('המסמך הועלה. אפשר להשלים ידנית את הפרטים החסרים');
       }
     } finally {
       setLoader(false);
     }
   };
 
+  const buildEntityPayload = (source) => {
+    const payload = {
+      client_email: source.client_email,
+      bank_name: source.bank_name,
+      approval_title: source.approval_title,
+      notes: source.notes,
+      file_url: source.file_url,
+      file_name: source.file_name,
+      ai_data: injectManualExpiryIntoAiData(source.ai_data, source.manual_expiry_date),
+    };
+
+    if (source.amount) payload.amount = Number(source.amount);
+    if (source.monthly_payment) payload.monthly_payment = Number(source.monthly_payment);
+    if (source.mortgage_years) payload.mortgage_years = Number(source.mortgage_years);
+
+    return payload;
+  };
+
   const handleCreate = async () => {
     if (!form.client_email || !form.bank_name) return;
 
-    const data = mergeManualExpiryIntoAiData({ ...form });
-
-    if (data.amount) data.amount = Number(data.amount);
-    else delete data.amount;
-
-    if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment);
-    else delete data.monthly_payment;
-
-    if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years);
-    else delete data.mortgage_years;
-
+    const data = buildEntityPayload(form);
     await base44.entities.BankApproval.create(data);
     toast.success('אישור בנק נוסף');
     setForm({ ...emptyForm, client_email: selectedClient || '' });
@@ -189,38 +190,25 @@ export default function AdminBankApprovals({ selectedClient }) {
     load();
   };
 
-  const startEdit = (a) => {
-    const aiExpiryDate = a.ai_data?.offer_metadata?.expiry_date
-      ? new Date(a.ai_data.offer_metadata.expiry_date).toISOString().slice(0, 10)
-      : '';
-
-    setEditingId(a.id);
+  const startEdit = (approval) => {
+    setEditingId(approval.id);
     setEditForm({
-      bank_name: a.bank_name || '',
-      approval_title: a.approval_title || '',
-      notes: a.notes || '',
-      amount: a.amount || '',
-      monthly_payment: a.monthly_payment || '',
-      mortgage_years: a.mortgage_years || '',
-      offer_expiry_date: a.offer_expiry_date || aiExpiryDate || '',
-      file_url: a.file_url || '',
-      file_name: a.file_name || '',
-      ai_data: a.ai_data || null,
+      client_email: approval.client_email || '',
+      bank_name: approval.bank_name || '',
+      approval_title: approval.approval_title || '',
+      notes: approval.notes || '',
+      amount: approval.amount || '',
+      monthly_payment: approval.monthly_payment || '',
+      mortgage_years: approval.mortgage_years || '',
+      manual_expiry_date: normalizeDateInput(approval.ai_data?.offer_metadata?.expiry_date),
+      file_url: approval.file_url || '',
+      file_name: approval.file_name || '',
+      ai_data: approval.ai_data || null,
     });
   };
 
   const handleSaveEdit = async () => {
-    const data = mergeManualExpiryIntoAiData({ ...editForm });
-
-    if (data.amount) data.amount = Number(data.amount);
-    else delete data.amount;
-
-    if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment);
-    else delete data.monthly_payment;
-
-    if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years);
-    else delete data.mortgage_years;
-
+    const data = buildEntityPayload(editForm);
     await base44.entities.BankApproval.update(editingId, data);
     toast.success('האישור עודכן');
     setEditingId(null);
@@ -243,6 +231,7 @@ export default function AdminBankApprovals({ selectedClient }) {
             <Building2 className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold">אישורי בנקים</h2>
           </div>
+
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
@@ -250,6 +239,7 @@ export default function AdminBankApprovals({ selectedClient }) {
                 אישור חדש
               </Button>
             </DialogTrigger>
+
             <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>הוספת אישור בנק</DialogTitle>
@@ -338,8 +328,8 @@ export default function AdminBankApprovals({ selectedClient }) {
                   <Label>תוקף ההצעה</Label>
                   <Input
                     type="date"
-                    value={form.offer_expiry_date}
-                    onChange={(e) => setForm({ ...form, offer_expiry_date: e.target.value })}
+                    value={form.manual_expiry_date}
+                    onChange={(e) => setForm({ ...form, manual_expiry_date: e.target.value })}
                     className="mt-1"
                     dir="ltr"
                   />
@@ -362,11 +352,6 @@ export default function AdminBankApprovals({ selectedClient }) {
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
                     <span className="text-sm text-muted-foreground">{form.file_name || 'העלה מסמך'}</span>
                   </label>
-                  {form.ai_data?.tracks?.length ? (
-                    <p className="mt-2 text-xs text-emerald-600">
-                      זוהה תמהיל מוצע של {form.ai_data.tracks.length} מסלולים מהמסמך.
-                    </p>
-                  ) : null}
                 </div>
 
                 <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">
@@ -459,8 +444,8 @@ export default function AdminBankApprovals({ selectedClient }) {
                     <Label className="text-xs">תוקף ההצעה</Label>
                     <Input
                       type="date"
-                      value={editForm.offer_expiry_date || ''}
-                      onChange={(e) => setEditForm((f) => ({ ...f, offer_expiry_date: e.target.value }))}
+                      value={editForm.manual_expiry_date || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, manual_expiry_date: e.target.value }))}
                       className="mt-1 h-8 text-sm"
                       dir="ltr"
                     />
@@ -484,21 +469,11 @@ export default function AdminBankApprovals({ selectedClient }) {
                       <span className="text-xs text-muted-foreground">{editForm.file_name || 'החלף מסמך'}</span>
                     </label>
                     {editForm.file_url && (
-                      <a
-                        href={editForm.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline"
-                      >
+                      <a href={editForm.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
                         <Download className="w-3 h-3" />
                         {editForm.file_name || 'הורד מסמך'}
                       </a>
                     )}
-                    {editForm.ai_data?.tracks?.length ? (
-                      <p className="mt-2 text-xs text-emerald-600">
-                        זוהה תמהיל מוצע של {editForm.ai_data.tracks.length} מסלולים מהמסמך.
-                      </p>
-                    ) : null}
                   </div>
 
                   <div className="flex gap-2">
@@ -524,20 +499,14 @@ export default function AdminBankApprovals({ selectedClient }) {
                       {a.amount && <span className="text-xs text-emerald-600">₪{a.amount.toLocaleString()}</span>}
                       {a.monthly_payment && <span className="text-xs text-blue-600">החזר חודשי: ₪{a.monthly_payment.toLocaleString()}</span>}
                       {a.mortgage_years && <span className="text-xs text-purple-600">{a.mortgage_years} שנים</span>}
-                      {(a.offer_expiry_date || a.ai_data?.offer_metadata?.expiry_date) && (
+                      {a.ai_data?.offer_metadata?.expiry_date && (
                         <span className="text-xs text-amber-700">
-                          תוקף:{' '}
-                          {new Date(a.offer_expiry_date || a.ai_data?.offer_metadata?.expiry_date).toLocaleDateString('he-IL')}
+                          תוקף: {new Date(a.ai_data.offer_metadata.expiry_date).toLocaleDateString('he-IL')}
                         </span>
                       )}
                     </div>
                     {a.file_url && (
-                      <a
-                        href={a.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline"
-                      >
+                      <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
                         <Download className="w-3 h-3" />
                         {a.file_name || 'הורד מסמך'}
                       </a>
@@ -547,12 +516,7 @@ export default function AdminBankApprovals({ selectedClient }) {
                     <Button size="icon" variant="ghost" onClick={() => startEdit(a)}>
                       <Edit2 className="w-4 h-4" />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDelete(a.id)}
-                      className="text-destructive hover:bg-destructive/10"
-                    >
+                    <Button size="icon" variant="ghost" onClick={() => handleDelete(a.id)} className="text-destructive hover:bg-destructive/10">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
