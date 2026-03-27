@@ -5,10 +5,6 @@ const formatCurrency = (value) => (
   value || value === 0 ? `₪${Number(value).toLocaleString('he-IL')}` : '-'
 );
 
-const formatPercent = (value) => (
-  value || value === 0 ? `${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%` : '-'
-);
-
 const formatDate = (value) => {
   if (!value) return '-';
   const date = new Date(value);
@@ -42,7 +38,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
 
   const bestTotalRepayment = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.total_repayment_forecast, 'min');
   const bestFirstPayment = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.first_monthly_payment, 'min');
-  const bestRate = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.weighted_interest_rate, 'min');
+  const bestMortgageYears = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.mortgage_years, 'min');
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -97,17 +93,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
                 <ValueCell
                   key={approval.id}
                   value={approval.summary_metrics.mortgage_years ? `${approval.summary_metrics.mortgage_years} שנים` : '-'}
-                />
-              ))}
-            </tr>
-
-            <tr className="border-b border-border/50 hover:bg-muted/5">
-              <td className="bg-muted/5 p-4 font-medium">ריבית משוקללת</td>
-              {comparableApprovals.map((approval) => (
-                <ValueCell
-                  key={approval.id}
-                  value={formatPercent(approval.summary_metrics.weighted_interest_rate)}
-                  isBest={approval.id === bestRate}
+                  isBest={approval.id === bestMortgageYears}
                 />
               ))}
             </tr>
@@ -159,7 +145,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
                           <div className="font-semibold text-foreground">{track.name}</div>
                           <div>{formatCurrency(track.amount)}</div>
                           <div>{track.years ? `${track.years} שנים` : '-'}</div>
-                          <div>{formatPercent(track.interest_rate)}</div>
+                          <div>{track.interest_rate || track.interest_rate === 0 ? `${Number(track.interest_rate).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%` : '-'}</div>
                           <div>{formatCurrency(track.monthly_payment)}</div>
                         </div>
                       ) : (
