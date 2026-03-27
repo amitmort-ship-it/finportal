@@ -11,6 +11,9 @@ const TRACK_LABELS = [
   'גרייס',
 ];
 
+const EXPIRY_MARKER_REGEX = /\[\[expiry:([^\]]+)\]\]/i;
+const TOTAL_REPAYMENT_MARKER_REGEX = /\[\[total_repayment:([^\]]+)\]\]/i;
+
 const SUMMARY_PATTERNS = {
   amount: [
     /(?:סכום|סה["']?כ(?:\s+)?הלוואה|loan amount|approved amount)[^\d]{0,24}([\d,]{5,})/i,
@@ -30,6 +33,16 @@ const SUMMARY_PATTERNS = {
   expiry_date: [
     /(?:תוקף(?:\s+עד)?|בתוקף\s+עד|expiry(?:\s+date)?)[^\d]{0,24}(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i,
   ],
+};
+
+const extractMetadataFromNotes = (notes = '') => {
+  const expiryMatch = notes.match(EXPIRY_MARKER_REGEX);
+  const totalRepaymentMatch = notes.match(TOTAL_REPAYMENT_MARKER_REGEX);
+
+  return {
+    expiry_date: expiryMatch?.[1]?.trim() || null,
+    total_repayment_forecast: totalRepaymentMatch?.[1]?.trim() || null,
+  };
 };
 
 const cleanNumber = (value) => {
@@ -72,11 +85,16 @@ const estimateTrackRepayment = (track) => {
   const principal = cleanNumber(track.amount);
   const years = cleanNumber(track.years);
   const annualRate = cleanNumber(track.interest_rate);
+  const monthlyPayment = cleanNumber(track.monthly_payment);
 
   if (!principal || !years) return null;
 
   const totalMonths = Math.round(years * 12);
   if (!totalMonths) return null;
+
+  if (monthlyPayment) {
+    return monthlyPayment * totalMonths;
+  }
 
   if (!annualRate) {
     return principal;
@@ -85,8 +103,8 @@ const estimateTrackRepayment = (track) => {
   const monthlyRate = annualRate / 100 / 12;
   if (!monthlyRate) return principal;
 
-  const monthlyPayment = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
-  return Number.isFinite(monthlyPayment) ? monthlyPayment * totalMonths : null;
+  const calculatedMonthlyPayment = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
+  return Number.isFinite(calculatedMonthlyPayment) ? calculatedMonthlyPayment * totalMonths : null;
 };
 
 const extractTrackFromLine = (line, index) => {
@@ -118,6 +136,7 @@ export const buildComparableApproval = (approval) => {
   const aiData = approval?.ai_data || {};
   const summaryMetrics = aiData.summary_metrics || {};
   const tracks = Array.isArray(aiData.tracks) ? aiData.tracks : [];
+  const notesMetadata = extractMetadataFromNotes(approval.notes || '');
 
   const amount = cleanNumber(summaryMetrics.amount ?? approval.amount);
   const firstMonthlyPayment = cleanNumber(summaryMetrics.first_monthly_payment ?? approval.monthly_payment);
@@ -145,6 +164,7 @@ export const buildComparableApproval = (approval) => {
 
   const totalRepayment =
     cleanNumber(summaryMetrics.total_repayment_forecast) ??
+    cleanNumber(notesMetadata.total_repayment_forecast) ??
     (() => {
       const estimated = tracks
         .map(estimateTrackRepayment)
@@ -166,7 +186,7 @@ export const buildComparableApproval = (approval) => {
       total_repayment_forecast: totalRepayment,
     },
     offer_metadata: {
-      expiry_date: parseDateValue(aiData.offer_metadata?.expiry_date || approval.offer_expiry_date),
+      expiry_date: parseDateValue(aiData.offer_metadata?.expiry_date || notesMetadata.expiry_date),
       parsing_confidence: cleanNumber(aiData.offer_metadata?.parsing_confidence),
       source: aiData.offer_metadata?.source || (tracks.length ? 'parsed_pdf' : 'manual'),
     },
