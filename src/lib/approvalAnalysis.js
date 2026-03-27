@@ -165,7 +165,7 @@ export const buildComparableApproval = (approval) => {
       total_repayment_forecast: totalRepayment,
     },
     offer_metadata: {
-      expiry_date: parseDateValue(aiData.offer_metadata?.expiry_date),
+      expiry_date: parseDateValue(aiData.offer_metadata?.expiry_date || approval.offer_expiry_date),
       parsing_confidence: cleanNumber(aiData.offer_metadata?.parsing_confidence),
       source: aiData.offer_metadata?.source || (tracks.length ? 'parsed_pdf' : 'manual'),
     },
