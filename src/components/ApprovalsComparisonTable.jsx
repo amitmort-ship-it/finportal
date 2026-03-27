@@ -1,13 +1,15 @@
 import { AlertCircle, CheckCircle2, Table as TableIcon } from 'lucide-react';
 import { buildComparisonRows } from '@/lib/approvalAnalysis';
 
-const formatCurrency = (value) => (
-  value || value === 0 ? `₪${Number(value).toLocaleString('he-IL')}` : '-'
-);
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return '-';
+  return `₪${Number(value).toLocaleString('he-IL')}`;
+};
 
-const formatPercent = (value) => (
-  value || value === 0 ? `${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%` : '-'
-);
+const formatPercent = (value) => {
+  if (value === null || value === undefined) return '-';
+  return `${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%`;
+};
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -18,7 +20,7 @@ const formatDate = (value) => {
 const getBestValue = (approvals, selector, direction = 'min') => {
   const values = approvals
     .map((approval) => ({ id: approval.id, value: selector(approval) }))
-    .filter((item) => item.value || item.value === 0);
+    .filter((item) => item.value !== null && item.value !== undefined);
 
   if (!values.length) return null;
 
@@ -26,23 +28,39 @@ const getBestValue = (approvals, selector, direction = 'min') => {
     direction === 'min' ? a.value - b.value : b.value - a.value
   ));
 
-  return ranked[0]?.id || null;
+  return ranked.length ? ranked[0].id : null;
 };
 
-const ValueCell = ({ value, isBest = false, children }) => (
-  <td className={`border-r border-border/50 p-4 text-center align-top ${isBest ? 'bg-emerald-50/70 font-bold text-emerald-700' : ''}`}>
-    {children || value}
-  </td>
-);
+const ValueCell = ({ value, isBest = false, children }) => {
+  const content = children !== undefined && children !== null ? children : value;
+
+  return (
+    <td className={`border-r border-border/50 p-4 text-center align-top ${isBest ? 'bg-emerald-50/70 font-bold text-emerald-700' : ''}`}>
+      {content}
+    </td>
+  );
+};
 
 export default function ApprovalsComparisonTable({ approvals, title = 'השוואת הצעות', emptyState = null }) {
   const { approvals: comparableApprovals, maxTrackCount } = buildComparisonRows(approvals);
 
   if (!comparableApprovals.length) return emptyState;
 
-  const bestTotalRepayment = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.total_repayment_forecast, 'min');
-  const bestFirstPayment = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.first_monthly_payment, 'min');
-  const bestMortgageYears = getBestValue(comparableApprovals, (approval) => approval.summary_metrics.mortgage_years, 'min');
+  const bestTotalRepayment = getBestValue(
+    comparableApprovals,
+    (approval) => approval.summary_metrics.total_repayment_forecast,
+    'min',
+  );
+  const bestFirstPayment = getBestValue(
+    comparableApprovals,
+    (approval) => approval.summary_metrics.first_monthly_payment,
+    'min',
+  );
+  const bestMortgageYears = getBestValue(
+    comparableApprovals,
+    (approval) => approval.summary_metrics.mortgage_years,
+    'min',
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -61,14 +79,20 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
           <thead>
             <tr className="border-b border-border bg-muted/20 text-xs font-bold uppercase tracking-wider text-muted-foreground">
               <th className="min-w-[180px] p-4">פרמטר להשוואה</th>
-              {comparableApprovals.map((approval) => (
-                <th key={approval.id} className="min-w-[180px] border-r border-border/50 p-4 text-center">
-                  <div className="font-bold text-foreground">{approval.bank_name || 'הצעה'}</div>
-                  {approval.approval_title ? (
-                    <div className="mt-1 text-[11px] font-normal normal-case text-muted-foreground">{approval.approval_title}</div>
-                  ) : null}
-                </th>
-              ))}
+              {comparableApprovals.map((approval) => {
+                const bankName = approval.bank_name ? approval.bank_name : 'הצעה';
+
+                return (
+                  <th key={approval.id} className="min-w-[180px] border-r border-border/50 p-4 text-center">
+                    <div className="font-bold text-foreground">{bankName}</div>
+                    {approval.approval_title ? (
+                      <div className="mt-1 text-[11px] font-normal normal-case text-muted-foreground">
+                        {approval.approval_title}
+                      </div>
+                    ) : null}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
@@ -118,6 +142,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
               {comparableApprovals.map((approval) => {
                 const expiry = approval.offer_metadata.expiry_date;
                 const isExpired = expiry ? new Date(expiry) < new Date() : false;
+
                 return (
                   <ValueCell
                     key={approval.id}
@@ -126,7 +151,11 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
                       <div className={`inline-flex items-center gap-1 ${isExpired ? 'text-red-600 font-bold' : ''}`}>
                         <span>{formatDate(expiry)}</span>
                         {expiry ? (
-                          isExpired ? <AlertCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          isExpired ? (
+                            <AlertCircle className="h-3.5 w-3.5" />
+                          ) : (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          )
                         ) : null}
                       </div>
                     }
@@ -140,21 +169,24 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
                 <td className="bg-muted/5 p-4 font-medium">{`תמהיל מוצע ${index + 1}`}</td>
                 {comparableApprovals.map((approval) => {
                   const track = approval.tracks[index];
+
                   return (
                     <ValueCell
                       key={`${approval.id}-track-${index}`}
                       value="-"
-                      children={track ? (
-                        <div className="space-y-1 text-xs leading-5">
-                          <div className="font-semibold text-foreground">{track.name}</div>
-                          <div>{formatCurrency(track.amount)}</div>
-                          <div>{track.years ? `${track.years} שנים` : '-'}</div>
-                          <div>{formatPercent(track.interest_rate)}</div>
-                          <div>{formatCurrency(track.monthly_payment)}</div>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
+                      children={
+                        track ? (
+                          <div className="space-y-1 text-xs leading-5">
+                            <div className="font-semibold text-foreground">{track.name}</div>
+                            <div>{formatCurrency(track.amount)}</div>
+                            <div>{track.years ? `${track.years} שנים` : '-'}</div>
+                            <div>{formatPercent(track.interest_rate)}</div>
+                            <div>{formatCurrency(track.monthly_payment)}</div>
+                          </div>
+                        ) : (
+                          '-'
+                        )
+                      }
                     />
                   );
                 })}
