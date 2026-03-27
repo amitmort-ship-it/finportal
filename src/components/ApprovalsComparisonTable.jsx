@@ -94,9 +94,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
           <TableIcon className="h-5 w-5 text-primary" />
           <h2 className="font-bold text-foreground">{title}</h2>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {comparableApprovals.length} הצעות פעילות
-        </div>
+        <div className="text-xs text-muted-foreground">{comparableApprovals.length} הצעות פעילות</div>
       </div>
 
       <div className="overflow-x-auto" dir="rtl">
