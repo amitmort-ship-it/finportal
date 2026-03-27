@@ -163,8 +163,8 @@ export const buildComparableApproval = (approval) => {
     })();
 
   const totalRepayment =
-    cleanNumber(summaryMetrics.total_repayment_forecast) ??
     cleanNumber(notesMetadata.total_repayment_forecast) ??
+    cleanNumber(summaryMetrics.total_repayment_forecast) ??
     (() => {
       const estimated = tracks
         .map(estimateTrackRepayment)
@@ -186,9 +186,9 @@ export const buildComparableApproval = (approval) => {
       total_repayment_forecast: totalRepayment,
     },
     offer_metadata: {
-      expiry_date: parseDateValue(aiData.offer_metadata?.expiry_date || notesMetadata.expiry_date),
+      expiry_date: parseDateValue(notesMetadata.expiry_date || aiData.offer_metadata?.expiry_date),
       parsing_confidence: cleanNumber(aiData.offer_metadata?.parsing_confidence),
-      source: aiData.offer_metadata?.source || (tracks.length ? 'parsed_pdf' : 'manual'),
+      source: notesMetadata.expiry_date ? 'manual' : (aiData.offer_metadata?.source || (tracks.length ? 'parsed_pdf' : 'manual')),
     },
     tracks: tracks.map((track, index) => ({
       id: track.id || `track-${index + 1}`,
