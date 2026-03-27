@@ -11,9 +11,6 @@ const TRACK_LABELS = [
   'גרייס',
 ];
 
-const EXPIRY_MARKER_REGEX = /\[\[expiry:([^\]]+)\]\]/i;
-const TOTAL_REPAYMENT_MARKER_REGEX = /\[\[total_repayment:([^\]]+)\]\]/i;
-
 const SUMMARY_PATTERNS = {
   amount: [
     /(?:סכום|סה["']?כ(?:\s+)?הלוואה|loan amount|approved amount)[^\d]{0,24}([\d,]{5,})/i,
@@ -35,15 +32,9 @@ const SUMMARY_PATTERNS = {
   ],
 };
 
-const extractMetadataFromNotes = (notes = '') => {
-  const expiryMatch = notes.match(EXPIRY_MARKER_REGEX);
-  const totalRepaymentMatch = notes.match(TOTAL_REPAYMENT_MARKER_REGEX);
-
-  return {
-    expiry_date: expiryMatch?.[1]?.trim() || null,
-    total_repayment_forecast: totalRepaymentMatch?.[1]?.trim() || null,
-  };
-};
+const normalizeObject = (value) => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+);
 
 const cleanNumber = (value) => {
   if (value === null || value === undefined) return null;
@@ -60,35 +51,27 @@ const cleanNumber = (value) => {
 
 const parseDateValue = (value) => {
   if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
 
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString();
-  }
+  const normalizedValue = String(value).trim();
+  if (!normalizedValue) return null;
 
-  const str = String(value).trim();
-  if (!str) return null;
-
-  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const isoMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (isoMatch) {
     const [, year, month, day] = isoMatch;
-    const date = new Date(`${year}-${month}-${day}T00:00:00`);
-    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+    const isoDate = new Date(`${year}-${month}-${day}T00:00:00`);
+    return Number.isNaN(isoDate.getTime()) ? null : isoDate.toISOString();
   }
 
-  const directDate = new Date(str);
-  if (!Number.isNaN(directDate.getTime())) {
-    return directDate.toISOString();
-  }
+  const directDate = new Date(normalizedValue);
+  if (!Number.isNaN(directDate.getTime())) return directDate.toISOString();
 
-  const localMatch = str.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
-  if (!localMatch) return null;
+  const match = normalizedValue.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+  if (!match) return null;
 
-  const [, dayRaw, monthRaw, yearRaw] = localMatch;
+  const [, dayRaw, monthRaw, yearRaw] = match;
   const year = yearRaw.length === 2 ? `20${yearRaw}` : yearRaw;
-  const month = monthRaw.padStart(2, '0');
-  const day = dayRaw.padStart(2, '0');
-
-  const date = new Date(`${year}-${month}-${day}T00:00:00`);
+  const date = new Date(`${year}-${monthRaw.padStart(2, '0')}-${dayRaw.padStart(2, '0')}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
@@ -106,16 +89,11 @@ const estimateTrackRepayment = (track) => {
   const principal = cleanNumber(track.amount);
   const years = cleanNumber(track.years);
   const annualRate = cleanNumber(track.interest_rate);
-  const monthlyPayment = cleanNumber(track.monthly_payment);
 
   if (!principal || !years) return null;
 
   const totalMonths = Math.round(years * 12);
   if (!totalMonths) return null;
-
-  if (monthlyPayment) {
-    return monthlyPayment * totalMonths;
-  }
 
   if (!annualRate) {
     return principal;
@@ -124,8 +102,8 @@ const estimateTrackRepayment = (track) => {
   const monthlyRate = annualRate / 100 / 12;
   if (!monthlyRate) return principal;
 
-  const calculatedMonthlyPayment = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
-  return Number.isFinite(calculatedMonthlyPayment) ? calculatedMonthlyPayment * totalMonths : null;
+  const monthlyPayment = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
+  return Number.isFinite(monthlyPayment) ? monthlyPayment * totalMonths : null;
 };
 
 const extractTrackFromLine = (line, index) => {
@@ -154,10 +132,10 @@ const extractTrackFromLine = (line, index) => {
 };
 
 export const buildComparableApproval = (approval) => {
-  const aiData = approval?.ai_data || {};
-  const summaryMetrics = aiData.summary_metrics || {};
+  const aiData = normalizeObject(approval?.ai_data);
+  const summaryMetrics = normalizeObject(aiData.summary_metrics);
+  const offerMetadata = normalizeObject(aiData.offer_metadata);
   const tracks = Array.isArray(aiData.tracks) ? aiData.tracks : [];
-  const notesMetadata = extractMetadataFromNotes(approval.notes || '');
 
   const amount = cleanNumber(summaryMetrics.amount ?? approval.amount);
   const firstMonthlyPayment = cleanNumber(summaryMetrics.first_monthly_payment ?? approval.monthly_payment);
@@ -184,7 +162,6 @@ export const buildComparableApproval = (approval) => {
     })();
 
   const totalRepayment =
-    cleanNumber(notesMetadata.total_repayment_forecast) ??
     cleanNumber(summaryMetrics.total_repayment_forecast) ??
     (() => {
       const estimated = tracks
@@ -207,9 +184,9 @@ export const buildComparableApproval = (approval) => {
       total_repayment_forecast: totalRepayment,
     },
     offer_metadata: {
-      expiry_date: parseDateValue(notesMetadata.expiry_date || aiData.offer_metadata?.expiry_date),
-      parsing_confidence: cleanNumber(aiData.offer_metadata?.parsing_confidence),
-      source: notesMetadata.expiry_date ? 'manual' : (aiData.offer_metadata?.source || (tracks.length ? 'parsed_pdf' : 'manual')),
+      expiry_date: parseDateValue(approval.offer_expiry_date || offerMetadata.expiry_date),
+      parsing_confidence: cleanNumber(offerMetadata.parsing_confidence ?? offerMetadata.confidence),
+      source: approval.offer_expiry_date ? 'manual' : (offerMetadata.source || (tracks.length ? 'parsed_pdf' : 'manual')),
     },
     tracks: tracks.map((track, index) => ({
       id: track.id || `track-${index + 1}`,
@@ -225,7 +202,7 @@ export const buildComparableApproval = (approval) => {
 };
 
 export const buildComparisonRows = (approvals) => {
-  const comparable = approvals.map(buildComparableApproval).filter((approval) => (
+  const comparable = (Array.isArray(approvals) ? approvals : []).map(buildComparableApproval).filter((approval) => (
     approval.summary_metrics.amount ||
     approval.summary_metrics.first_monthly_payment ||
     approval.summary_metrics.total_repayment_forecast ||
