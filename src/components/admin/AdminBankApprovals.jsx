@@ -14,7 +14,7 @@ import { extractPdfText } from '@/lib/pdfTextExtractor';
 
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
 
-const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', file_url: '', file_name: '', ai_data: null };
+const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', ai_data: null };
 
 const mergeParsedIntoForm = (currentForm, parsedResult) => {
   if (!parsedResult?.ai_data) return currentForm;
@@ -122,6 +122,7 @@ export default function AdminBankApprovals({ selectedClient }) {
     if (data.amount) data.amount = Number(data.amount); else delete data.amount;
     if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment); else delete data.monthly_payment;
     if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
+    if (!data.offer_expiry_date) delete data.offer_expiry_date;
     await base44.entities.BankApproval.create(data);
     toast.success('אישור בנק נוסף');
     setForm({ ...emptyForm, client_email: selectedClient || '' });
@@ -144,6 +145,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       amount: a.amount || '',
       monthly_payment: a.monthly_payment || '',
       mortgage_years: a.mortgage_years || '',
+      offer_expiry_date: a.offer_expiry_date || '',
       file_url: a.file_url || '',
       file_name: a.file_name || '',
       ai_data: a.ai_data || null,
@@ -155,6 +157,7 @@ export default function AdminBankApprovals({ selectedClient }) {
     if (data.amount) data.amount = Number(data.amount); else delete data.amount;
     if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment); else delete data.monthly_payment;
     if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
+    if (!data.offer_expiry_date) delete data.offer_expiry_date;
     await base44.entities.BankApproval.update(editingId, data);
     toast.success('האישור עודכן');
     setEditingId(null);
@@ -213,6 +216,10 @@ export default function AdminBankApprovals({ selectedClient }) {
                     <Label>שנות משכנתא</Label>
                     <Input type="number" value={form.mortgage_years} onChange={e => setForm({ ...form, mortgage_years: e.target.value })} placeholder="30" className="mt-1" dir="ltr" />
                   </div>
+                </div>
+                <div>
+                  <Label>תוקף ההצעה</Label>
+                  <Input type="date" value={form.offer_expiry_date} onChange={e => setForm({ ...form, offer_expiry_date: e.target.value })} className="mt-1" dir="ltr" />
                 </div>
                 <div>
                   <Label>הערות</Label>
@@ -280,6 +287,10 @@ export default function AdminBankApprovals({ selectedClient }) {
                     </div>
                   </div>
                   <div>
+                    <Label className="text-xs">תוקף ההצעה</Label>
+                    <Input type="date" value={editForm.offer_expiry_date || ''} onChange={e => setEditForm(f => ({ ...f, offer_expiry_date: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
+                  </div>
+                  <div>
                     <Label className="text-xs">הערות</Label>
                     <Textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className="mt-1 text-sm" rows={2} />
                   </div>
@@ -316,6 +327,7 @@ export default function AdminBankApprovals({ selectedClient }) {
                       {a.amount && <span className="text-xs text-emerald-600">₪{a.amount.toLocaleString()}</span>}
                       {a.monthly_payment && <span className="text-xs text-blue-600">החזר חודשי: ₪{a.monthly_payment.toLocaleString()}</span>}
                       {a.mortgage_years && <span className="text-xs text-purple-600">{a.mortgage_years} שנים</span>}
+                      {a.offer_expiry_date && <span className="text-xs text-amber-700">תוקף: {new Date(a.offer_expiry_date).toLocaleDateString('he-IL')}</span>}
                     </div>
                     {a.file_url && (
                       <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
