@@ -1,37 +1,56 @@
 import { AlertCircle, CheckCircle2, Table as TableIcon } from 'lucide-react';
 import { buildComparisonRows } from '@/lib/approvalAnalysis';
 
-const formatCurrency = (value) => {
-  if (value === null || value === undefined) return '-';
+function formatCurrency(value) {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+
   return `₪${Number(value).toLocaleString('he-IL')}`;
-};
+}
 
-const formatPercent = (value) => {
-  if (value === null || value === undefined) return '-';
+function formatPercent(value) {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+
   return `${Number(value).toLocaleString('he-IL', { maximumFractionDigits: 2 })}%`;
-};
+}
 
-const formatDate = (value) => {
-  if (!value) return '-';
+function formatDate(value) {
+  if (!value) {
+    return '-';
+  }
+
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('he-IL');
-};
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
 
-const getBestValue = (approvals, selector, direction = 'min') => {
+  return date.toLocaleDateString('he-IL');
+}
+
+function getBestValue(approvals, selector, direction = 'min') {
   const values = approvals
     .map((approval) => ({ id: approval.id, value: selector(approval) }))
     .filter((item) => item.value !== null && item.value !== undefined);
 
-  if (!values.length) return null;
+  if (!values.length) {
+    return null;
+  }
 
-  const ranked = values.sort((a, b) => (
-    direction === 'min' ? a.value - b.value : b.value - a.value
-  ));
+  const ranked = values.sort((a, b) => {
+    if (direction === 'min') {
+      return a.value - b.value;
+    }
 
-  return ranked.length ? ranked[0].id : null;
-};
+    return b.value - a.value;
+  });
 
-const ValueCell = ({ value, isBest = false, children }) => {
+  return ranked[0] ? ranked[0].id : null;
+}
+
+function ValueCell({ value, isBest = false, children }) {
   const content = children !== undefined && children !== null ? children : value;
 
   return (
@@ -39,23 +58,29 @@ const ValueCell = ({ value, isBest = false, children }) => {
       {content}
     </td>
   );
-};
+}
 
 export default function ApprovalsComparisonTable({ approvals, title = 'השוואת הצעות', emptyState = null }) {
-  const { approvals: comparableApprovals, maxTrackCount } = buildComparisonRows(approvals);
+  const comparison = buildComparisonRows(approvals);
+  const comparableApprovals = comparison.approvals;
+  const maxTrackCount = comparison.maxTrackCount;
 
-  if (!comparableApprovals.length) return emptyState;
+  if (!comparableApprovals.length) {
+    return emptyState;
+  }
 
   const bestTotalRepayment = getBestValue(
     comparableApprovals,
     (approval) => approval.summary_metrics.total_repayment_forecast,
     'min',
   );
+
   const bestFirstPayment = getBestValue(
     comparableApprovals,
     (approval) => approval.summary_metrics.first_monthly_payment,
     'min',
   );
+
   const bestMortgageYears = getBestValue(
     comparableApprovals,
     (approval) => approval.summary_metrics.mortgage_years,
