@@ -126,6 +126,7 @@ export const buildComparableApproval = (approval) => {
     if (!years) return max;
     return Math.max(max, years);
   }, cleanNumber(approval.mortgage_years) || 0) || null;
+
   const weightedRate =
     cleanNumber(summaryMetrics.weighted_interest_rate) ??
     (() => {
