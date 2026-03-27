@@ -200,3 +200,59 @@ export const buildComparisonRows = (approvals) => {
 
 export const parseApprovalText = (text, fallback = {}) => {
   const normalizedText = text.replace(/\u0000/g, ' ').replace(/\s+/g, ' ').trim();
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const tracks = lines
+    .map(extractTrackFromLine)
+    .filter(Boolean);
+
+  const tracksAmount = tracks.reduce((sum, track) => sum + (cleanNumber(track.amount) || 0), 0);
+  const tracksMonthlyPayment = tracks.reduce((sum, track) => sum + (cleanNumber(track.monthly_payment) || 0), 0);
+
+  const summaryAmount = extractPatternValue(normalizedText, SUMMARY_PATTERNS.amount) ?? (tracksAmount || null);
+
+  const firstMonthlyPayment =
+    extractPatternValue(normalizedText, SUMMARY_PATTERNS.first_monthly_payment) ??
+    (tracksMonthlyPayment || null);
+
+  const weightedInterestRate =
+    extractPatternValue(normalizedText, SUMMARY_PATTERNS.weighted_interest_rate) ??
+    (() => {
+      const validTracks = tracks.filter((track) => cleanNumber(track.amount) && cleanNumber(track.interest_rate));
+      if (!validTracks.length) return null;
+      const totalAmount = validTracks.reduce((sum, track) => sum + cleanNumber(track.amount), 0);
+      const weighted = validTracks.reduce(
+        (sum, track) => sum + cleanNumber(track.amount) * cleanNumber(track.interest_rate),
+        0,
+      );
+      return totalAmount ? Number((weighted / totalAmount).toFixed(2)) : null;
+    })();
+
+  const parsed = {
+    summary_metrics: {
+      amount: summaryAmount,
+      first_monthly_payment: firstMonthlyPayment,
+      max_monthly_payment_forecast: extractPatternValue(normalizedText, SUMMARY_PATTERNS.max_monthly_payment_forecast),
+      weighted_interest_rate: weightedInterestRate,
+      total_repayment_forecast: extractPatternValue(normalizedText, SUMMARY_PATTERNS.total_repayment_forecast),
+    },
+    offer_metadata: {
+      expiry_date: extractPatternValue(normalizedText, SUMMARY_PATTERNS.expiry_date, parseDateValue),
+      parsing_confidence: tracks.length ? 0.72 : 0.4,
+      source: 'parsed_pdf',
+    },
+    tracks,
+    raw_text_excerpt: normalizedText.slice(0, 2000),
+    bank_name: fallback.bank_name || null,
+  };
+
+  return {
+    ai_data: parsed,
+    amount: summaryAmount,
+    monthly_payment: firstMonthlyPayment,
+    mortgage_years: tracks[0]?.years || null,
+  };
+};
