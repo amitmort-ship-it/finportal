@@ -60,14 +60,35 @@ const cleanNumber = (value) => {
 
 const parseDateValue = (value) => {
   if (!value) return null;
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
 
-  const match = String(value).match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
-  if (!match) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
 
-  const [, dayRaw, monthRaw, yearRaw] = match;
+  const str = String(value).trim();
+  if (!str) return null;
+
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    const date = new Date(`${year}-${month}-${day}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  const directDate = new Date(str);
+  if (!Number.isNaN(directDate.getTime())) {
+    return directDate.toISOString();
+  }
+
+  const localMatch = str.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+  if (!localMatch) return null;
+
+  const [, dayRaw, monthRaw, yearRaw] = localMatch;
   const year = yearRaw.length === 2 ? `20${yearRaw}` : yearRaw;
-  const date = new Date(`${year}-${monthRaw.padStart(2, '0')}-${dayRaw.padStart(2, '0')}T00:00:00`);
+  const month = monthRaw.padStart(2, '0');
+  const day = dayRaw.padStart(2, '0');
+
+  const date = new Date(`${year}-${month}-${day}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
