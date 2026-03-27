@@ -22,7 +22,7 @@ const emptyForm = {
   amount: '',
   monthly_payment: '',
   mortgage_years: '',
-  manual_expiry_date: '',
+  offer_expiry_date: '',
   file_url: '',
   file_name: '',
   ai_data: null,
@@ -33,19 +33,6 @@ const normalizeDateInput = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toISOString().slice(0, 10);
-};
-
-const injectManualExpiryIntoAiData = (aiData, expiryDate) => {
-  if (!expiryDate) return aiData || null;
-
-  return {
-    ...(aiData || {}),
-    offer_metadata: {
-      ...(aiData?.offer_metadata || {}),
-      expiry_date: expiryDate,
-      source: aiData?.offer_metadata?.source || 'manual',
-    },
-  };
 };
 
 const mergeParsedIntoForm = (currentForm, parsedResult) => {
@@ -59,7 +46,20 @@ const mergeParsedIntoForm = (currentForm, parsedResult) => {
     amount: currentForm.amount || parsedResult.amount || '',
     monthly_payment: currentForm.monthly_payment || parsedResult.monthly_payment || '',
     mortgage_years: currentForm.mortgage_years || parsedResult.mortgage_years || '',
-    manual_expiry_date: currentForm.manual_expiry_date || parsedExpiry || '',
+    offer_expiry_date: currentForm.offer_expiry_date || parsedExpiry || '',
+  };
+};
+
+const syncExpiryIntoAiData = (aiData, expiryDate) => {
+  if (!expiryDate) return aiData || null;
+
+  return {
+    ...(aiData || {}),
+    offer_metadata: {
+      ...(aiData?.offer_metadata || {}),
+      expiry_date: expiryDate,
+      source: aiData?.offer_metadata?.source || 'manual',
+    },
   };
 };
 
@@ -155,7 +155,7 @@ export default function AdminBankApprovals({ selectedClient }) {
     }
   };
 
-  const buildEntityPayload = (source) => {
+  const buildPayload = (source) => {
     const payload = {
       client_email: source.client_email,
       bank_name: source.bank_name,
@@ -163,7 +163,8 @@ export default function AdminBankApprovals({ selectedClient }) {
       notes: source.notes,
       file_url: source.file_url,
       file_name: source.file_name,
-      ai_data: injectManualExpiryIntoAiData(source.ai_data, source.manual_expiry_date),
+      offer_expiry_date: source.offer_expiry_date || null,
+      ai_data: syncExpiryIntoAiData(source.ai_data, source.offer_expiry_date),
     };
 
     if (source.amount) payload.amount = Number(source.amount);
@@ -176,8 +177,7 @@ export default function AdminBankApprovals({ selectedClient }) {
   const handleCreate = async () => {
     if (!form.client_email || !form.bank_name) return;
 
-    const data = buildEntityPayload(form);
-    await base44.entities.BankApproval.create(data);
+    await base44.entities.BankApproval.create(buildPayload(form));
     toast.success('אישור בנק נוסף');
     setForm({ ...emptyForm, client_email: selectedClient || '' });
     setOpen(false);
@@ -200,7 +200,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       amount: approval.amount || '',
       monthly_payment: approval.monthly_payment || '',
       mortgage_years: approval.mortgage_years || '',
-      manual_expiry_date: normalizeDateInput(approval.ai_data?.offer_metadata?.expiry_date),
+      offer_expiry_date: normalizeDateInput(approval.offer_expiry_date || approval.ai_data?.offer_metadata?.expiry_date),
       file_url: approval.file_url || '',
       file_name: approval.file_name || '',
       ai_data: approval.ai_data || null,
@@ -208,8 +208,7 @@ export default function AdminBankApprovals({ selectedClient }) {
   };
 
   const handleSaveEdit = async () => {
-    const data = buildEntityPayload(editForm);
-    await base44.entities.BankApproval.update(editingId, data);
+    await base44.entities.BankApproval.update(editingId, buildPayload(editForm));
     toast.success('האישור עודכן');
     setEditingId(null);
     load();
@@ -291,58 +290,26 @@ export default function AdminBankApprovals({ selectedClient }) {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label>סכום (₪)</Label>
-                    <Input
-                      type="number"
-                      value={form.amount}
-                      onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                      placeholder="0"
-                      className="mt-1"
-                      dir="ltr"
-                    />
+                    <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
                   </div>
                   <div>
                     <Label>החזר חודשי (₪)</Label>
-                    <Input
-                      type="number"
-                      value={form.monthly_payment}
-                      onChange={(e) => setForm({ ...form, monthly_payment: e.target.value })}
-                      placeholder="0"
-                      className="mt-1"
-                      dir="ltr"
-                    />
+                    <Input type="number" value={form.monthly_payment} onChange={(e) => setForm({ ...form, monthly_payment: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
                   </div>
                   <div>
                     <Label>שנות משכנתא</Label>
-                    <Input
-                      type="number"
-                      value={form.mortgage_years}
-                      onChange={(e) => setForm({ ...form, mortgage_years: e.target.value })}
-                      placeholder="30"
-                      className="mt-1"
-                      dir="ltr"
-                    />
+                    <Input type="number" value={form.mortgage_years} onChange={(e) => setForm({ ...form, mortgage_years: e.target.value })} placeholder="30" className="mt-1" dir="ltr" />
                   </div>
                 </div>
 
                 <div>
                   <Label>תוקף ההצעה</Label>
-                  <Input
-                    type="date"
-                    value={form.manual_expiry_date}
-                    onChange={(e) => setForm({ ...form, manual_expiry_date: e.target.value })}
-                    className="mt-1"
-                    dir="ltr"
-                  />
+                  <Input type="date" value={form.offer_expiry_date} onChange={(e) => setForm({ ...form, offer_expiry_date: e.target.value })} className="mt-1" dir="ltr" />
                 </div>
 
                 <div>
                   <Label>הערות</Label>
-                  <Textarea
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="הוסף פרטים..."
-                    className="mt-1"
-                  />
+                  <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="הוסף פרטים..." className="mt-1" />
                 </div>
 
                 <div>
@@ -364,10 +331,7 @@ export default function AdminBankApprovals({ selectedClient }) {
 
         {users.length > 0 && selectedClient && (
           <div className="bg-muted/30 rounded-lg px-3 py-2 text-sm text-muted-foreground mt-3">
-            מציג אישורים עבור:{' '}
-            <span className="font-medium text-foreground">
-              {users.find((u) => u.email === selectedClient)?.full_name || selectedClient}
-            </span>
+            מציג אישורים עבור: <span className="font-medium text-foreground">{users.find((u) => u.email === selectedClient)?.full_name || selectedClient}</span>
           </div>
         )}
       </div>
@@ -379,9 +343,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       )}
 
       {approvals.length === 0 ? (
-        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-          אין אישורי בנקים
-        </div>
+        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">אין אישורי בנקים</div>
       ) : (
         <div className="space-y-3">
           {approvals.map((a) => (
@@ -391,74 +353,37 @@ export default function AdminBankApprovals({ selectedClient }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs">שם הבנק</Label>
-                      <Input
-                        value={editForm.bank_name}
-                        onChange={(e) => setEditForm((f) => ({ ...f, bank_name: e.target.value }))}
-                        className="mt-1 h-8 text-sm"
-                      />
+                      <Input value={editForm.bank_name} onChange={(e) => setEditForm((f) => ({ ...f, bank_name: e.target.value }))} className="mt-1 h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs">כותרת</Label>
-                      <Input
-                        value={editForm.approval_title}
-                        onChange={(e) => setEditForm((f) => ({ ...f, approval_title: e.target.value }))}
-                        className="mt-1 h-8 text-sm"
-                      />
+                      <Input value={editForm.approval_title} onChange={(e) => setEditForm((f) => ({ ...f, approval_title: e.target.value }))} className="mt-1 h-8 text-sm" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <Label className="text-xs">סכום (₪)</Label>
-                      <Input
-                        type="number"
-                        value={editForm.amount}
-                        onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
-                        className="mt-1 h-8 text-sm"
-                        dir="ltr"
-                      />
+                      <Input type="number" value={editForm.amount} onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
                     </div>
                     <div>
                       <Label className="text-xs">החזר חודשי (₪)</Label>
-                      <Input
-                        type="number"
-                        value={editForm.monthly_payment}
-                        onChange={(e) => setEditForm((f) => ({ ...f, monthly_payment: e.target.value }))}
-                        className="mt-1 h-8 text-sm"
-                        dir="ltr"
-                      />
+                      <Input type="number" value={editForm.monthly_payment} onChange={(e) => setEditForm((f) => ({ ...f, monthly_payment: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
                     </div>
                     <div>
                       <Label className="text-xs">שנות משכנתא</Label>
-                      <Input
-                        type="number"
-                        value={editForm.mortgage_years}
-                        onChange={(e) => setEditForm((f) => ({ ...f, mortgage_years: e.target.value }))}
-                        className="mt-1 h-8 text-sm"
-                        dir="ltr"
-                      />
+                      <Input type="number" value={editForm.mortgage_years} onChange={(e) => setEditForm((f) => ({ ...f, mortgage_years: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
                     </div>
                   </div>
 
                   <div>
                     <Label className="text-xs">תוקף ההצעה</Label>
-                    <Input
-                      type="date"
-                      value={editForm.manual_expiry_date || ''}
-                      onChange={(e) => setEditForm((f) => ({ ...f, manual_expiry_date: e.target.value }))}
-                      className="mt-1 h-8 text-sm"
-                      dir="ltr"
-                    />
+                    <Input type="date" value={editForm.offer_expiry_date || ''} onChange={(e) => setEditForm((f) => ({ ...f, offer_expiry_date: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
                   </div>
 
                   <div>
                     <Label className="text-xs">הערות</Label>
-                    <Textarea
-                      value={editForm.notes}
-                      onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
-                      className="mt-1 text-sm"
-                      rows={2}
-                    />
+                    <Textarea value={editForm.notes} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))} className="mt-1 text-sm" rows={2} />
                   </div>
 
                   <div>
@@ -499,11 +424,7 @@ export default function AdminBankApprovals({ selectedClient }) {
                       {a.amount && <span className="text-xs text-emerald-600">₪{a.amount.toLocaleString()}</span>}
                       {a.monthly_payment && <span className="text-xs text-blue-600">החזר חודשי: ₪{a.monthly_payment.toLocaleString()}</span>}
                       {a.mortgage_years && <span className="text-xs text-purple-600">{a.mortgage_years} שנים</span>}
-                      {a.ai_data?.offer_metadata?.expiry_date && (
-                        <span className="text-xs text-amber-700">
-                          תוקף: {new Date(a.ai_data.offer_metadata.expiry_date).toLocaleDateString('he-IL')}
-                        </span>
-                      )}
+                      {a.offer_expiry_date && <span className="text-xs text-amber-700">תוקף: {new Date(a.offer_expiry_date).toLocaleDateString('he-IL')}</span>}
                     </div>
                     {a.file_url && (
                       <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
