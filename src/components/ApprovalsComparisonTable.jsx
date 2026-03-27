@@ -92,6 +92,16 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
             </tr>
 
             <tr className="border-b border-border/50 hover:bg-muted/5">
+              <td className="bg-muted/5 p-4 font-medium">שנות משכנתא</td>
+              {comparableApprovals.map((approval) => (
+                <ValueCell
+                  key={approval.id}
+                  value={approval.summary_metrics.mortgage_years ? `${approval.summary_metrics.mortgage_years} שנים` : '-'}
+                />
+              ))}
+            </tr>
+
+            <tr className="border-b border-border/50 hover:bg-muted/5">
               <td className="bg-muted/5 p-4 font-medium">ריבית משוקללת</td>
               {comparableApprovals.map((approval) => (
                 <ValueCell
