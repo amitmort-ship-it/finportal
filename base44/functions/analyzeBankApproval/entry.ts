@@ -112,7 +112,60 @@ function cleanNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function estimateTrackRepayment(track: any) {
+  const principal = cleanNumber(track?.amount);
+  const years = cleanNumber(track?.years);
+  const annualRate = cleanNumber(track?.interest_rate);
+  const statedMonthlyPayment = cleanNumber(track?.monthly_payment);
+
+  if (!principal || !years) return null;
+
+  const totalMonths = Math.round(years * 12);
+  if (!totalMonths) return null;
+
+  if (statedMonthlyPayment) {
+    return statedMonthlyPayment * totalMonths;
+  }
+
+  if (!annualRate) {
+    return principal;
+  }
+
+  const monthlyRate = annualRate / 100 / 12;
+  if (!monthlyRate) {
+    return principal;
+  }
+
+  const monthlyPayment = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
+  return Number.isFinite(monthlyPayment) ? monthlyPayment * totalMonths : null;
+}
+
 function normalizeAnalysis(raw: any) {
+  const normalizedTracks = Array.isArray(raw?.tracks)
+    ? raw.tracks.map((track: any) => ({
+        name: track?.name || null,
+        amount: cleanNumber(track?.amount),
+        years: cleanNumber(track?.years),
+        interest_rate: cleanNumber(track?.interest_rate),
+        monthly_payment: cleanNumber(track?.monthly_payment),
+        rate_type: track?.rate_type || null,
+        linkage_type: track?.linkage_type || null,
+        grace_months: cleanNumber(track?.grace_months),
+        balloon_type: track?.balloon_type || null,
+        notes: track?.notes || null,
+      }))
+    : [];
+
+  const extractedTotalRepayment = cleanNumber(raw?.summary_metrics?.total_repayment_forecast);
+  const calculatedTotalRepayment = normalizedTracks
+    .map(estimateTrackRepayment)
+    .filter((value) => value || value === 0)
+    .reduce((sum, value) => sum + value, 0);
+
+  const totalRepayment =
+    extractedTotalRepayment ??
+    (calculatedTotalRepayment ? Math.round(calculatedTotalRepayment) : null);
+
   return {
     bank_name: raw?.bank_name || null,
     approval_title: raw?.approval_title || 'אישור עקרוני',
@@ -122,29 +175,19 @@ function normalizeAnalysis(raw: any) {
       first_monthly_payment: cleanNumber(raw?.summary_metrics?.first_monthly_payment),
       max_monthly_payment_forecast: cleanNumber(raw?.summary_metrics?.max_monthly_payment_forecast),
       weighted_interest_rate: cleanNumber(raw?.summary_metrics?.weighted_interest_rate),
-      total_repayment_forecast: cleanNumber(raw?.summary_metrics?.total_repayment_forecast),
+      total_repayment_forecast: totalRepayment,
     },
     offer_metadata: {
       expiry_date: normalizeDate(raw?.offer_metadata?.expiry_date),
       offer_date: normalizeDate(raw?.offer_metadata?.offer_date),
       confidence: cleanNumber(raw?.offer_metadata?.confidence),
       document_language: raw?.offer_metadata?.document_language || 'he',
-      warnings: Array.isArray(raw?.offer_metadata?.warnings) ? raw.offer_metadata.warnings.filter(Boolean) : [],
+      warnings: [
+        ...(Array.isArray(raw?.offer_metadata?.warnings) ? raw.offer_metadata.warnings.filter(Boolean) : []),
+        ...(!extractedTotalRepayment && totalRepayment ? ['total_repayment_forecast was calculated from extracted tracks'] : []),
+      ],
     },
-    tracks: Array.isArray(raw?.tracks)
-      ? raw.tracks.map((track: any) => ({
-          name: track?.name || null,
-          amount: cleanNumber(track?.amount),
-          years: cleanNumber(track?.years),
-          interest_rate: cleanNumber(track?.interest_rate),
-          monthly_payment: cleanNumber(track?.monthly_payment),
-          rate_type: track?.rate_type || null,
-          linkage_type: track?.linkage_type || null,
-          grace_months: cleanNumber(track?.grace_months),
-          balloon_type: track?.balloon_type || null,
-          notes: track?.notes || null,
-        }))
-      : [],
+    tracks: normalizedTracks,
   };
 }
 
@@ -188,11 +231,22 @@ Deno.serve(async (req) => {
 - אם שדה לא מופיע במפורש, החזר null.
 - אל תנחש מספרים.
 - אם יש טבלה של תמהיל/מסלולים, חלץ כל מסלול בנפרד.
+- במסמכים רבים יש טבלת "תמהיל מוצע" או טבלת השוואה/סיכום.
+- יש לחפש במיוחד שורות מסכמות בתחתית התמהיל, גם אם הן מופיעות רק בשורה 9 או 10.
 - amount הוא סכום ההלוואה הכולל.
 - first_monthly_payment הוא ההחזר החודשי הראשון/התחלתי.
 - max_monthly_payment_forecast הוא ההחזר הגבוה ביותר אם מופיע תחזית/שינוי עתידי.
 - weighted_interest_rate הוא ריבית משוקללת רק אם מופיעה במפורש או אם כתובה כריבית כוללת של ההצעה.
-- total_repayment_forecast הוא סך ההחזר הכולל רק אם מופיע במפורש.
+- total_repayment_forecast הוא סך ההחזר הכולל/הצפוי/המשוער.
+- חפש עבור total_repayment_forecast גם וריאציות כמו:
+  "סך החזר",
+  "סך החזר צפוי",
+  "סך החזר משוער",
+  "סה\\"כ החזר",
+  "סה\\"כ לתשלום",
+  "החזר כולל",
+  "סכום החזר כולל".
+- אם הערך מופיע בטבלת התמהיל המוצע, יש להעדיף אותו גם אם הוא נמצא בשורה מסכמת ללא כותרת בולטת.
 - expiry_date הוא תוקף ההצעה אם מופיע.
 - offer_date הוא תאריך ההצעה אם מופיע.
 - confidence צריך להיות בין 0 ל-1 בהתאם לאיכות החילוץ.
@@ -207,6 +261,15 @@ Deno.serve(async (req) => {
 
 אם הבנק מזוהה במסמך, העדף אותו על פני הבנק שסופק חיצונית.
 אם לא זוהה במסמך, אפשר להשתמש בערך החיצוני: ${bank_name || 'לא סופק'}.
+
+בנוסף:
+- יש לחפש expiry_date גם ליד נוסחים כמו:
+  "בתוקף עד",
+  "תוקף האישור",
+  "האישור תקף עד",
+  "תוקף הצעה",
+  "תוקף האישור העקרוני".
+- אם יש כמה תאריכים במסמך, בחר את זה שקשור במפורש לתוקף ההצעה ולא לתאריך הפקה/חתימה.
 
 החזר את ה-JSON בלבד.
 `.trim();
