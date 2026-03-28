@@ -32,12 +32,26 @@ const SUMMARY_PATTERNS = {
   ],
 };
 
+const EXPIRY_MARKER_REGEX = /\[\[expiry:([^\]]+)\]\]/i;
+const TOTAL_REPAYMENT_MARKER_REGEX = /\[\[total_repayment:([^\]]+)\]\]/i;
+
 function normalizeObject(value) {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value;
   }
 
   return {};
+}
+
+function extractMetadataFromNotes(notes) {
+  const text = notes ? String(notes) : '';
+  const expiryMatch = text.match(EXPIRY_MARKER_REGEX);
+  const totalRepaymentMatch = text.match(TOTAL_REPAYMENT_MARKER_REGEX);
+
+  return {
+    expiry_date: expiryMatch ? expiryMatch[1].trim() : null,
+    total_repayment_forecast: totalRepaymentMatch ? totalRepaymentMatch[1].trim() : null,
+  };
 }
 
 function cleanNumber(value) {
@@ -179,6 +193,7 @@ export function buildComparableApproval(approval) {
   const summaryMetrics = normalizeObject(aiData.summary_metrics);
   const offerMetadata = normalizeObject(aiData.offer_metadata);
   const tracks = Array.isArray(aiData.tracks) ? aiData.tracks : [];
+  const notesMetadata = extractMetadataFromNotes(approval ? approval.notes : '');
 
   const amount = cleanNumber(
     summaryMetrics.amount !== undefined ? summaryMetrics.amount : approval.amount,
@@ -227,6 +242,10 @@ export function buildComparableApproval(approval) {
 
   let totalRepayment = cleanNumber(summaryMetrics.total_repayment_forecast);
   if (totalRepayment === null || totalRepayment === undefined) {
+    totalRepayment = cleanNumber(notesMetadata.total_repayment_forecast);
+  }
+
+  if (totalRepayment === null || totalRepayment === undefined) {
     const estimated = tracks
       .map(estimateTrackRepayment)
       .filter((value) => value !== null && value !== undefined)
@@ -235,9 +254,14 @@ export function buildComparableApproval(approval) {
     totalRepayment = estimated ? estimated : null;
   }
 
-  const expirySource = approval && approval.offer_expiry_date
-    ? approval.offer_expiry_date
-    : offerMetadata.expiry_date;
+  let expirySource = null;
+  if (approval && approval.offer_expiry_date) {
+    expirySource = approval.offer_expiry_date;
+  } else if (notesMetadata.expiry_date) {
+    expirySource = notesMetadata.expiry_date;
+  } else {
+    expirySource = offerMetadata.expiry_date;
+  }
 
   const parsingConfidenceSource = offerMetadata.parsing_confidence !== undefined
     ? offerMetadata.parsing_confidence
@@ -245,6 +269,8 @@ export function buildComparableApproval(approval) {
 
   let source = offerMetadata.source;
   if (approval && approval.offer_expiry_date) {
+    source = 'manual';
+  } else if (notesMetadata.expiry_date || notesMetadata.total_repayment_forecast) {
     source = 'manual';
   } else if (!source) {
     source = tracks.length ? 'parsed_pdf' : 'manual';
