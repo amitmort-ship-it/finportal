@@ -13,21 +13,22 @@ const CATEGORY_STYLES = {
 };
 
 export default function FilesPage() {
-  const { user } = useAuth();
+  const { caseEmail } = useAuth();
+
   const { data: requests = [], isLoading: loading } = useQuery({
-    queryKey: ['file-requests', user?.email],
+    queryKey: ['file-requests', caseEmail],
     queryFn: async () => {
-      if (!user?.email) return [];
-      return base44.entities.FileRequest.filter({ client_email: user.email }, '-created_date');
+      if (!caseEmail) return [];
+      return base44.entities.FileRequest.filter({ client_email: caseEmail }, '-created_date');
     },
-    enabled: !!user?.email,
+    enabled: !!caseEmail,
   });
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!caseEmail) return;
     const unsubscribe = base44.entities.FileRequest.subscribe(() => {});
     return unsubscribe;
-  }, [user?.email]);
+  }, [caseEmail]);
 
   if (loading) {
     return (
@@ -53,7 +54,7 @@ export default function FilesPage() {
   }
 
   const grouped = CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = requests.filter(r => r.category === cat);
+    acc[cat] = requests.filter((r) => r.category === cat);
     return acc;
   }, {});
 
@@ -64,12 +65,12 @@ export default function FilesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {CATEGORIES.map(cat => (
+        {CATEGORIES.map((cat) => (
           <div key={cat} className={`rounded-2xl border p-5 ${CATEGORY_STYLES[cat].bg}`}>
             <h2 className={`font-bold text-base mb-4 text-center ${CATEGORY_STYLES[cat].title}`}>{cat}</h2>
             {grouped[cat]?.length > 0 ? (
               <div className="space-y-3">
-                {grouped[cat].map(request => (
+                {grouped[cat].map((request) => (
                   <FileUploadCard key={request.id} request={request} />
                 ))}
               </div>
