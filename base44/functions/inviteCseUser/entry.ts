@@ -13,36 +13,59 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { email, full_name } = await req.json();
+    const { email, full_name, case_profile_id } = await req.json();
     if (!email) {
       return Response.json({ error: 'Missing email' }, { status: 400 });
     }
 
     const inviterEmail = normalizeEmail(currentUser.email);
     const inviteeEmail = normalizeEmail(email);
+    const inviteeName = typeof full_name === 'string' ? full_name.trim() : '';
+    const isAdmin = currentUser.role === 'admin';
+
+    if (inviterEmail === inviteeEmail) {
+      return Response.json({ error: 'Cannot invite the same email as the primary borrower' }, { status: 400 });
+    }
 
     let caseProfile = null;
-    const directProfiles = await base44.entities.ClientProfile.filter({ email: inviterEmail });
 
-    if (directProfiles.length > 0) {
-      caseProfile = directProfiles[0];
-    } else {
-      const memberships = await base44.entities.CaseUser.filter({
-        user_email: inviterEmail,
-        status: 'active',
-      });
-
-      if (!memberships.length) {
-        return Response.json({ error: 'No active case found for inviter' }, { status: 404 });
+    if (isAdmin) {
+      if (!case_profile_id) {
+        return Response.json({ error: 'Missing case profile id' }, { status: 400 });
       }
 
-      const caseProfiles = await base44.entities.ClientProfile.filter({ id: memberships[0].case_profile_id });
-
+      const caseProfiles = await base44.entities.ClientProfile.filter({ id: case_profile_id });
       if (!caseProfiles.length) {
         return Response.json({ error: 'Case profile not found' }, { status: 404 });
       }
 
       caseProfile = caseProfiles[0];
+    } else {
+      return Response.json({ error: 'Only admins can invite additional users' }, { status: 403 });
+    }
+
+    const existingCaseOwner = await base44.entities.ClientProfile.filter({ email: inviteeEmail });
+    if (existingCaseOwner.length > 0) {
+      return Response.json({ error: 'This email already owns a different case' }, { status: 409 });
+    }
+
+    const existingMemberships = await base44.entities.CaseUser.filter({
+      case_profile_id: caseProfile.id,
+      user_email: inviteeEmail,
+    });
+
+    if (existingMemberships.some((membership) => membership.status === 'active')) {
+      return Response.json({ error: 'This user already has access to the case' }, { status: 409 });
+    }
+
+    const pendingInvites = await base44.entities.CaseInvite.filter({
+      case_profile_id: caseProfile.id,
+      email: inviteeEmail,
+      status: 'pending',
+    });
+
+    if (pendingInvites.length > 0) {
+      return Response.json({ error: 'There is already a pending invitation for this email' }, { status: 409 });
     }
 
     const token = crypto.randomUUID();
@@ -52,7 +75,7 @@ Deno.serve(async (req) => {
     await base44.entities.CaseInvite.create({
       case_profile_id: caseProfile.id,
       email: inviteeEmail,
-      full_name: full_name || null,
+      full_name: inviteeName || null,
       invited_by_email: inviterEmail,
       token,
       status: 'pending',
@@ -65,7 +88,7 @@ Deno.serve(async (req) => {
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px;">
           <h2 style="margin: 0 0 16px; color: #0f172a;">הוזמנת להצטרף לתיק המשכנתא</h2>
           <p style="color: #334155; line-height: 1.7;">
-            ${currentUser.full_name || inviterEmail} הזמין אותך להצטרף לתיק המשכנתא המשותף.
+            נשלחה אליך הזמנה להצטרף לתיק המשכנתא המשותף של ${caseProfile.full_name || caseProfile.email}.
           </p>
           <p style="color: #334155; line-height: 1.7;">
             אם כבר יש לך משתמש, התחבר ואז לחץ על הקישור. אם אין לך עדיין משתמש, צור חשבון עם אותו אימייל:
