@@ -113,7 +113,7 @@ export default function AdminClients() {
       setOpen(false);
       await loadClients();
     } catch (error) {
-      toast.error(error.message || 'שגיאה ביצירת הפרופיל');
+      toast.error(error?.message || 'שגיאה ביצירת הפרופיל');
     } finally {
       setCreating(false);
     }
@@ -128,7 +128,7 @@ export default function AdminClients() {
       toast.success(`הזמנה נשלחה ל-${client.email}`);
       await loadClients();
     } catch (error) {
-      toast.error(error.message || 'שגיאה בשליחת הזמנה');
+      toast.error(error?.message || 'שגיאה בשליחת הזמנה');
     } finally {
       setInvitingId(null);
     }
@@ -148,16 +148,20 @@ export default function AdminClients() {
       setEditingId(null);
       await loadClients();
     } catch (error) {
-      toast.error(error.message || 'שגיאה בעדכון השם');
+      toast.error(error?.message || 'שגיאה בעדכון השם');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.ClientProfile.delete(id);
-    toast.success('תיק הלקוח נמחק');
-    await loadClients();
+    try {
+      await base44.entities.ClientProfile.delete(id);
+      toast.success('תיק הלקוח נמחק');
+      await loadClients();
+    } catch (error) {
+      toast.error(error?.message || 'שגיאה במחיקת הלקוח');
+    }
   };
 
   const openMemberInviteDialog = (client) => {
@@ -191,7 +195,11 @@ export default function AdminClients() {
       setMemberInviteEmail('');
       await loadClients();
     } catch (error) {
-      toast.error(error.message || 'שגיאה בשליחת ההזמנה');
+      toast.error(
+        error?.data?.error ||
+        error?.message ||
+        'שגיאה בשליחת ההזמנה'
+      );
     } finally {
       setSendingMemberInvite(false);
     }
