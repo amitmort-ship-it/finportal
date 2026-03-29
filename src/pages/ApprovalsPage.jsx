@@ -6,18 +6,21 @@ import { Building2 } from 'lucide-react';
 import ApprovalsComparisonTable from '../components/ApprovalsComparisonTable';
 
 export default function ApprovalsPage() {
-  const { user } = useAuth();
+  const { caseEmail } = useAuth();
+
   const { data: approvals = [], isLoading: loading } = useQuery({
-    queryKey: ['bank-approvals', user?.email],
-    queryFn: async () => base44.entities.BankApproval.filter({ client_email: user.email }, '-created_date'),
-    enabled: !!user?.email,
+    queryKey: ['bank-approvals', caseEmail],
+    queryFn: async () => base44.entities.BankApproval.filter({ client_email: caseEmail }, '-created_date'),
+    enabled: !!caseEmail,
   });
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const grouped = approvals.reduce((acc, approval) => {
     if (!acc[approval.bank_name]) acc[approval.bank_name] = [];
