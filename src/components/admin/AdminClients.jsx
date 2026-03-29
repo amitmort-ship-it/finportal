@@ -3,7 +3,17 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, Users, Trash2, Edit2, Send, CheckCircle2, Clock, Link2 } from 'lucide-react';
+import {
+  UserPlus,
+  Users,
+  Trash2,
+  Edit2,
+  Send,
+  CheckCircle2,
+  Clock,
+  Link2,
+  MailPlus,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -18,6 +28,11 @@ export default function AdminClients() {
   const [editingName, setEditingName] = useState('');
   const [saving, setSaving] = useState(false);
   const [invitingId, setInvitingId] = useState(null);
+  const [memberInviteOpen, setMemberInviteOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [memberInviteName, setMemberInviteName] = useState('');
+  const [memberInviteEmail, setMemberInviteEmail] = useState('');
+  const [sendingMemberInvite, setSendingMemberInvite] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -45,13 +60,19 @@ export default function AdminClients() {
       }
 
       const clientsWithMeta = profiles.map((profile) => {
-        const memberCount = memberships.filter((item) => item.case_profile_id === profile.id && item.status === 'active').length;
-        const pendingInviteCount = invites.filter((item) => item.case_profile_id === profile.id && item.status === 'pending').length;
+        const activeMembers = memberships.filter(
+          (item) => item.case_profile_id === profile.id && item.status === 'active',
+        );
+        const pendingInvites = invites.filter(
+          (item) => item.case_profile_id === profile.id && item.status === 'pending',
+        );
 
         return {
           ...profile,
-          member_count: 1 + memberCount,
-          pending_invite_count: pendingInviteCount,
+          members: activeMembers,
+          pending_invites: pendingInvites,
+          member_count: 1 + activeMembers.length,
+          pending_invite_count: pendingInvites.length,
         };
       });
 
@@ -139,6 +160,43 @@ export default function AdminClients() {
     await loadClients();
   };
 
+  const openMemberInviteDialog = (client) => {
+    setSelectedClient(client);
+    setMemberInviteName('');
+    setMemberInviteEmail('');
+    setMemberInviteOpen(true);
+  };
+
+  const handleInviteAdditionalUser = async () => {
+    const email = memberInviteEmail.trim().toLowerCase();
+    const fullName = memberInviteName.trim();
+
+    if (!selectedClient?.id || !email) {
+      return;
+    }
+
+    setSendingMemberInvite(true);
+
+    try {
+      await base44.functions.invoke('inviteCaseUser', {
+        case_profile_id: selectedClient.id,
+        email,
+        full_name: fullName || null,
+      });
+
+      toast.success('הזמנה למשתמש נוסף נשלחה בהצלחה');
+      setMemberInviteOpen(false);
+      setSelectedClient(null);
+      setMemberInviteName('');
+      setMemberInviteEmail('');
+      await loadClients();
+    } catch (error) {
+      toast.error(error.message || 'שגיאה בשליחת ההזמנה');
+    } finally {
+      setSendingMemberInvite(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -162,7 +220,7 @@ export default function AdminClients() {
 
             <p className="text-sm text-muted-foreground">
               כאן יוצרים את תיק המשכנתא של הלווה הראשי. משתמשים נוספים כמו בן/בת זוג או לווה 2
-              יצטרפו אחר כך לאותו תיק דרך הזמנה.
+              יצורפו אחר כך על ידך דרך הזמנה לתיק.
             </p>
 
             <div className="space-y-4 pt-2">
@@ -200,6 +258,51 @@ export default function AdminClients() {
         </Dialog>
       </div>
 
+      <Dialog open={memberInviteOpen} onOpenChange={setMemberInviteOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>הזמנת משתמש נוסף לתיק</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-muted-foreground">
+            ההזמנה תצורף לתיק של {selectedClient?.full_name || selectedClient?.email}. המשתמש החדש
+            יפתח התחברות משלו, אבל יראה את אותו תיק.
+          </p>
+
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label>שם מלא</Label>
+              <Input
+                value={memberInviteName}
+                onChange={(e) => setMemberInviteName(e.target.value)}
+                placeholder="למשל: בן/בת זוג"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label>כתובת אימייל</Label>
+              <Input
+                type="email"
+                value={memberInviteEmail}
+                onChange={(e) => setMemberInviteEmail(e.target.value)}
+                placeholder="borrower2@example.com"
+                dir="ltr"
+                className="mt-1"
+              />
+            </div>
+
+            <Button
+              onClick={handleInviteAdditionalUser}
+              disabled={sendingMemberInvite || !memberInviteEmail.trim()}
+              className="w-full"
+            >
+              {sendingMemberInvite ? 'שולח הזמנה...' : 'שלח הזמנה למשתמש נוסף'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -235,7 +338,7 @@ export default function AdminClients() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center gap-3 flex-wrap">
                       <div>
                         <div className="font-semibold">{client.full_name || 'ללא שם'}</div>
@@ -268,6 +371,26 @@ export default function AdminClients() {
                         </span>
                       ) : null}
                     </div>
+
+                    {client.members?.length > 0 ? (
+                      <div className="space-y-1">
+                        {client.members.map((member) => (
+                          <div key={member.id} className="text-xs text-muted-foreground">
+                            משתמש נוסף: {member.full_name || member.user_email} ({member.user_email})
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {client.pending_invites?.length > 0 ? (
+                      <div className="space-y-1">
+                        {client.pending_invites.map((invite) => (
+                          <div key={invite.id} className="text-xs text-amber-700">
+                            הזמנה פתוחה: {invite.full_name || invite.email} ({invite.email})
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -286,6 +409,16 @@ export default function AdminClients() {
                       {invitingId === client.id ? 'שולח...' : 'שלח הזמנה'}
                     </Button>
                   ) : null}
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => openMemberInviteDialog(client)}
+                  >
+                    <MailPlus className="w-3.5 h-3.5" />
+                    הזמן משתמש נוסף
+                  </Button>
 
                   <Button
                     size="icon"
