@@ -5,17 +5,25 @@ import CollateralCard from '../components/CollateralCard';
 import { Shield } from 'lucide-react';
 
 export default function CollateralsPage() {
-  const { user } = useAuth();
+  const { caseEmail } = useAuth();
   const [collaterals, setCollaterals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const data = await base44.entities.Collateral.filter({ client_email: user.email }, '-created_date');
+    if (!caseEmail) {
+      setCollaterals([]);
+      setLoading(false);
+      return;
+    }
+
+    const data = await base44.entities.Collateral.filter({ client_email: caseEmail }, '-created_date');
     setCollaterals(data);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [user.email]);
+  useEffect(() => {
+    load();
+  }, [caseEmail]);
 
   if (loading) {
     return (
@@ -40,7 +48,7 @@ export default function CollateralsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {collaterals.map(c => (
+          {collaterals.map((c) => (
             <CollateralCard key={c.id} collateral={c} onUpdate={load} />
           ))}
         </div>
