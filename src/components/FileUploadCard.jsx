@@ -3,6 +3,7 @@ import { Upload, CheckCircle2, Clock, XCircle, FileText, Loader2, Trash2 } from 
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const statusConfig = {
   pending: { label: 'ממתין להעלאה', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -12,23 +13,21 @@ const statusConfig = {
 };
 
 export default function FileUploadCard({ request: initialRequest, onUpdate }) {
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  // ניהול ה-request ב-State פנימי כדי לאפשר עדכון חי
   const [request, setRequest] = useState(initialRequest);
 
-  // סנכרון אם ה-Props משתנים
   useEffect(() => {
     setRequest(initialRequest);
   }, [initialRequest]);
 
-  // האזנה לשינויים במסד הנתונים בזמן אמת (Realtime)
   useEffect(() => {
     const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
-      // אם בוצע עדכון לרשומה הספציפית הזו
       if (event.type === 'update' && event.data.id === request.id) {
         setRequest(event.data);
       }
     });
+
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
@@ -43,30 +42,37 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     if (!file) return;
 
     setUploading(true);
+
     try {
-      // 1. העלאת הקובץ הפיזי
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newFiles = [...uploadedFiles, { file_url, file_name: file.name }];
-      
-      // 2. עדכון הרשומה ב-Database (ה-Subscription למעלה יתפוס את זה ויעדכן את ה-UI)
+
+      const newFiles = [
+        ...uploadedFiles,
+        {
+          file_url,
+          file_name: file.name,
+          uploaded_by_email: user?.email || null,
+          uploaded_by_name: user?.full_name || user?.email || null,
+          uploaded_at: new Date().toISOString(),
+        },
+      ];
+
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
         status: 'uploaded',
       });
 
-      // עדכון מקומי מהיר לגיבוי
       setRequest(updatedDoc);
 
-      // 3. פונקציית ענן ברקע
       base44.functions.invoke('uploadToDrive', {
         file_url,
         file_name: file.name,
         client_email: request.client_email,
         category: request.category,
-      }).catch(err => console.error('Drive upload failed:', err));
+      }).catch((err) => console.error('Drive upload failed:', err));
 
       toast.success('הקובץ הועלה בהצלחה');
-      onUpdate?.(); 
+      onUpdate?.();
     } catch (err) {
       console.error(err);
       toast.error('שגיאה בהעלאה');
@@ -78,12 +84,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const handleDeleteFile = async (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     const newStatus = newFiles.length === 0 ? 'pending' : request.status;
-    
+
     const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
-      status: newStatus
+      status: newStatus,
     });
-    
+
     setRequest(updatedDoc);
     toast.success('הקובץ הוסר');
     onUpdate?.();
@@ -109,12 +115,21 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a href={file.file_url} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate flex-1">
+              <a
+                href={file.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1"
+              >
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
-                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive h-6 w-6">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleDeleteFile(idx)}
+                  className="text-destructive h-6 w-6"
+                >
                   <Trash2 className="w-3 h-3" />
                 </Button>
               )}
