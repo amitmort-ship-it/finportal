@@ -13,43 +13,44 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Authentication required' }, { status: 401 });
     }
 
+    if (currentUser?.role !== 'admin') {
+      return Response.json({ error: 'Only admins can invite additional users' }, { status: 403 });
+    }
+
     const { email, full_name, case_profile_id } = await req.json();
+
     if (!email) {
       return Response.json({ error: 'Missing email' }, { status: 400 });
+    }
+
+    if (!case_profile_id) {
+      return Response.json({ error: 'Missing case profile id' }, { status: 400 });
     }
 
     const inviterEmail = normalizeEmail(currentUser.email);
     const inviteeEmail = normalizeEmail(email);
     const inviteeName = typeof full_name === 'string' ? full_name.trim() : '';
-    const isAdmin = currentUser.role === 'admin';
 
     if (inviterEmail === inviteeEmail) {
-      return Response.json({ error: 'Cannot invite the same email as the primary borrower' }, { status: 400 });
+      return Response.json(
+        { error: 'Cannot invite the same email as the primary borrower' },
+        { status: 400 },
+      );
     }
 
-    let caseProfile = null;
-
-    if (isAdmin) {
-      if (!case_profile_id) {
-        return Response.json({ error: 'Missing case profile id' }, { status: 400 });
-      }
-
-      const caseProfiles = await base44.entities.ClientProfile.filter({ id: case_profile_id });
-      if (!caseProfiles.length) {
-        return Response.json({ error: 'Case profile not found' }, { status: 404 });
-      }
-
-      caseProfile = caseProfiles[0];
-    } else {
-      return Response.json({ error: 'Only admins can invite additional users' }, { status: 403 });
+    const caseProfiles = await base44.asServiceRole.entities.ClientProfile.filter({ id: case_profile_id });
+    if (!caseProfiles.length) {
+      return Response.json({ error: 'Case profile not found' }, { status: 404 });
     }
 
-    const existingCaseOwner = await base44.entities.ClientProfile.filter({ email: inviteeEmail });
+    const caseProfile = caseProfiles[0];
+
+    const existingCaseOwner = await base44.asServiceRole.entities.ClientProfile.filter({ email: inviteeEmail });
     if (existingCaseOwner.length > 0) {
       return Response.json({ error: 'This email already owns a different case' }, { status: 409 });
     }
 
-    const existingMemberships = await base44.entities.CaseUser.filter({
+    const existingMemberships = await base44.asServiceRole.entities.CaseUser.filter({
       case_profile_id: caseProfile.id,
       user_email: inviteeEmail,
     });
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'This user already has access to the case' }, { status: 409 });
     }
 
-    const pendingInvites = await base44.entities.CaseInvite.filter({
+    const pendingInvites = await base44.asServiceRole.entities.CaseInvite.filter({
       case_profile_id: caseProfile.id,
       email: inviteeEmail,
       status: 'pending',
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
     const appBaseUrl = Deno.env.get('VITE_BASE44_APP_BASE_URL') || req.headers.get('origin') || '';
     const joinUrl = `${appBaseUrl.replace(/\/$/, '')}/join-case?token=${token}`;
 
-    await base44.entities.CaseInvite.create({
+    await base44.asServiceRole.entities.CaseInvite.create({
       case_profile_id: caseProfile.id,
       email: inviteeEmail,
       full_name: inviteeName || null,
@@ -103,6 +104,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, join_url: joinUrl });
   } catch (error) {
+    console.error('inviteCaseUser error:', error);
     return Response.json(
       { error: error?.message || 'Failed to send invite' },
       { status: 500 },
