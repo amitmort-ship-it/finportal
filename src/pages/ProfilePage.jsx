@@ -4,16 +4,21 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Trash2, MailPlus, Users } from 'lucide-react';
+import { User, Trash2, Users, Link2, Clock3, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const { user, activeCase, caseMembers, isPrimaryCaseUser, refreshCaseAccess } = useAuth();
+  const {
+    user,
+    activeCase,
+    caseMembers,
+    pendingCaseInvites,
+    isPrimaryCaseUser,
+    refreshCaseAccess,
+  } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteName, setInviteName] = useState('');
-  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     if (user?.full_name) {
@@ -28,9 +33,18 @@ export default function ProfilePage() {
     }
 
     setLoading(true);
+
     try {
-      await base44.auth.updateMe({ full_name: fullName });
+      await base44.auth.updateMe({ full_name: fullName.trim() });
+
+      if (isPrimaryCaseUser && activeCase?.id) {
+        await base44.entities.ClientProfile.update(activeCase.id, {
+          full_name: fullName.trim(),
+        });
+      }
+
       toast.success('השם עודכן בהצלחה');
+      await refreshCaseAccess();
     } catch (error) {
       toast.error(error.message || 'שגיאה בעדכון השם');
     } finally {
@@ -38,34 +52,11 @@ export default function ProfilePage() {
     }
   };
 
-  const handleInviteUser = async () => {
-    if (!inviteEmail.trim()) {
-      toast.error('Email is required');
-      return;
-    }
-
-    setInviting(true);
-    try {
-      await base44.functions.invoke('inviteCaseUser', {
-        email: inviteEmail.trim().toLowerCase(),
-        full_name: inviteName.trim() || null,
-      });
-      toast.success('Invitation sent');
-      setInviteEmail('');
-      setInviteName('');
-      await refreshCaseAccess();
-    } catch (error) {
-      toast.error(error.message || 'Failed to send invite');
-    } finally {
-      setInviting(false);
-    }
-  };
-
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">פרופיל</h1>
-        <p className="text-muted-foreground mt-1">ערוך את פרטי החשבון שלך</p>
+        <p className="text-muted-foreground mt-1">פרטי החשבון והרשאות הגישה לתיק</p>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-8 max-w-md">
@@ -98,7 +89,7 @@ export default function ProfilePage() {
 
           <Button
             onClick={handleSave}
-            disabled={loading || fullName === user?.full_name}
+            disabled={loading || fullName.trim() === (user?.full_name || '').trim()}
             className="w-full"
           >
             {loading ? 'שומר...' : 'שמור שינויים'}
@@ -110,79 +101,90 @@ export default function ProfilePage() {
         <div className="flex items-center gap-3 mb-6">
           <Users className="w-5 h-5 text-primary" />
           <div>
-            <h3 className="font-semibold text-foreground">Case access</h3>
+            <h3 className="font-semibold text-foreground">משתמשי התיק</h3>
             <p className="text-sm text-muted-foreground">
-              {activeCase?.full_name || activeCase?.email || 'No case linked yet'}
+              {activeCase?.full_name || activeCase?.email || 'אין תיק משויך כרגע'}
             </p>
           </div>
         </div>
 
         <div className="space-y-3 mb-6">
           {caseMembers.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Only the primary borrower is connected right now.</div>
+            <div className="text-sm text-muted-foreground">כרגע רק הלווה הראשי מחובר לתיק.</div>
           ) : (
             caseMembers.map((member) => (
-              <div key={member.id} className="rounded-lg border border-border p-3 flex items-center justify-between gap-3">
+              <div
+                key={member.id}
+                className="rounded-lg border border-border p-3 flex items-center justify-between gap-3"
+              >
                 <div>
                   <div className="font-medium text-foreground">{member.full_name}</div>
                   <div className="text-sm text-muted-foreground">{member.email}</div>
                 </div>
+
                 <div className="text-xs text-muted-foreground">
-                  {member.role === 'primary_borrower' ? 'Primary borrower' : 'Additional borrower'}
+                  {member.role === 'primary_borrower' ? 'לווה ראשי' : 'משתמש נוסף'}
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {isPrimaryCaseUser ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <MailPlus className="w-4 h-4 text-primary" />
-              <h4 className="font-medium text-foreground">Invite another user to this case</h4>
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium text-blue-900">ניהול הרשאות מתבצע על ידי האדמין בלבד</div>
+              <p className="text-sm text-blue-800 mt-1">
+                כדי להוסיף בן/בת זוג או משתמש נוסף לתיק, צריך לפנות לאדמין. רק האדמין יכול
+                לשלוח הזמנות ולהרחיב את הגישה לתוכנה.
+              </p>
             </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label>Full name</Label>
-                <Input
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  placeholder="Spouse / borrower 2"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="borrower2@example.com"
-                  dir="ltr"
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <Button onClick={handleInviteUser} disabled={inviting || !inviteEmail.trim()}>
-              {inviting ? 'Sending...' : 'Invite user'}
-            </Button>
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Only the primary borrower can invite additional users.
-          </p>
-        )}
+        </div>
       </div>
+
+      {pendingCaseInvites.length > 0 ? (
+        <div className="bg-card rounded-xl border border-border p-8 max-w-2xl mt-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Link2 className="w-5 h-5 text-primary" />
+            <div>
+              <h3 className="font-semibold text-foreground">הזמנות פתוחות</h3>
+              <p className="text-sm text-muted-foreground">משתמשים שהאדמין הזמין ועדיין לא הצטרפו</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {pendingCaseInvites.map((invite) => (
+              <div
+                key={invite.id}
+                className="rounded-lg border border-border p-3 flex items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="font-medium text-foreground">{invite.full_name}</div>
+                  <div className="text-sm text-muted-foreground">{invite.email}</div>
+                </div>
+
+                <div className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                  <Clock3 className="w-3 h-3" />
+                  ממתין להצטרפות
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="bg-card rounded-xl border border-destructive/30 p-6 max-w-md mt-6">
         <div className="flex items-center gap-3 mb-3">
           <Trash2 className="w-5 h-5 text-destructive" />
           <h3 className="font-semibold text-destructive">מחיקת חשבון</h3>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">פעולה זו אינה הפיכה. פנייה אל עמית לבקשה זו.</p>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          פעולה זו אינה הפיכה. פנייה אל עמית לבקשה זו.
+        </p>
+
         <Button
           variant="destructive"
           className="w-full"
