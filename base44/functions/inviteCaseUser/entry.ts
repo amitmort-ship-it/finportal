@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       status: 'pending',
     });
 
-    await base44.integrations.Core.SendEmail({
+    await base44.asServiceRole.integrations.Core.SendEmail({
       to: inviteeEmail,
       subject: 'Invitation to join your mortgage case',
       body: `
@@ -103,6 +103,9 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, join_url: joinUrl });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json(
+      { error: error?.message || 'Failed to send invite' },
+      { status: 500 },
+    );
   }
 });
