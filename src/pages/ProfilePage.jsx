@@ -4,13 +4,16 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Trash2 } from 'lucide-react';
+import { User, Trash2, MailPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, activeCase, caseMembers, isPrimaryCaseUser, refreshCaseAccess } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     if (user?.full_name) {
@@ -32,6 +35,29 @@ export default function ProfilePage() {
       toast.error(error.message || 'שגיאה בעדכון השם');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+
+    setInviting(true);
+    try {
+      await base44.functions.invoke('inviteCaseUser', {
+        email: inviteEmail.trim().toLowerCase(),
+        full_name: inviteName.trim() || null,
+      });
+      toast.success('Invitation sent');
+      setInviteEmail('');
+      setInviteName('');
+      await refreshCaseAccess();
+    } catch (error) {
+      toast.error(error.message || 'Failed to send invite');
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -78,6 +104,77 @@ export default function ProfilePage() {
             {loading ? 'שומר...' : 'שמור שינויים'}
           </Button>
         </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-8 max-w-2xl mt-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Users className="w-5 h-5 text-primary" />
+          <div>
+            <h3 className="font-semibold text-foreground">Case access</h3>
+            <p className="text-sm text-muted-foreground">
+              {activeCase?.full_name || activeCase?.email || 'No case linked yet'}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          {caseMembers.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Only the primary borrower is connected right now.</div>
+          ) : (
+            caseMembers.map((member) => (
+              <div key={member.id} className="rounded-lg border border-border p-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-medium text-foreground">{member.full_name}</div>
+                  <div className="text-sm text-muted-foreground">{member.email}</div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {member.role === 'primary_borrower' ? 'Primary borrower' : 'Additional borrower'}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {isPrimaryCaseUser ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <MailPlus className="w-4 h-4 text-primary" />
+              <h4 className="font-medium text-foreground">Invite another user to this case</h4>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Full name</Label>
+                <Input
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  placeholder="Spouse / borrower 2"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="borrower2@example.com"
+                  dir="ltr"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <Button onClick={handleInviteUser} disabled={inviting || !inviteEmail.trim()}>
+              {inviting ? 'Sending...' : 'Invite user'}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Only the primary borrower can invite additional users.
+          </p>
+        )}
       </div>
 
       <div className="bg-card rounded-xl border border-destructive/30 p-6 max-w-md mt-6">
