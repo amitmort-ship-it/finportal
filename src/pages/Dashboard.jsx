@@ -7,22 +7,32 @@ import ClientUpdates from '../components/ClientUpdates';
 import { Building2, Shield, Package, FileText } from 'lucide-react';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, caseEmail } = useAuth();
   const navigate = useNavigate();
   const [processStage, setProcessStage] = useState(null);
-  const [counts, setCounts] = useState({ approvals: 0, files: 0, collaterals: 0, packages: 0 });
+  const [counts, setCounts] = useState({
+    approvals: 0,
+    files: 0,
+    collaterals: 0,
+    packages: 0,
+  });
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!caseEmail) return;
+
     const load = async () => {
       const [stages, approvals, fileRequests, collaterals, packages] = await Promise.all([
-        base44.entities.ProcessStage.filter({ client_email: user.email }),
-        base44.entities.BankApproval.filter({ client_email: user.email }),
-        base44.entities.FileRequest.filter({ client_email: user.email }),
-        base44.entities.Collateral.filter({ client_email: user.email }),
-        base44.entities.SelectedPackage.filter({ client_email: user.email }),
+        base44.entities.ProcessStage.filter({ client_email: caseEmail }),
+        base44.entities.BankApproval.filter({ client_email: caseEmail }),
+        base44.entities.FileRequest.filter({ client_email: caseEmail }),
+        base44.entities.Collateral.filter({ client_email: caseEmail }),
+        base44.entities.SelectedPackage.filter({ client_email: caseEmail }),
       ]);
-      if (stages.length > 0) setProcessStage(stages[0]);
+
+      if (stages.length > 0) {
+        setProcessStage(stages[0]);
+      }
+
       setCounts({
         approvals: approvals.length,
         files: fileRequests.length,
@@ -30,8 +40,9 @@ export default function Dashboard() {
         packages: packages.length,
       });
     };
+
     load();
-  }, [user?.email]);
+  }, [caseEmail]);
 
   const summaryCards = [
     {
