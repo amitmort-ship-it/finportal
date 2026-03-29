@@ -4,18 +4,19 @@ import { base44 } from '@/api/base44Client';
 import FileUploadCard from '@/components/FileUploadCard';
 
 export default function ClientFiles() {
-  const { user } = useAuth();
+  const { caseEmail } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    if (!user?.email) {
+    if (!caseEmail) {
       setLoading(false);
       return;
     }
+
     try {
       const data = await base44.entities.FileRequest.list('-created_date');
-      const pending = data.filter(r => r.client_email === user.email);
+      const pending = data.filter((r) => r.client_email === caseEmail);
       setRequests(pending);
     } catch (error) {
       console.error('Error loading requests:', error);
@@ -26,15 +27,17 @@ export default function ClientFiles() {
 
   useEffect(() => {
     load();
-  }, [user?.email]);
+  }, [caseEmail]);
 
   useEffect(() => {
-    if (!user?.email) return;
-    const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
+    if (!caseEmail) return;
+
+    const unsubscribe = base44.entities.FileRequest.subscribe(() => {
       load();
     });
+
     return unsubscribe;
-  }, [user?.email]);
+  }, [caseEmail]);
 
   if (loading) {
     return (
@@ -57,10 +60,9 @@ export default function ClientFiles() {
   };
 
   const grouped = CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = requests.filter(r => r.category === cat);
+    acc[cat] = requests.filter((r) => r.category === cat);
     return acc;
   }, {});
-  const uncategorized = requests.filter(r => !r.category);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -72,12 +74,12 @@ export default function ClientFiles() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {CATEGORIES.map(cat => (
+          {CATEGORIES.map((cat) => (
             <div key={cat} className={`rounded-xl border p-5 ${CATEGORY_COLORS[cat]}`}>
               <h2 className={`font-bold text-base mb-4 ${CATEGORY_TITLE_COLORS[cat]}`}>{cat}</h2>
               {grouped[cat]?.length > 0 ? (
                 <div className="space-y-3">
-                  {grouped[cat].map(request => (
+                  {grouped[cat].map((request) => (
                     <FileUploadCard key={request.id} request={request} onUpdate={load} />
                   ))}
                 </div>
