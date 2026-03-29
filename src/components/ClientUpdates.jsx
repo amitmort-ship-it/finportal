@@ -6,48 +6,44 @@ import { he } from 'date-fns/locale';
 import { Bell } from 'lucide-react';
 
 export default function ClientUpdates() {
-  const { user } = useAuth();
+  const { user, caseEmail } = useAuth();
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!caseEmail) return;
 
     const load = async () => {
       try {
         const data = await base44.entities.ClientUpdate.filter(
-          { client_email: user.email },
+          { client_email: caseEmail },
           '-created_date'
         );
         setUpdates(data || []);
       } catch (err) {
-        console.error("Error loading updates:", err);
+        console.error('Error loading updates:', err);
       } finally {
         setLoading(false);
       }
     };
-    
+
     load();
 
-    // האזנה לעדכונים בזמן אמת
     const unsubscribe = base44.entities.ClientUpdate.subscribe((event) => {
-      if (event.type === 'create' && event.data.client_email === user.email) {
-        setUpdates(prev => [event.data, ...prev]);
+      if (event.type === 'create' && event.data.client_email === caseEmail) {
+        setUpdates((prev) => [event.data, ...prev]);
       }
     });
 
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [user?.email]);
+  }, [caseEmail]);
 
   if (!user) return null;
 
   return (
-    /* h-[500px] קובע גובה קבוע כדי למנוע מהריבוע להימתח. flex-col מאפשר גלילה פנימית */
     <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex flex-col h-[500px] w-full shadow-sm">
-      
-      {/* כותרת קבועה שלא נעלמת בגלילה */}
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-blue-600" />
@@ -55,7 +51,6 @@ export default function ClientUpdates() {
         </div>
       </div>
 
-      {/* אזור רשימת ההודעות עם גלילה מובנית */}
       <div className="overflow-y-auto space-y-3 flex-1 pr-2 
         [&::-webkit-scrollbar]:w-1.5 
         [&::-webkit-scrollbar-track]:bg-blue-100 
@@ -63,7 +58,6 @@ export default function ClientUpdates() {
         [&::-webkit-scrollbar-thumb]:bg-blue-400 
         [&::-webkit-scrollbar-thumb]:rounded-full 
         [&::-webkit-scrollbar-thumb]:hover:bg-blue-500">
-        
         {loading ? (
           <div className="flex justify-center py-10">
             <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
@@ -74,8 +68,8 @@ export default function ClientUpdates() {
           </div>
         ) : (
           updates.map((update) => (
-            <div 
-              key={update.id} 
+            <div
+              key={update.id}
               className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm hover:border-blue-300 transition-colors"
             >
               <p className="text-sm text-slate-700 leading-relaxed font-medium">
@@ -83,7 +77,9 @@ export default function ClientUpdates() {
               </p>
               <div className="flex justify-end mt-2">
                 <span className="text-[10px] text-slate-400 font-normal">
-                  {update.created_date ? format(new Date(update.created_date), 'HH:mm dd.MM.yyyy', { locale: he }) : ''}
+                  {update.created_date
+                    ? format(new Date(update.created_date), 'HH:mm dd.MM.yyyy', { locale: he })
+                    : ''}
                 </span>
               </div>
             </div>
