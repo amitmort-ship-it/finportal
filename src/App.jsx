@@ -1,6 +1,6 @@
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
+import { Toaster } from "@/components/ui/toaster";
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClientInstance } from '@/lib/query-client';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
@@ -16,6 +16,7 @@ const CollateralsPage = lazy(() => import('./pages/CollateralsPage'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ClientFiles = lazy(() => import('./pages/ClientFiles'));
+const JoinCasePage = lazy(() => import('./pages/JoinCasePage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/my-files" element={<ClientFiles />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/join-case" element={<JoinCasePage />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
@@ -68,7 +70,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
