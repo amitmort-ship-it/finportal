@@ -212,65 +212,49 @@ export default function AdminClients() {
     setSendingMemberInvite(true);
 
     try {
-      const existingCaseOwner = await base44.entities.ClientProfile.filter({ email });
-      if (existingCaseOwner.length > 0) {
-        toast.error('האימייל הזה כבר שייך לתיק אחר');
-        return;
-      }
-
-      let existingMemberships = [];
-      let pendingInvites = [];
-
-      try {
-        existingMemberships = await base44.entities.CaseUser.filter({
-          case_profile_id: selectedClient.id,
-          user_email: email,
-        });
-      } catch (error) {
-        existingMemberships = [];
-      }
-
-      if (existingMemberships.some((membership) => membership.status === 'active')) {
-        toast.error('למשתמש הזה כבר יש גישה לתיק');
-        return;
-      }
-
-      try {
-        pendingInvites = await base44.entities.CaseInvite.filter({
-          case_profile_id: selectedClient.id,
-          email,
-          status: 'pending',
-        });
-      } catch (error) {
-        pendingInvites = [];
-      }
-
-      if (pendingInvites.length > 0) {
-        const existingLink = buildJoinUrl(pendingInvites[0].token);
-        setLatestJoinLink(existingLink);
-        toast.error('כבר קיימת הזמנה פתוחה לאימייל הזה');
-        return;
-      }
-
-      const token = crypto.randomUUID();
-
-      await base44.entities.CaseInvite.create({
-        case_profile_id: selectedClient.id,
+      const result = await base44.functions.invoke('inviteCaseUser', {
         email,
-        full_name: fullName || null,
-        invited_by_email: 'admin',
-        token,
-        status: 'pending',
+        full_name: fullName || undefined,
+        case_profile_id: selectedClient.id,
       });
 
-      const joinUrl = buildJoinUrl(token);
+      const joinUrl = result?.join_url || buildJoinUrl(result?.invite_id || '');
       setLatestJoinLink(joinUrl);
 
-      toast.success('הזמנה נוצרה בהצלחה. אפשר להעתיק את הקישור ולשלוח ללקוח.');
+      if (result?.warning) {
+        toast.success('הזמנה נוצרה אך המייל לא נשלח. אפשר להעתיק את הקישור ולשלוח ידנית.');
+      } else {
+        toast.success('הזמנה נשלחה בהצלחה למייל. הקישור הועתק ללוח.');
+      }
+
       await copyToClipboard(joinUrl);
       await loadClients();
     } catch (error) {
-      toast.error(error?.message || 'שגיאה ביצירת ההזמנה');
+      const msg = error?.message || 'שגיאה ביצירת ההזמנה';
+
+      // Show friendly messages for known conflict cases
+      if (msg.includes('already owns a different case')) {
+        toast.error('האימייל הזה כבר שייך לתיק אחר');
+      } else if (msg.includes('already has access')) {
+        toast.error('למשתמש הזה כבר יש גישה לתיק');
+      } else if (msg.includes('pending invitation')) {
+        // Fetch existing token to show the link
+        try {
+          const existing = await base44.entities.CaseInvite.filter({
+            case_profile_id: selectedClient.id,
+            email,
+            status: 'pending',
+          });
+          if (existing.length > 0) {
+            const existingLink = buildJoinUrl(existing[0].token);
+            setLatestJoinLink(existingLink);
+            await copyToClipboard(existingLink);
+          }
+        } catch (_) {}
+        toast.error('כבר קיימת הזמנה פתוחה לאימייל הזה. הקישור הועתק.');
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setSendingMemberInvite(false);
     }
