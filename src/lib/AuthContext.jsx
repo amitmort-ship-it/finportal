@@ -7,6 +7,8 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [activeCase, setActiveCase] = useState(null);
+  const [caseMembers, setCaseMembers] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
@@ -26,7 +28,7 @@ export const AuthProvider = ({ children }) => {
         baseURL: `/api/apps/public`,
         headers: { 'X-App-Id': appParams.appId },
         token: appParams.token,
-        interceptResponses: true
+        interceptResponses: true,
       });
 
       try {
@@ -39,6 +41,7 @@ export const AuthProvider = ({ children }) => {
           setIsLoadingAuth(false);
           setIsAuthenticated(false);
         }
+
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
@@ -55,6 +58,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setAuthError({ type: 'unknown', message: appError.message || 'Failed to load app' });
         }
+
         setIsLoadingPublicSettings(false);
         setIsLoadingAuth(false);
       }
@@ -66,22 +70,101 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loadCaseAccess = async (currentUser) => {
+    if (!currentUser?.email) {
+      setActiveCase(null);
+      setCaseMembers([]);
+      return;
+    }
+
+    let resolvedCase = null;
+    let resolvedMembers = [];
+
+    try {
+      const directProfiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
+
+      if (directProfiles.length > 0) {
+        resolvedCase = directProfiles[0];
+      } else {
+        try {
+          const memberships = await base44.entities.CaseUser.filter({
+            user_email: currentUser.email,
+            status: 'active',
+          });
+
+          if (memberships.length > 0) {
+            const caseProfileId = memberships[0].case_profile_id;
+            const caseProfiles = await base44.entities.ClientProfile.filter({ id: caseProfileId });
+
+            if (caseProfiles.length > 0) {
+              resolvedCase = caseProfiles[0];
+            }
+          }
+        } catch (membershipError) {
+          // CaseUser may not exist yet
+        }
+      }
+
+      if (resolvedCase) {
+        try {
+          const memberships = await base44.entities.CaseUser.filter(
+            { case_profile_id: resolvedCase.id },
+            '-created_date',
+          );
+
+          resolvedMembers = memberships.map((membership) => ({
+            id: membership.id,
+            email: membership.user_email,
+            full_name: membership.full_name || membership.user_email,
+            role: membership.role || 'co_borrower',
+            status: membership.status || 'active',
+            joined_at: membership.joined_at || null,
+            invited_by_email: membership.invited_by_email || null,
+            is_primary: false,
+          }));
+        } catch (membershipLoadError) {
+          resolvedMembers = [];
+        }
+
+        const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
+
+        if (!hasPrimaryMember) {
+          resolvedMembers.unshift({
+            id: `primary-${resolvedCase.id}`,
+            email: resolvedCase.email,
+            full_name: resolvedCase.full_name || resolvedCase.email,
+            role: 'primary_borrower',
+            status: 'active',
+            joined_at: null,
+            invited_by_email: null,
+            is_primary: true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Case access resolution failed:', error);
+    }
+
+    setActiveCase(resolvedCase);
+    setCaseMembers(resolvedMembers);
+  };
+
   const checkUserAuth = async () => {
     try {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
 
-      // Override full_name with the name set by admin in ClientProfile
       try {
         const profiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
         if (profiles.length > 0 && profiles[0].full_name) {
           currentUser.full_name = profiles[0].full_name;
         }
       } catch (e) {
-        // silently ignore — fallback to auth name
+        // ignore
       }
 
       setUser(currentUser);
+      await loadCaseAccess(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
     } catch (error) {
@@ -97,7 +180,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = (shouldRedirect = true) => {
     setUser(null);
+    setActiveCase(null);
+    setCaseMembers([]);
     setIsAuthenticated(false);
+
     if (shouldRedirect) {
       base44.auth.logout(window.location.href);
     } else {
@@ -110,17 +196,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      logout,
-      navigateToLogin,
-      checkAppState
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        activeCase,
+        caseMembers,
+        caseEmail: activeCase?.email || user?.email || null,
+        isPrimaryCaseUser: activeCase?.email === user?.email,
+        isAuthenticated,
+        isLoadingAuth,
+        isLoadingPublicSettings,
+        authError,
+        appPublicSettings,
+        logout,
+        navigateToLogin,
+        checkAppState,
+        refreshCaseAccess: () => loadCaseAccess(user),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
