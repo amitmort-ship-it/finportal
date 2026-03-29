@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [activeCase, setActiveCase] = useState(null);
   const [caseMembers, setCaseMembers] = useState([]);
+  const [pendingCaseInvites, setPendingCaseInvites] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
@@ -74,6 +75,7 @@ export const AuthProvider = ({ children }) => {
     if (!currentUser?.email) {
       setActiveCase(null);
       setCaseMembers([]);
+      setPendingCaseInvites([]);
       return;
     }
 
@@ -147,6 +149,21 @@ export const AuthProvider = ({ children }) => {
 
     setActiveCase(resolvedCase);
     setCaseMembers(resolvedMembers);
+
+    // Load pending invites for the resolved case
+    if (resolvedCase) {
+      try {
+        const pending = await base44.entities.CaseInvite.filter({
+          case_profile_id: resolvedCase.id,
+          status: 'pending',
+        });
+        setPendingCaseInvites(pending);
+      } catch (e) {
+        setPendingCaseInvites([]);
+      }
+    } else {
+      setPendingCaseInvites([]);
+    }
   };
 
   const checkUserAuth = async () => {
@@ -201,6 +218,7 @@ export const AuthProvider = ({ children }) => {
         user,
         activeCase,
         caseMembers,
+        pendingCaseInvites,
         caseEmail: activeCase?.email || user?.email || null,
         isPrimaryCaseUser: activeCase?.email === user?.email,
         isAuthenticated,
