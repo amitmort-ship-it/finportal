@@ -10,12 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 
 function getInvokeError(result) {
-  return (
-    result?.error ||
-    result?.data?.error ||
-    result?.response?.data?.error ||
-    null
-  );
+  return result?.error || result?.data?.error || result?.response?.data?.error || null;
 }
 
 export default function AdminViewDocuments({ selectedClient }) {
@@ -37,8 +32,13 @@ export default function AdminViewDocuments({ selectedClient }) {
       base44.entities.FileRequest.filter({}, '-created_date'),
       base44.functions.invoke('getAllClients', {}),
     ]);
-    const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
+
+    const filtered = selectedClient
+      ? data.filter((r) => r.client_email === selectedClient)
+      : data;
+
     const withFiles = filtered.filter((r) => r.uploaded_files && r.uploaded_files.length > 0);
+
     setRequests(withFiles);
     setUsers(clientRes.data?.profiles || []);
     setLoading(false);
@@ -70,6 +70,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
     try {
       const resolvedTitle = form.title.trim() || getDefaultTitle();
+      const driveResults = [];
 
       const uploadedFiles = await Promise.all(
         form.files.map(async (file) => {
@@ -87,7 +88,9 @@ export default function AdminViewDocuments({ selectedClient }) {
             throw new Error(invokeError);
           }
 
-          console.log('uploadToDrive result', driveRes);
+          const drivePayload = driveRes?.data || driveRes;
+          driveResults.push(drivePayload);
+          console.log('uploadToDrive result', drivePayload);
 
           return {
             file_url,
@@ -109,7 +112,10 @@ export default function AdminViewDocuments({ selectedClient }) {
         uploaded_files: uploadedFiles,
       });
 
+      console.log('uploadToDrive summary', driveResults);
+
       toast.success('המסמכים הועלו למערכת בשם הלקוח');
+
       setForm({
         client_email: selectedClient || '',
         title: '',
@@ -117,18 +123,23 @@ export default function AdminViewDocuments({ selectedClient }) {
         category: '',
         files: [],
       });
+
       setOpen(false);
       await load();
     } catch (error) {
       console.error(error);
-      toast.error(error?.message || 'שגיאה בהעלאת המסמכים');
+      toast.error('שגיאה בהעלאת המסמך');
     } finally {
       setUploading(false);
     }
   };
 
   if (loading) {
-    return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -149,13 +160,16 @@ export default function AdminViewDocuments({ selectedClient }) {
 
           <DialogContent dir="rtl">
             <DialogHeader>
-              <DialogTitle>העלאת מסמכים אישיים בשם הלקוח</DialogTitle>
+              <DialogTitle>העלאת מסמך בשם הלקוח</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 pt-4">
               <div>
                 <Label>לקוח</Label>
-                <Select value={form.client_email} onValueChange={(value) => setForm((prev) => ({ ...prev, client_email: value }))}>
+                <Select
+                  value={form.client_email}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, client_email: value }))}
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="בחר לקוח" />
                   </SelectTrigger>
@@ -170,11 +184,11 @@ export default function AdminViewDocuments({ selectedClient }) {
               </div>
 
               <div>
-                <Label>שם המסמך / הקבוצה</Label>
+                <Label>שם המסמך</Label>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="אופציונלי, ואם תשאיר ריק המערכת תיצור שם אוטומטי"
+                  placeholder="למשל: תלושי שכר"
                   className="mt-1"
                 />
               </div>
@@ -194,7 +208,7 @@ export default function AdminViewDocuments({ selectedClient }) {
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="הערות פנימיות או תיאור למסמכים"
+                  placeholder="הערות פנימיות או תיאור למסמך"
                   className="mt-1"
                 />
               </div>
@@ -206,10 +220,19 @@ export default function AdminViewDocuments({ selectedClient }) {
                     type="file"
                     multiple
                     className="hidden"
-                    onChange={(e) => setForm((prev) => ({ ...prev, files: Array.from(e.target.files || []) }))}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        files: Array.from(e.target.files || []),
+                      }))
+                    }
                     disabled={uploading}
                   />
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-muted-foreground" />
+                  )}
                   <span className="text-sm text-muted-foreground">
                     {form.files.length === 0
                       ? 'בחר קובץ אחד או יותר'
@@ -228,8 +251,20 @@ export default function AdminViewDocuments({ selectedClient }) {
                 ) : null}
               </div>
 
-              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.files.length} className="w-full gap-2">
-                {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
+              <Button
+                type="button"
+                onClick={handleManualUpload}
+                disabled={uploading || !form.client_email || !form.files.length}
+                className="w-full gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    מעלה...
+                  </>
+                ) : (
+                  'העלה מסמכים'
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -249,13 +284,24 @@ export default function AdminViewDocuments({ selectedClient }) {
                   <div className="font-semibold">{req.title}</div>
                   <div className="text-sm text-muted-foreground">{req.client_email}</div>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                  req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
-                  req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                  req.status === 'rejected' ? 'bg-red-50 text-red-600' :
-                  'bg-amber-50 text-amber-600'
-                }`}>
-                  {req.status === 'pending' ? 'ממתין' : req.status === 'uploaded' ? 'הועלה' : req.status === 'approved' ? 'אושר' : 'נדחה'}
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                    req.status === 'uploaded'
+                      ? 'bg-blue-50 text-blue-600'
+                      : req.status === 'approved'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : req.status === 'rejected'
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-amber-50 text-amber-600'
+                  }`}
+                >
+                  {req.status === 'pending'
+                    ? 'ממתין'
+                    : req.status === 'uploaded'
+                      ? 'הועלה'
+                      : req.status === 'approved'
+                        ? 'אושר'
+                        : 'נדחה'}
                 </span>
               </div>
 
