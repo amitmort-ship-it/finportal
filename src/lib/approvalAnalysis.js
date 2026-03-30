@@ -54,6 +54,42 @@ function extractMetadataFromNotes(notes) {
   };
 }
 
+export function readApprovalMetadataFromNotes(notes) {
+  return extractMetadataFromNotes(notes);
+}
+
+export function stripApprovalMetadataMarkers(notes) {
+  if (typeof notes !== 'string') {
+    return '';
+  }
+
+  return notes
+    .replace(EXPIRY_MARKER_REGEX, '')
+    .replace(TOTAL_REPAYMENT_MARKER_REGEX, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+export function attachApprovalMetadataToNotes(notes, metadata) {
+  const cleanNotes = stripApprovalMetadataMarkers(notes || '');
+  const nextMetadata = metadata || {};
+  const markers = [];
+
+  if (nextMetadata.expiry_date) {
+    markers.push(`[[expiry:${String(nextMetadata.expiry_date).trim()}]]`);
+  }
+
+  if (nextMetadata.total_repayment_forecast !== null && nextMetadata.total_repayment_forecast !== undefined && nextMetadata.total_repayment_forecast !== '') {
+    markers.push(`[[total_repayment:${String(nextMetadata.total_repayment_forecast).trim()}]]`);
+  }
+
+  if (!markers.length) {
+    return cleanNotes;
+  }
+
+  return cleanNotes ? `${cleanNotes}\n\n${markers.join('\n')}` : markers.join('\n');
+}
+
 function cleanNumber(value) {
   if (value === null || value === undefined) {
     return null;
@@ -252,6 +288,13 @@ export function buildComparableApproval(approval) {
       .reduce((sum, value) => sum + value, 0);
 
     totalRepayment = estimated ? estimated : null;
+  }
+
+  if (totalRepayment === null || totalRepayment === undefined) {
+    const fallbackYears = maxMortgageYears;
+    if (firstMonthlyPayment && fallbackYears) {
+      totalRepayment = firstMonthlyPayment * fallbackYears * 12;
+    }
   }
 
   let expirySource = null;
