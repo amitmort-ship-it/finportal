@@ -8,50 +8,63 @@ Deno.serve(async (req) => {
     try {
       user = await base44.auth.me();
     } catch (error) {
-      return Response.json(
-        {
-          error: `auth.me failed: ${error?.message || 'unknown error'}`,
-          stage: 'auth_me',
+      return Response.json({
+        success: true,
+        insights: {
+          admin_summary: `auth.me failed: ${error?.message || 'unknown error'}`,
+          client_summary: 'בדיקת תקלה: auth.me נכשל.',
+          market_context: 'שלב התקלה: auth_me',
+          strengths: [],
+          watchouts: [],
+          financial_flags: [],
         },
-        { status: 500 },
-      );
+      });
     }
 
     if (user?.role !== 'admin') {
-      return Response.json(
-        {
-          error: 'Admin access required',
-          stage: 'auth_role',
-          role: user?.role || null,
-          email: user?.email || null,
+      return Response.json({
+        success: true,
+        insights: {
+          admin_summary: `Admin access required. Current role: ${user?.role || 'unknown'}`,
+          client_summary: 'בדיקת תקלה: המשתמש הנוכחי אינו אדמין.',
+          market_context: 'שלב התקלה: auth_role',
+          strengths: [],
+          watchouts: [],
+          financial_flags: [],
         },
-        { status: 403 },
-      );
+      });
     }
 
     let body = null;
     try {
       body = await req.json();
     } catch (error) {
-      return Response.json(
-        {
-          error: `req.json failed: ${error?.message || 'unknown error'}`,
-          stage: 'parse_body',
+      return Response.json({
+        success: true,
+        insights: {
+          admin_summary: `req.json failed: ${error?.message || 'unknown error'}`,
+          client_summary: 'בדיקת תקלה: גוף הבקשה לא נקרא.',
+          market_context: 'שלב התקלה: parse_body',
+          strengths: [],
+          watchouts: [],
+          financial_flags: [],
         },
-        { status: 500 },
-      );
+      });
     }
 
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      return Response.json(
-        {
-          error: 'Missing OPENAI_API_KEY',
-          stage: 'secret',
-          email: user?.email || null,
+      return Response.json({
+        success: true,
+        insights: {
+          admin_summary: 'Missing OPENAI_API_KEY',
+          client_summary: 'בדיקת תקלה: אין מפתח OpenAI.',
+          market_context: 'שלב התקלה: secret',
+          strengths: [],
+          watchouts: [],
+          financial_flags: [],
         },
-        { status: 500 },
-      );
+      });
     }
 
     try {
@@ -65,29 +78,45 @@ Deno.serve(async (req) => {
       const responseText = await openAiRes.text();
 
       return Response.json({
-        success: openAiRes.ok,
-        stage: 'openai_ping',
-        status: openAiRes.status,
-        user_email: user?.email || null,
-        request_keys: body ? Object.keys(body) : [],
-        response_preview: responseText.slice(0, 1000),
+        success: true,
+        insights: {
+          admin_summary: `OpenAI ping status: ${openAiRes.status}`,
+          client_summary: 'בדיקת תקלה: פונקציית התובנות הצליחה להגיע ל-OpenAI.',
+          market_context: `request keys: ${body ? Object.keys(body).join(', ') : 'none'}`,
+          strengths: [
+            `user: ${user?.email || 'unknown'}`,
+            `openai ok: ${String(openAiRes.ok)}`,
+          ],
+          watchouts: [
+            responseText.slice(0, 300) || 'empty response',
+          ],
+          financial_flags: [],
+        },
       });
     } catch (error) {
-      return Response.json(
-        {
-          error: `OpenAI fetch failed: ${error?.message || 'unknown error'}`,
-          stage: 'openai_fetch',
+      return Response.json({
+        success: true,
+        insights: {
+          admin_summary: `OpenAI fetch failed: ${error?.message || 'unknown error'}`,
+          client_summary: 'בדיקת תקלה: הקריאה ל-OpenAI נכשלה.',
+          market_context: 'שלב התקלה: openai_fetch',
+          strengths: [],
+          watchouts: [],
+          financial_flags: [],
         },
-        { status: 500 },
-      );
+      });
     }
   } catch (error) {
-    return Response.json(
-      {
-        error: error?.message || 'Unexpected generateApprovalInsights failure',
-        stage: 'unknown',
+    return Response.json({
+      success: true,
+      insights: {
+        admin_summary: `Unexpected failure: ${error?.message || 'unknown error'}`,
+        client_summary: 'בדיקת תקלה: שגיאה כללית בפונקציה.',
+        market_context: 'שלב התקלה: unknown',
+        strengths: [],
+        watchouts: [],
+        financial_flags: [],
       },
-      { status: 500 },
-    );
+    });
   }
 });
