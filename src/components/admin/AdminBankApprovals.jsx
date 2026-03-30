@@ -49,6 +49,21 @@ const getErrorMessage = (error, fallback) =>
 const stripInternalNotesMarkers = (notes) =>
   stripApprovalMetadataMarkers(stripSharedInsightsMarker(notes || ''));
 
+const buildNotesWithMetadata = (notes, values = {}, fallbackAiData = null) => {
+  const aiData = fallbackAiData && typeof fallbackAiData === 'object' ? fallbackAiData : {};
+  const summaryMetrics = aiData.summary_metrics && typeof aiData.summary_metrics === 'object'
+    ? aiData.summary_metrics
+    : {};
+  const offerMetadata = aiData.offer_metadata && typeof aiData.offer_metadata === 'object'
+    ? aiData.offer_metadata
+    : {};
+
+  return attachApprovalMetadataToNotes(notes, {
+    expiry_date: values.offer_expiry_date || offerMetadata.expiry_date || null,
+    total_repayment_forecast: values.total_repayment_forecast || summaryMetrics.total_repayment_forecast || null,
+  });
+};
+
 export default function AdminBankApprovals({ selectedClient }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -179,6 +194,7 @@ export default function AdminBankApprovals({ selectedClient }) {
     if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment); else delete data.monthly_payment;
     if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
     if (!data.offer_expiry_date) delete data.offer_expiry_date;
+    data.notes = buildNotesWithMetadata(data.notes, data, data.ai_data);
     await base44.entities.BankApproval.create(data);
     toast.success('אישור בנק נוסף');
     setForm({ ...emptyForm, client_email: selectedClient || '' });
@@ -212,12 +228,18 @@ export default function AdminBankApprovals({ selectedClient }) {
     const data = { ...editForm };
     const approval = approvals.find((item) => item.id === editingId);
     const sharedInsights = approval ? readSharedInsightsFromApproval(approval) : null;
-    const approvalMetadata = readApprovalMetadataFromNotes(approval?.notes || '');
     if (data.amount) data.amount = Number(data.amount); else delete data.amount;
     if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment); else delete data.monthly_payment;
     if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
     if (!data.offer_expiry_date) delete data.offer_expiry_date;
-    let nextNotes = attachApprovalMetadataToNotes(data.notes, approvalMetadata);
+    let nextNotes = buildNotesWithMetadata(
+      data.notes,
+      {
+        ...data,
+        total_repayment_forecast: readApprovalMetadataFromNotes(approval?.notes || '').total_repayment_forecast,
+      },
+      data.ai_data || approval?.ai_data,
+    );
     nextNotes = sharedInsights
       ? attachSharedInsightsToNotes(nextNotes, sharedInsights)
       : nextNotes;
