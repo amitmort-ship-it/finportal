@@ -350,7 +350,8 @@ export default function AdminBankApprovals({ selectedClient }) {
             <Textarea
               value={insightsForm.admin_summary}
               onChange={(e) => setInsightsForm((f) => ({ ...f, admin_summary: e.target.value }))}
-              className="mt-1"
+              className="mt-1 text-right"
+              dir="rtl"
               rows={5}
             />
           </div>
