@@ -2,6 +2,25 @@ function normalizeObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
+function normalizeBoolean(value) {
+  if (value === true || value === false) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+
+  if (typeof value === 'number') {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+
+  return !!value;
+}
+
 const SHARED_INSIGHTS_REGEX = /\[\[shared_insights:([^\]]+)\]\]/i;
 
 function decodeSharedInsightsFromNotes(notes) {
@@ -53,7 +72,13 @@ export function getSharedApprovalInsights(approvals) {
 
   const sharedInsights = normalizeObject(readSharedInsightsFromApproval(host));
 
-  return Object.keys(sharedInsights).length ? { hostApprovalId: host.id, ...sharedInsights } : null;
+  return Object.keys(sharedInsights).length
+    ? {
+        hostApprovalId: host.id,
+        ...sharedInsights,
+        publish_to_client: normalizeBoolean(sharedInsights.publish_to_client),
+      }
+    : null;
 }
 
 export function buildApprovalWithSharedInsights(approval, sharedInsights) {
