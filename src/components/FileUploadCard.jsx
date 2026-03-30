@@ -5,6 +5,15 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
+function getInvokeError(result) {
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
+}
+
 const statusConfig = {
   pending: { label: 'ממתין להעלאה', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
   uploaded: { label: 'הועלה', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -65,9 +74,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         category: request.category,
       });
 
-      if (driveRes?.data?.error) {
-        throw new Error(driveRes.data.error);
+      const invokeError = getInvokeError(driveRes);
+      if (invokeError) {
+        throw new Error(invokeError);
       }
+
+      console.log('uploadToDrive result', driveRes);
 
       toast.success('הקובץ הועלה בהצלחה');
       onUpdate?.();
