@@ -74,12 +74,29 @@ function extractText(responseJson: any) {
   return parts.join('\n').trim();
 }
 
-function safeParseInsights(rawText: string) {
-  const fencedMatch = rawText.match(/```json\s*([\s\S]*?)```/i) || rawText.match(/```\s*([\s\S]*?)```/i);
+function parseJsonCandidate(rawText: string) {
+  const fencedMatch =
+    rawText.match(/```json\s*([\s\S]*?)```/i) ||
+    rawText.match(/```\s*([\s\S]*?)```/i);
+
   const candidate = fencedMatch ? fencedMatch[1].trim() : rawText.trim();
+  return JSON.parse(candidate);
+}
 
-  const parsed = JSON.parse(candidate);
+function toInsightsFallback(rawText: string) {
+  const text = rawText.trim();
 
+  return {
+    admin_summary: text.slice(0, 1500) || 'לא התקבל טקסט מהמודל.',
+    client_summary: text.slice(0, 700) || 'לא התקבל טקסט מהמודל.',
+    market_context: 'התגובה חזרה בפורמט טקסט חופשי ולכן הומרה ידנית לשדות התובנות.',
+    strengths: [],
+    watchouts: [],
+    financial_flags: [],
+  };
+}
+
+function normalizeParsedInsights(parsed: any) {
   return {
     admin_summary: typeof parsed?.admin_summary === 'string' ? parsed.admin_summary : '',
     client_summary: typeof parsed?.client_summary === 'string' ? parsed.client_summary : '',
@@ -115,9 +132,9 @@ Deno.serve(async (req) => {
 אתה יועץ פיננסי מנוסה למשכנתאות בישראל.
 
 המטרה שלך:
-לנתח את האישורים העקרוניים ולהחזיר JSON בלבד.
+לנתח אישורים עקרוניים למשכנתא ולהחזיר תובנות עבור אדמין ולקוח.
 
-תחזיר בדיוק אובייקט JSON עם השדות הבאים:
+אם אפשר, תחזיר JSON בלבד במבנה:
 {
   "admin_summary": string,
   "client_summary": string,
@@ -127,16 +144,14 @@ Deno.serve(async (req) => {
   "financial_flags": string[]
 }
 
+אם אינך מחזיר JSON, כתוב טקסט ברור ומסודר בעברית.
+
 כללים:
-- אל תחזיר markdown.
-- אל תחזיר הסברים מחוץ ל-JSON.
+- אל תכתוב הבטחות או ייעוץ משפטי.
 - אל תמציא נתוני שוק שלא ניתנו.
-- אם אין מספיק מידע להשוואה לשוק, תכתוב זאת בזהירות ב-market_context.
+- אם אין מספיק מידע להשוואה לשוק, תכתוב זאת בזהירות.
 - admin_summary צריך להיות מקצועי יותר.
 - client_summary צריך להיות פשוט וברור.
-- strengths = יתרונות עיקריים.
-- watchouts = נקודות זהירות.
-- financial_flags = סיכונים פיננסיים מהותיים.
 
 שם הלקוח:
 ${client_name || 'לא סופק'}
@@ -191,22 +206,21 @@ ${JSON.stringify(normalizedApprovals, null, 2)}
     }
 
     let insights;
+    let warning = null;
+
     try {
-      insights = safeParseInsights(rawText);
-    } catch (parseError) {
-      return Response.json(
-        {
-          error: `Failed to parse OpenAI JSON: ${parseError?.message || 'unknown parse error'}`,
-          stage: 'json_parse',
-          raw_output: rawText,
-        },
-        { status: 500 },
-      );
+      const parsed = parseJsonCandidate(rawText);
+      insights = normalizeParsedInsights(parsed);
+    } catch {
+      insights = toInsightsFallback(rawText);
+      warning = 'OpenAI returned non-JSON output, converted to fallback insights';
     }
 
     return Response.json({
       success: true,
+      warning,
       insights,
+      raw_output: rawText,
     });
   } catch (error) {
     return Response.json(
