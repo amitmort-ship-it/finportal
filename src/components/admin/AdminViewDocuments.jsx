@@ -20,7 +20,7 @@ export default function AdminViewDocuments({ selectedClient }) {
     title: '',
     description: '',
     category: '',
-    file: null,
+    files: [],
   });
 
   const load = async () => {
@@ -46,15 +46,34 @@ export default function AdminViewDocuments({ selectedClient }) {
   }, [selectedClient]);
 
   const handleManualUpload = async () => {
-    if (!form.client_email || !form.title || !form.file) {
-      toast.error('בחר לקוח, הזן שם מסמך ובחר קובץ');
+    if (!form.client_email || !form.title || !form.files.length) {
+      toast.error('בחר לקוח, הזן שם מסמך ובחר לפחות קובץ אחד');
       return;
     }
 
     setUploading(true);
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: form.file });
+      const uploadedFiles = await Promise.all(
+        form.files.map(async (file) => {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+          base44.functions.invoke('uploadToDrive', {
+            file_url,
+            file_name: file.name,
+            client_email: form.client_email,
+            category: form.category || form.title,
+          }).catch((err) => console.error('Drive upload failed:', err));
+
+          return {
+            file_url,
+            file_name: file.name,
+            uploaded_by_email: 'admin',
+            uploaded_by_name: 'הועלה על ידי המשרד',
+            uploaded_at: new Date().toISOString(),
+          };
+        }),
+      );
 
       await base44.entities.FileRequest.create({
         client_email: form.client_email,
@@ -62,37 +81,22 @@ export default function AdminViewDocuments({ selectedClient }) {
         description: form.description,
         category: form.category || null,
         status: 'uploaded',
-        uploaded_files: [
-          {
-            file_url,
-            file_name: form.file.name,
-            uploaded_by_email: 'admin',
-            uploaded_by_name: 'הועלה על ידי המשרד',
-            uploaded_at: new Date().toISOString(),
-          },
-        ],
+        uploaded_files: uploadedFiles,
       });
 
-      base44.functions.invoke('uploadToDrive', {
-        file_url,
-        file_name: form.file.name,
-        client_email: form.client_email,
-        category: form.category || form.title,
-      }).catch((err) => console.error('Drive upload failed:', err));
-
-      toast.success('המסמך הועלה למערכת בשם הלקוח');
+      toast.success('המסמכים הועלו למערכת בשם הלקוח');
       setForm({
         client_email: selectedClient || '',
         title: '',
         description: '',
         category: '',
-        file: null,
+        files: [],
       });
       setOpen(false);
       await load();
     } catch (error) {
       console.error(error);
-      toast.error('שגיאה בהעלאת המסמך');
+      toast.error('שגיאה בהעלאת המסמכים');
     } finally {
       setUploading(false);
     }
@@ -120,7 +124,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
           <DialogContent dir="rtl">
             <DialogHeader>
-              <DialogTitle>העלאת מסמך אישי בשם הלקוח</DialogTitle>
+              <DialogTitle>העלאת מסמכים אישיים בשם הלקוח</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 pt-4">
@@ -141,11 +145,11 @@ export default function AdminViewDocuments({ selectedClient }) {
               </div>
 
               <div>
-                <Label>שם המסמך</Label>
+                <Label>שם המסמך / הקבוצה</Label>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="למשל: תלושי שכר"
+                  placeholder="למשל: תלושי שכר מרץ-מאי"
                   className="mt-1"
                 />
               </div>
@@ -165,27 +169,42 @@ export default function AdminViewDocuments({ selectedClient }) {
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="הערות פנימיות או תיאור למסמך"
+                  placeholder="הערות פנימיות או תיאור למסמכים"
                   className="mt-1"
                 />
               </div>
 
               <div>
-                <Label>קובץ</Label>
+                <Label>קבצים</Label>
                 <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
                   <input
                     type="file"
+                    multiple
                     className="hidden"
-                    onChange={(e) => setForm((prev) => ({ ...prev, file: e.target.files?.[0] || null }))}
+                    onChange={(e) => setForm((prev) => ({ ...prev, files: Array.from(e.target.files || []) }))}
                     disabled={uploading}
                   />
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
-                  <span className="text-sm text-muted-foreground">{form.file?.name || 'בחר קובץ'}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {form.files.length === 0
+                      ? 'בחר קובץ אחד או יותר'
+                      : form.files.length === 1
+                        ? form.files[0].name
+                        : `נבחרו ${form.files.length} קבצים`}
+                  </span>
                 </label>
+
+                {form.files.length > 1 ? (
+                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    {form.files.map((file) => (
+                      <div key={`${file.name}-${file.size}`}>{file.name}</div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
-              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.title || !form.file} className="w-full gap-2">
-                {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמך'}
+              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.title || !form.files.length} className="w-full gap-2">
+                {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
               </Button>
             </div>
           </DialogContent>
