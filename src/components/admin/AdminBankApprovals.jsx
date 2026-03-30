@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import ApprovalsComparisonTable from '@/components/ApprovalsComparisonTable';
 import { parseApprovalText } from '@/lib/approvalAnalysis';
 import { extractPdfText } from '@/lib/pdfTextExtractor';
-import { buildApprovalWithSharedInsights, getApprovalInsightsHost, getSharedApprovalInsights } from '@/lib/approvalInsights';
+import { buildApprovalWithSharedInsights, getSharedApprovalInsights } from '@/lib/approvalInsights';
 
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
 
@@ -207,8 +207,7 @@ export default function AdminBankApprovals({ selectedClient }) {
   };
 
   const handleSaveInsights = async () => {
-    const hostApproval = getApprovalInsightsHost(approvals);
-    if (!hostApproval) {
+    if (!approvals.length) {
       toast.error('אין אישור לשמירת התובנות');
       return;
     }
@@ -227,10 +226,14 @@ export default function AdminBankApprovals({ selectedClient }) {
         generated_at: new Date().toISOString(),
       };
 
-      const updatedApproval = buildApprovalWithSharedInsights(hostApproval, sharedInsights);
-      await base44.entities.BankApproval.update(hostApproval.id, {
-        ai_data: updatedApproval.ai_data,
-      });
+      await Promise.all(
+        approvals.map((approval) => {
+          const updatedApproval = buildApprovalWithSharedInsights(approval, sharedInsights);
+          return base44.entities.BankApproval.update(approval.id, {
+            ai_data: updatedApproval.ai_data,
+          });
+        }),
+      );
 
       toast.success(insightsForm.publish_to_client ? 'התובנות נשמרו ונחשפו ללקוח' : 'התובנות נשמרו בטיוטה פנימית');
       await load();
