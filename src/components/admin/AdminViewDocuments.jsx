@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { FileText, Download, Upload, Loader2, Plus } from 'lucide-react';
+import { FileText, Download, Upload, Loader2, Plus, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,11 +19,16 @@ function getInvokeError(result) {
   );
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
 export default function AdminViewDocuments({ selectedClient }) {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
@@ -35,16 +40,27 @@ export default function AdminViewDocuments({ selectedClient }) {
   });
 
   const load = async () => {
-    const [data, clientRes] = await Promise.all([
+    const normalizedSelectedClient = normalizeEmail(selectedClient);
+
+    const [data, clientRes, driveFolders] = await Promise.all([
       base44.entities.FileRequest.filter({}, '-created_date'),
       base44.functions.invoke('getAllClients', {}),
+      normalizedSelectedClient
+        ? base44.entities.DriveFolder.filter({ client_email: normalizedSelectedClient })
+        : Promise.resolve([]),
     ]);
 
     const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
     const withFiles = filtered.filter((r) => r.uploaded_files && r.uploaded_files.length > 0);
+    const driveFolder = Array.isArray(driveFolders) ? driveFolders[0] : null;
 
     setRequests(withFiles);
     setUsers(clientRes.data?.profiles || []);
+    setDriveFolderUrl(
+      driveFolder?.folder_id
+        ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}`
+        : '',
+    );
     setLoading(false);
   };
 
@@ -119,8 +135,12 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       console.log('uploadToDrive summary', driveResults);
 
-      toast.success('המסמכים הועלו למערכת בשם הלקוח');
+      const firstDriveResult = driveResults[0];
+      if (firstDriveResult?.folder_url) {
+        setDriveFolderUrl(firstDriveResult.folder_url);
+      }
 
+      toast.success('המסמכים הועלו למערכת בשם הלקוח');
       setForm({
         client_email: selectedClient || '',
         title: '',
@@ -128,19 +148,31 @@ export default function AdminViewDocuments({ selectedClient }) {
         category: '',
         files: [],
       });
-
       setOpen(false);
       await load();
     } catch (error) {
       console.error(error);
-      toast.error('שגיאה בהעלאת המסמך');
+      toast.error(error?.message || 'שגיאה בהעלאת המסמך');
     } finally {
       setUploading(false);
     }
   };
 
+  const handleOpenDriveFolder = () => {
+    if (!driveFolderUrl) {
+      toast.error('עדיין לא קיימת תיקיית דרייב ללקוח הזה');
+      return;
+    }
+
+    window.open(driveFolderUrl, '_blank', 'noopener,noreferrer');
+  };
+
   if (loading) {
-    return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -151,101 +183,119 @@ export default function AdminViewDocuments({ selectedClient }) {
           <h2 className="text-lg font-bold">המסמכים שהועלו</h2>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              העלה בשם הלקוח
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={handleOpenDriveFolder}
+            disabled={!selectedClient || !driveFolderUrl}
+          >
+            <FolderOpen className="w-4 h-4" />
+            פתח תיקיית דרייב
+          </Button>
 
-          <DialogContent dir="rtl">
-            <DialogHeader>
-              <DialogTitle>העלאת מסמך בשם הלקוח</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4 pt-4">
-              <div>
-                <Label>לקוח</Label>
-                <Select value={form.client_email} onValueChange={(value) => setForm((prev) => ({ ...prev, client_email: value }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="בחר לקוח" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((userItem) => (
-                      <SelectItem key={userItem.id} value={userItem.email}>
-                        {userItem.full_name || userItem.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>שם המסמך</Label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="למשל: תלושי שכר"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>קטגוריה</Label>
-                <Input
-                  value={form.category}
-                  onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                  placeholder="אופציונלי"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>הערות</Label>
-                <Textarea
-                  value={form.description}
-                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="הערות פנימיות או תיאור למסמך"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>קבצים</Label>
-                <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => setForm((prev) => ({ ...prev, files: Array.from(e.target.files || []) }))}
-                    disabled={uploading}
-                  />
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
-                  <span className="text-sm text-muted-foreground">
-                    {form.files.length === 0
-                      ? 'בחר קובץ אחד או יותר'
-                      : form.files.length === 1
-                        ? form.files[0].name
-                        : `נבחרו ${form.files.length} קבצים`}
-                  </span>
-                </label>
-
-                {form.files.length > 1 ? (
-                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                    {form.files.map((file) => (
-                      <div key={`${file.name}-${file.size}`}>{file.name}</div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-
-              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.files.length} className="w-full gap-2">
-                {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                העלה בשם הלקוח
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+
+            <DialogContent dir="rtl">
+              <DialogHeader>
+                <DialogTitle>העלאת מסמך בשם הלקוח</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4 pt-4">
+                <div>
+                  <Label>לקוח</Label>
+                  <Select value={form.client_email} onValueChange={(value) => setForm((prev) => ({ ...prev, client_email: value }))}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="בחר לקוח" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((userItem) => (
+                        <SelectItem key={userItem.id} value={userItem.email}>
+                          {userItem.full_name || userItem.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>שם המסמך</Label>
+                  <Input
+                    value={form.title}
+                    onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                    placeholder="למשל: תלושי שכר"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label>קטגוריה</Label>
+                  <Input
+                    value={form.category}
+                    onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                    placeholder="אופציונלי"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label>הערות</Label>
+                  <Textarea
+                    value={form.description}
+                    onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="הערות פנימיות או תיאור למסמך"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label>קבצים</Label>
+                  <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => setForm((prev) => ({ ...prev, files: Array.from(e.target.files || []) }))}
+                      disabled={uploading}
+                    />
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
+                    <span className="text-sm text-muted-foreground">
+                      {form.files.length === 0
+                        ? 'בחר קובץ אחד או יותר'
+                        : form.files.length === 1
+                          ? form.files[0].name
+                          : `נבחרו ${form.files.length} קבצים`}
+                    </span>
+                  </label>
+
+                  {form.files.length > 1 ? (
+                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      {form.files.map((file) => (
+                        <div key={`${file.name}-${file.size}`}>{file.name}</div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleManualUpload}
+                  disabled={uploading || !form.client_email || !form.files.length}
+                  className="w-full gap-2"
+                >
+                  {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {requests.length === 0 ? (
