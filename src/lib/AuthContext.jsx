@@ -4,6 +4,7 @@ import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
+const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }) => {
         baseURL: `/api/apps/public`,
         headers: { 'X-App-Id': appParams.appId },
         token: appParams.token,
-        interceptResponses: true,
+        interceptResponses: true
       });
 
       try {
@@ -42,7 +43,6 @@ export const AuthProvider = ({ children }) => {
           setIsLoadingAuth(false);
           setIsAuthenticated(false);
         }
-
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
@@ -59,7 +59,6 @@ export const AuthProvider = ({ children }) => {
         } else {
           setAuthError({ type: 'unknown', message: appError.message || 'Failed to load app' });
         }
-
         setIsLoadingPublicSettings(false);
         setIsLoadingAuth(false);
       }
@@ -71,49 +70,83 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkUserAuth = async () => {
+    try {
+      setIsLoadingAuth(true);
+      const currentUser = await base44.auth.me();
+
+      try {
+        const profiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
+        if (profiles.length > 0 && profiles[0].full_name) {
+          currentUser.full_name = profiles[0].full_name;
+        }
+      } catch (e) {
+      }
+
+      setUser(currentUser);
+      const resolvedCase = await loadCaseAccess(currentUser);
+
+      if (currentUser.role !== 'admin' && resolvedCase?.email) {
+        const sessionKey = `admin-login-notified:${String(resolvedCase.email).toLowerCase()}`;
+        if (!sessionStorage.getItem(sessionKey)) {
+          sessionStorage.setItem(sessionKey, '1');
+          try {
+            await base44.entities.ClientUpdate.create({
+              client_email: ADMIN_NOTIFICATIONS_EMAIL,
+              message: `[[admin_event:login]][[client:${resolvedCase.email}]] ${resolvedCase.full_name || currentUser.full_name || currentUser.email} נכנס/ה למערכת`,
+            });
+          } catch (notificationError) {
+            console.error('Failed to create admin login notification:', notificationError);
+          }
+        }
+      }
+
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+    } catch (error) {
+      console.error('User auth check failed:', error);
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+
+      if (error.status === 401 || error.status === 403) {
+        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+      }
+    }
+  };
+
   const loadCaseAccess = async (currentUser) => {
     if (!currentUser?.email) {
       setActiveCase(null);
       setCaseMembers([]);
       setPendingCaseInvites([]);
-      return;
+      return null;
     }
 
     let resolvedCase = null;
     let resolvedMembers = [];
+    let resolvedInvites = [];
 
     try {
       const directProfiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
-
       if (directProfiles.length > 0) {
         resolvedCase = directProfiles[0];
       } else {
         try {
-          const memberships = await base44.entities.CaseUser.filter({
-            user_email: currentUser.email,
-            status: 'active',
-          });
-
+          const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' });
           if (memberships.length > 0) {
             const caseProfileId = memberships[0].case_profile_id;
             const caseProfiles = await base44.entities.ClientProfile.filter({ id: caseProfileId });
-
             if (caseProfiles.length > 0) {
               resolvedCase = caseProfiles[0];
             }
           }
         } catch (membershipError) {
-          // CaseUser may not exist yet
         }
       }
 
       if (resolvedCase) {
         try {
-          const memberships = await base44.entities.CaseUser.filter(
-            { case_profile_id: resolvedCase.id },
-            '-created_date',
-          );
-
+          const memberships = await base44.entities.CaseUser.filter({ case_profile_id: resolvedCase.id }, '-created_date');
           resolvedMembers = memberships.map((membership) => ({
             id: membership.id,
             email: membership.user_email,
@@ -128,8 +161,23 @@ export const AuthProvider = ({ children }) => {
           resolvedMembers = [];
         }
 
-        const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
+        try {
+          const invites = await base44.entities.CaseInvite.filter({ case_profile_id: resolvedCase.id }, '-created_date');
+          resolvedInvites = invites
+            .filter((invite) => invite.status === 'pending')
+            .map((invite) => ({
+              id: invite.id,
+              email: invite.email,
+              full_name: invite.full_name || invite.email,
+              invited_by_email: invite.invited_by_email || null,
+              status: invite.status || 'pending',
+              created_date: invite.created_date || null,
+            }));
+        } catch (inviteLoadError) {
+          resolvedInvites = [];
+        }
 
+        const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
         if (!hasPrimaryMember) {
           resolvedMembers.unshift({
             id: `primary-${resolvedCase.id}`,
@@ -149,50 +197,8 @@ export const AuthProvider = ({ children }) => {
 
     setActiveCase(resolvedCase);
     setCaseMembers(resolvedMembers);
-
-    // Load pending invites for the resolved case
-    if (resolvedCase) {
-      try {
-        const pending = await base44.entities.CaseInvite.filter({
-          case_profile_id: resolvedCase.id,
-          status: 'pending',
-        });
-        setPendingCaseInvites(pending);
-      } catch (e) {
-        setPendingCaseInvites([]);
-      }
-    } else {
-      setPendingCaseInvites([]);
-    }
-  };
-
-  const checkUserAuth = async () => {
-    try {
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-
-      try {
-        const profiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
-        if (profiles.length > 0 && profiles[0].full_name) {
-          currentUser.full_name = profiles[0].full_name;
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      setUser(currentUser);
-      await loadCaseAccess(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
-      }
-    }
+    setPendingCaseInvites(resolvedInvites);
+    return resolvedCase;
   };
 
   const logout = (shouldRedirect = true) => {
@@ -200,7 +206,6 @@ export const AuthProvider = ({ children }) => {
     setActiveCase(null);
     setCaseMembers([]);
     setIsAuthenticated(false);
-
     if (shouldRedirect) {
       base44.auth.logout(window.location.href);
     } else {
@@ -213,25 +218,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        activeCase,
-        caseMembers,
-        pendingCaseInvites,
-        caseEmail: activeCase?.email || user?.email || null,
-        isPrimaryCaseUser: activeCase?.email === user?.email,
-        isAuthenticated,
-        isLoadingAuth,
-        isLoadingPublicSettings,
-        authError,
-        appPublicSettings,
-        logout,
-        navigateToLogin,
-        checkAppState,
-        refreshCaseAccess: () => loadCaseAccess(user),
-      }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      activeCase,
+      caseMembers,
+      pendingCaseInvites,
+      caseEmail: activeCase?.email || user?.email || null,
+      isPrimaryCaseUser: activeCase?.email === user?.email,
+      isAuthenticated,
+      isLoadingAuth,
+      isLoadingPublicSettings,
+      authError,
+      appPublicSettings,
+      logout,
+      navigateToLogin,
+      checkAppState,
+      refreshCaseAccess: () => loadCaseAccess(user),
+    }}>
       {children}
     </AuthContext.Provider>
   );
