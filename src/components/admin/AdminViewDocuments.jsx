@@ -9,6 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
+function getInvokeError(result) {
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
+}
+
 export default function AdminViewDocuments({ selectedClient }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,9 +82,12 @@ export default function AdminViewDocuments({ selectedClient }) {
             category: form.category || resolvedTitle,
           });
 
-          if (driveRes?.data?.error) {
-            throw new Error(driveRes.data.error);
+          const invokeError = getInvokeError(driveRes);
+          if (invokeError) {
+            throw new Error(invokeError);
           }
+
+          console.log('uploadToDrive result', driveRes);
 
           return {
             file_url,
