@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { file_url, file_name, client_email, category } = await req.json();
+    const { file_url, file_name, client_email } = await req.json();
     if (!file_url || !file_name || !client_email) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
     const authHeader = { Authorization: `Bearer ${accessToken}` };
 
-    // Get or create client folder record
+    // Get or create one root folder per client
     const folders = await base44.asServiceRole.entities.DriveFolder.filter({ client_email });
     let record = folders[0];
     let clientFolderId;
@@ -43,19 +43,8 @@ Deno.serve(async (req) => {
       clientFolderId = record.folder_id;
     }
 
-    // Get or create category sub-folder
-    let targetFolderId = clientFolderId;
-    if (category) {
-      const categoryFolders = record.category_folders || {};
-      if (categoryFolders[category]) {
-        targetFolderId = categoryFolders[category];
-      } else {
-        const catFolderId = await createDriveFolder(category, clientFolderId, authHeader);
-        categoryFolders[category] = catFolderId;
-        await base44.asServiceRole.entities.DriveFolder.update(record.id, { category_folders: categoryFolders });
-        targetFolderId = catFolderId;
-      }
-    }
+    // Always upload directly into the client's main folder
+    const targetFolderId = clientFolderId;
 
     // Download file from base44 storage
     const fileRes = await fetch(file_url);
