@@ -4,29 +4,30 @@ import { useAuth } from '@/lib/AuthContext';
 import BankApprovalCard from '../components/BankApprovalCard';
 import { Building2 } from 'lucide-react';
 import ApprovalsComparisonTable from '../components/ApprovalsComparisonTable';
+import ApprovalsInsightsPanel from '../components/ApprovalsInsightsPanel';
+import { getSharedApprovalInsights } from '@/lib/approvalInsights';
 
 export default function ApprovalsPage() {
   const { caseEmail } = useAuth();
-
   const { data: approvals = [], isLoading: loading } = useQuery({
     queryKey: ['bank-approvals', caseEmail],
     queryFn: async () => base44.entities.BankApproval.filter({ client_email: caseEmail }, '-created_date'),
     enabled: !!caseEmail,
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 
   const grouped = approvals.reduce((acc, approval) => {
     if (!acc[approval.bank_name]) acc[approval.bank_name] = [];
     acc[approval.bank_name].push(approval);
     return acc;
   }, {});
+  const sharedInsights = getSharedApprovalInsights(approvals);
+  const publishedInsights = sharedInsights?.publish_to_client ? sharedInsights : null;
 
   return (
     <div className="container mx-auto py-6">
@@ -44,6 +45,7 @@ export default function ApprovalsPage() {
       ) : (
         <div className="space-y-12">
           <ApprovalsComparisonTable approvals={approvals} title="השוואת הצעות ותמהיל מוצע" />
+          <ApprovalsInsightsPanel insights={publishedInsights} />
 
           <div className="space-y-8">
             {Object.keys(grouped).map((bankName) => (
