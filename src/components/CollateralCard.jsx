@@ -1,98 +1,160 @@
-import { useState } from 'react';
-import { Shield, Download, Upload, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, CheckCircle2, Clock, XCircle, FileText, Loader2, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
-export default function CollateralCard({ collateral, onUpdate }) {
+function getInvokeError(result) {
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
+}
+
+const statusConfig = {
+  pending: { label: 'ממתין להעלאה', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+  uploaded: { label: 'הועלה', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
+  approved: { label: 'אושר', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  rejected: { label: 'נדחה', icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
+};
+
+export default function FileUploadCard({ request: initialRequest, onUpdate }) {
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const isDone = collateral.status === 'signed' || collateral.status === 'completed';
+  const [request, setRequest] = useState(initialRequest);
 
-  const handleUpload = async (e) => {
+  useEffect(() => {
+    setRequest(initialRequest);
+  }, [initialRequest]);
+
+  useEffect(() => {
+    const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
+      if (event.type === 'update' && event.data.id === request.id) {
+        setRequest(event.data);
+      }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [request.id]);
+
+  const config = statusConfig[request.status] || statusConfig.pending;
+  const StatusIcon = config.icon;
+  const uploadedFiles = request.uploaded_files || [];
+
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Collateral.update(collateral.id, {
-      client_file_url: file_url,
-      client_file_name: file.name,
-      status: 'signed',
+
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      const newFiles = [...uploadedFiles, {
+        file_url,
+        file_name: file.name,
+        uploaded_by_email: user?.email || null,
+        uploaded_by_name: user?.full_name || user?.email || null,
+        uploaded_at: new Date().toISOString(),
+      }];
+
+      const updatedDoc = await base44.entities.FileRequest.update(request.id, {
+        uploaded_files: newFiles,
+        status: 'uploaded',
+      });
+
+      setRequest(updatedDoc);
+
+      const driveRes = await base44.functions.invoke('uploadToDrive', {
+        file_url,
+        file_name: file.name,
+        client_email: request.client_email,
+        category: request.category,
+        viewer_email: user?.email || null,
+      });
+
+      const invokeError = getInvokeError(driveRes);
+      if (invokeError) {
+        throw new Error(invokeError);
+      }
+
+      console.log('uploadToDrive result', driveRes?.data || driveRes);
+
+      toast.success('הקובץ הועלה בהצלחה');
+      onUpdate?.();
+    } catch (err) {
+      console.error(err);
+      toast.error('שגיאה בהעלאה');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (index) => {
+    const newFiles = uploadedFiles.filter((_, i) => i !== index);
+    const newStatus = newFiles.length === 0 ? 'pending' : request.status;
+
+    const updatedDoc = await base44.entities.FileRequest.update(request.id, {
+      uploaded_files: newFiles,
+      status: newStatus
     });
-    toast.success('המסמך החתום הועלה בהצלחה');
-    setUploading(false);
+
+    setRequest(updatedDoc);
+    toast.success('הקובץ הוסר');
     onUpdate?.();
   };
 
   return (
-    <div className={`bg-card rounded-xl border overflow-hidden ${isDone ? 'border-emerald-200' : 'border-amber-200'}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Shield className="w-4 h-4 text-primary" />
-          <span className="font-semibold text-foreground">{collateral.title}</span>
+    <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all duration-300">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h3 className="font-semibold text-foreground">{request.title}</h3>
+          {request.description && (
+            <p className="text-sm text-muted-foreground mt-1">{request.description}</p>
+          )}
         </div>
-        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${isDone ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
-          {isDone ? 'בוצע' : 'לא בוצע'}
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+          <StatusIcon className="w-3 h-3" />
+          {config.label}
         </span>
       </div>
 
-      {/* Split body */}
-      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-border">
-        {/* Right: document from office */}
-        <div className="p-4">
-          <div className="text-xs font-semibold text-primary mb-2">מסמך לחתימה</div>
-          {collateral.description && (
-            <p className="text-sm text-muted-foreground mb-2">{collateral.description}</p>
-          )}
-          {collateral.handler && (
-            <p className="text-xs text-muted-foreground mb-3">
-              מטפל: <span className="font-medium text-foreground">{collateral.handler}</span>
-            </p>
-          )}
-          {collateral.notes && (
-            <p className="text-xs text-muted-foreground mb-2">{collateral.notes}</p>
-          )}
-          {collateral.admin_file_url ? (
-            <a href={collateral.admin_file_url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-              <Download className="w-4 h-4" />
-              {collateral.admin_file_name || 'הורד מסמך לחתימה'}
-            </a>
-          ) : (
-            <span className="text-sm text-muted-foreground">לא הועלה מסמך עדיין</span>
-          )}
-        </div>
-
-        {/* Left: upload signed doc */}
-        <div className="p-4">
-          <div className="text-xs font-semibold text-emerald-600 mb-2">החזרת מסמך חתום</div>
-          {collateral.client_file_url ? (
-            <div className="space-y-2">
-              <a href={collateral.client_file_url} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-emerald-600 hover:underline">
-                <Download className="w-4 h-4" />
-                {collateral.client_file_name || 'המסמך החתום'}
+      {uploadedFiles.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {uploadedFiles.map((file, idx) => (
+            <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+              <FileText className="w-4 h-4 text-primary shrink-0" />
+              <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
+                {file.file_name}
               </a>
-              <label className="flex items-center gap-2 mt-2 text-xs text-muted-foreground cursor-pointer hover:text-primary">
-                <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-                <Upload className="w-3.5 h-3.5" />
-                החלף מסמך
-              </label>
-            </div>
-          ) : (
-            <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-5 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
-              <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-              {uploading ? (
-                <Loader2 className="w-7 h-7 text-emerald-500 animate-spin" />
-              ) : (
-                <Upload className="w-7 h-7 text-muted-foreground" />
+              {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
+                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive h-6 w-6">
+                  <Trash2 className="w-3 h-3" />
+                </Button>
               )}
-              <span className="text-sm text-muted-foreground text-center">
-                {uploading ? 'מעלה...' : 'לחץ להעלאת המסמך החתום'}
-              </span>
-            </label>
-          )}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+
+      {(request.status === 'pending' || request.status === 'rejected') && (
+        <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+          {uploading ? (
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          ) : (
+            <Upload className="w-8 h-8 text-muted-foreground" />
+          )}
+          <span className="text-sm text-muted-foreground">
+            {uploading ? 'מעלה...' : 'לחץ להעלאת קובץ'}
+          </span>
+        </label>
+      )}
     </div>
   );
 }
