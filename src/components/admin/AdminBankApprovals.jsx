@@ -443,7 +443,7 @@ export default function AdminBankApprovals({ selectedClient }) {
                   ) : null}
                 </div>
 
-                <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">
+                <Button type="button" onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">
                   הוסף אישור
                 </Button>
               </div>
@@ -558,7 +558,7 @@ export default function AdminBankApprovals({ selectedClient }) {
               {insightsForm.publish_to_client ? 'גלוי ללקוח' : 'טיוטה פנימית בלבד'}
             </Button>
 
-            <Button onClick={handleSaveInsights} disabled={savingInsights}>
+            <Button type="button" onClick={handleSaveInsights} disabled={savingInsights}>
               {savingInsights ? 'שומר...' : 'שמור תובנות'}
             </Button>
           </div>
@@ -679,11 +679,11 @@ export default function AdminBankApprovals({ selectedClient }) {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSaveEdit} className="gap-1">
+                    <Button type="button" size="sm" onClick={handleSaveEdit} className="gap-1">
                       <Check className="w-3 h-3" />
                       שמור
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="gap-1">
+                    <Button type="button" size="sm" variant="outline" onClick={() => setEditingId(null)} className="gap-1">
                       <X className="w-3 h-3" />
                       ביטול
                     </Button>
