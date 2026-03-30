@@ -45,25 +45,37 @@ export default function AdminViewDocuments({ selectedClient }) {
     }
   }, [selectedClient]);
 
+  const getDefaultTitle = () => {
+    if (!form.files.length) return '';
+    if (form.files.length === 1) return form.files[0].name;
+    return `מסמכים שהועלו ידנית (${form.files.length})`;
+  };
+
   const handleManualUpload = async () => {
-    if (!form.client_email || !form.title || !form.files.length) {
-      toast.error('בחר לקוח, הזן שם מסמך ובחר לפחות קובץ אחד');
+    if (!form.client_email || !form.files.length) {
+      toast.error('בחר לקוח ובחר לפחות קובץ אחד');
       return;
     }
 
     setUploading(true);
 
     try {
+      const resolvedTitle = form.title.trim() || getDefaultTitle();
+
       const uploadedFiles = await Promise.all(
         form.files.map(async (file) => {
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-          base44.functions.invoke('uploadToDrive', {
+          const driveRes = await base44.functions.invoke('uploadToDrive', {
             file_url,
             file_name: file.name,
             client_email: form.client_email,
-            category: form.category || form.title,
-          }).catch((err) => console.error('Drive upload failed:', err));
+            category: form.category || resolvedTitle,
+          });
+
+          if (driveRes?.data?.error) {
+            throw new Error(driveRes.data.error);
+          }
 
           return {
             file_url,
@@ -77,9 +89,10 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       await base44.entities.FileRequest.create({
         client_email: form.client_email,
-        title: form.title,
+        title: resolvedTitle,
         description: form.description,
         category: form.category || null,
+        source: 'admin_upload',
         status: 'uploaded',
         uploaded_files: uploadedFiles,
       });
@@ -96,7 +109,7 @@ export default function AdminViewDocuments({ selectedClient }) {
       await load();
     } catch (error) {
       console.error(error);
-      toast.error('שגיאה בהעלאת המסמכים');
+      toast.error(error?.message || 'שגיאה בהעלאת המסמכים');
     } finally {
       setUploading(false);
     }
@@ -149,7 +162,7 @@ export default function AdminViewDocuments({ selectedClient }) {
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="למשל: תלושי שכר מרץ-מאי"
+                  placeholder="אופציונלי, ואם תשאיר ריק המערכת תיצור שם אוטומטי"
                   className="mt-1"
                 />
               </div>
@@ -203,7 +216,7 @@ export default function AdminViewDocuments({ selectedClient }) {
                 ) : null}
               </div>
 
-              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.title || !form.files.length} className="w-full gap-2">
+              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.files.length} className="w-full gap-2">
                 {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
               </Button>
             </div>
