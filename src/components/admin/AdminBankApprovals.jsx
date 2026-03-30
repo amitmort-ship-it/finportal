@@ -11,61 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import ApprovalsComparisonTable from '@/components/ApprovalsComparisonTable';
 import { parseApprovalText } from '@/lib/approvalAnalysis';
 import { extractPdfText } from '@/lib/pdfTextExtractor';
+import { buildApprovalWithSharedInsights, getApprovalInsightsHost, getSharedApprovalInsights } from '@/lib/approvalInsights';
 
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
 
-const EXPIRY_MARKER_REGEX = /\[\[expiry:([^\]]+)\]\]/i;
-const TOTAL_REPAYMENT_MARKER_REGEX = /\[\[total_repayment:([^\]]+)\]\]/i;
-
-const stripMetadataMarkers = (notes = '') =>
-  notes
-    .replace(EXPIRY_MARKER_REGEX, '')
-    .replace(TOTAL_REPAYMENT_MARKER_REGEX, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-const extractMetadataFromNotes = (notes = '') => {
-  const expiryMatch = notes.match(EXPIRY_MARKER_REGEX);
-  const totalRepaymentMatch = notes.match(TOTAL_REPAYMENT_MARKER_REGEX);
-
-  return {
-    manual_expiry_date: expiryMatch?.[1]?.trim() || '',
-    manual_total_repayment: totalRepaymentMatch?.[1]?.trim() || '',
-    clean_notes: stripMetadataMarkers(notes),
-  };
-};
-
-const buildNotesWithMetadata = ({ notes, manual_expiry_date, manual_total_repayment }) => {
-  const cleanNotes = stripMetadataMarkers(notes);
-  const metadataLines = [];
-
-  if (manual_expiry_date) metadataLines.push(`[[expiry:${manual_expiry_date}]]`);
-  if (manual_total_repayment) metadataLines.push(`[[total_repayment:${manual_total_repayment}]]`);
-
-  return [cleanNotes, ...metadataLines].filter(Boolean).join('\n');
-};
-
-const emptyForm = {
-  client_email: '',
-  bank_name: '',
-  approval_title: '',
-  notes: '',
-  amount: '',
-  monthly_payment: '',
-  mortgage_years: '',
-  manual_expiry_date: '',
-  manual_total_repayment: '',
-  file_url: '',
-  file_name: '',
-  ai_data: null,
-};
+const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', ai_data: null };
 
 const mergeParsedIntoForm = (currentForm, parsedResult) => {
   if (!parsedResult?.ai_data) return currentForm;
-
-  const parsedExpiryDate = parsedResult.ai_data?.offer_metadata?.expiry_date
-    ? new Date(parsedResult.ai_data.offer_metadata.expiry_date).toISOString().slice(0, 10)
-    : '';
 
   return {
     ...currentForm,
@@ -73,30 +26,7 @@ const mergeParsedIntoForm = (currentForm, parsedResult) => {
     amount: currentForm.amount || parsedResult.amount || '',
     monthly_payment: currentForm.monthly_payment || parsedResult.monthly_payment || '',
     mortgage_years: currentForm.mortgage_years || parsedResult.mortgage_years || '',
-    manual_expiry_date: currentForm.manual_expiry_date || parsedExpiryDate || '',
-    manual_total_repayment:
-      currentForm.manual_total_repayment ||
-      parsedResult.ai_data?.summary_metrics?.total_repayment_forecast ||
-      '',
   };
-};
-
-const buildEntityPayload = (source) => {
-  const payload = {
-    client_email: source.client_email,
-    bank_name: source.bank_name,
-    approval_title: source.approval_title,
-    notes: buildNotesWithMetadata(source),
-    file_url: source.file_url,
-    file_name: source.file_name,
-    ai_data: source.ai_data || null,
-  };
-
-  if (source.amount) payload.amount = Number(source.amount);
-  if (source.monthly_payment) payload.monthly_payment = Number(source.monthly_payment);
-  if (source.mortgage_years) payload.mortgage_years = Number(source.mortgage_years);
-
-  return payload;
 };
 
 export default function AdminBankApprovals({ selectedClient }) {
@@ -109,6 +39,17 @@ export default function AdminBankApprovals({ selectedClient }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editUploading, setEditUploading] = useState(false);
+  const [insightsForm, setInsightsForm] = useState({
+    admin_summary: '',
+    client_summary: '',
+    market_context: '',
+    strengths: '',
+    watchouts: '',
+    financial_flags: '',
+    publish_to_client: false,
+  });
+  const [generatingInsights, setGeneratingInsights] = useState(false);
+  const [savingInsights, setSavingInsights] = useState(false);
 
   const load = async () => {
     const [data, clientRes] = await Promise.all([
@@ -116,19 +57,39 @@ export default function AdminBankApprovals({ selectedClient }) {
       base44.functions.invoke('getAllClients', {}),
     ]);
     const userList = clientRes.data?.profiles || [];
-    const filtered = selectedClient ? data.filter((a) => a.client_email === selectedClient) : data;
+    const filtered = selectedClient ? data.filter(a => a.client_email === selectedClient) : data;
     setApprovals(filtered);
     setUsers(userList);
     setLoading(false);
   };
 
+  useEffect(() => { load(); }, [selectedClient]);
+  useEffect(() => { if (selectedClient) setForm(f => ({ ...f, client_email: selectedClient })); }, [selectedClient]);
   useEffect(() => {
-    load();
-  }, [selectedClient]);
+    const sharedInsights = getSharedApprovalInsights(approvals);
+    if (!sharedInsights) {
+      setInsightsForm({
+        admin_summary: '',
+        client_summary: '',
+        market_context: '',
+        strengths: '',
+        watchouts: '',
+        financial_flags: '',
+        publish_to_client: false,
+      });
+      return;
+    }
 
-  useEffect(() => {
-    if (selectedClient) setForm((f) => ({ ...f, client_email: selectedClient }));
-  }, [selectedClient]);
+    setInsightsForm({
+      admin_summary: sharedInsights.admin_summary || '',
+      client_summary: sharedInsights.client_summary || '',
+      market_context: sharedInsights.market_context || '',
+      strengths: Array.isArray(sharedInsights.strengths) ? sharedInsights.strengths.join('\n') : '',
+      watchouts: Array.isArray(sharedInsights.watchouts) ? sharedInsights.watchouts.join('\n') : '',
+      financial_flags: Array.isArray(sharedInsights.financial_flags) ? sharedInsights.financial_flags.join('\n') : '',
+      publish_to_client: !!sharedInsights.publish_to_client,
+    });
+  }, [approvals]);
 
   const handleFileUpload = async (e, isEdit = false) => {
     const file = e.target.files?.[0];
@@ -161,30 +122,31 @@ export default function AdminBankApprovals({ selectedClient }) {
             mortgage_years: analysis.tracks?.[0]?.years || null,
           };
         }
-      } catch {
+      } catch (analysisError) {
         const extractedText = await extractPdfText(file).catch(() => '');
         parsedResult = extractedText
           ? parseApprovalText(extractedText, { bank_name: currentBankName })
           : null;
+
+        if (!parsedResult) {
+          toast.info('המסמך הועלה, אבל ניתוח ה-AI לא הצליח כרגע. אפשר להשלים ידנית.');
+        } else {
+          toast.info('ניתוח ה-AI לא הצליח, בוצע חילוץ חלקי מתוך שכבת הטקסט של ה-PDF.');
+        }
       }
 
-      setTargetForm((prev) =>
-        mergeParsedIntoForm(
-          {
-            ...prev,
-            file_url,
-            file_name: file.name,
-          },
-          parsedResult,
-        ),
-      );
+      setTargetForm((prev) => mergeParsedIntoForm({
+        ...prev,
+        file_url,
+        file_name: file.name,
+      }, parsedResult));
 
       if (parsedResult?.ai_data?.tracks?.length) {
         toast.success(`המסמך נותח ונמצאו ${parsedResult.ai_data.tracks.length} מסלולים לתמהיל המוצע`);
       } else if (parsedResult?.ai_data) {
         toast.info('המסמך הועלה וזוהו נתוני סיכום, אך לא כל המסלולים זוהו במלואם');
       } else {
-        toast.info('המסמך הועלה. אפשר להשלים ידנית את הפרטים החסרים');
+        toast.info('המסמך הועלה. אם ה-PDF כולל שכבת טקסט, המערכת תמלא את נתוני ההצעה אוטומטית');
       }
     } finally {
       setLoader(false);
@@ -193,8 +155,12 @@ export default function AdminBankApprovals({ selectedClient }) {
 
   const handleCreate = async () => {
     if (!form.client_email || !form.bank_name) return;
-
-    await base44.entities.BankApproval.create(buildEntityPayload(form));
+    const data = { ...form };
+    if (data.amount) data.amount = Number(data.amount); else delete data.amount;
+    if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment); else delete data.monthly_payment;
+    if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
+    if (!data.offer_expiry_date) delete data.offer_expiry_date;
+    await base44.entities.BankApproval.create(data);
     toast.success('אישור בנק נוסף');
     setForm({ ...emptyForm, client_email: selectedClient || '' });
     setOpen(false);
@@ -207,47 +173,118 @@ export default function AdminBankApprovals({ selectedClient }) {
     load();
   };
 
-  const startEdit = (approval) => {
-    const metadata = extractMetadataFromNotes(approval.notes || '');
-
-    setEditingId(approval.id);
+  const startEdit = (a) => {
+    setEditingId(a.id);
     setEditForm({
-      client_email: approval.client_email || '',
-      bank_name: approval.bank_name || '',
-      approval_title: approval.approval_title || '',
-      notes: metadata.clean_notes,
-      amount: approval.amount || '',
-      monthly_payment: approval.monthly_payment || '',
-      mortgage_years: approval.mortgage_years || '',
-      manual_expiry_date:
-        metadata.manual_expiry_date ||
-        (approval.ai_data?.offer_metadata?.expiry_date
-          ? new Date(approval.ai_data.offer_metadata.expiry_date).toISOString().slice(0, 10)
-          : ''),
-      manual_total_repayment:
-        metadata.manual_total_repayment ||
-        approval.ai_data?.summary_metrics?.total_repayment_forecast ||
-        '',
-      file_url: approval.file_url || '',
-      file_name: approval.file_name || '',
-      ai_data: approval.ai_data || null,
+      bank_name: a.bank_name || '',
+      approval_title: a.approval_title || '',
+      notes: a.notes || '',
+      amount: a.amount || '',
+      monthly_payment: a.monthly_payment || '',
+      mortgage_years: a.mortgage_years || '',
+      offer_expiry_date: a.offer_expiry_date || '',
+      file_url: a.file_url || '',
+      file_name: a.file_name || '',
+      ai_data: a.ai_data || null,
     });
   };
 
   const handleSaveEdit = async () => {
-    await base44.entities.BankApproval.update(editingId, buildEntityPayload(editForm));
+    const data = { ...editForm };
+    if (data.amount) data.amount = Number(data.amount); else delete data.amount;
+    if (data.monthly_payment) data.monthly_payment = Number(data.monthly_payment); else delete data.monthly_payment;
+    if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
+    if (!data.offer_expiry_date) delete data.offer_expiry_date;
+    await base44.entities.BankApproval.update(editingId, data);
     toast.success('האישור עודכן');
     setEditingId(null);
     load();
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const handleGenerateInsights = async () => {
+    if (approvals.length === 0) return;
+
+    setGeneratingInsights(true);
+
+    try {
+      const payload = approvals.map((approval) => ({
+        bank_name: approval.bank_name || null,
+        approval_title: approval.approval_title || null,
+        amount: approval.amount || approval.ai_data?.summary_metrics?.amount || null,
+        monthly_payment: approval.monthly_payment || approval.ai_data?.summary_metrics?.first_monthly_payment || null,
+        mortgage_years: approval.mortgage_years || null,
+        total_repayment_forecast: approval.ai_data?.summary_metrics?.total_repayment_forecast || null,
+        weighted_interest_rate: approval.ai_data?.summary_metrics?.weighted_interest_rate || null,
+        expiry_date: approval.offer_expiry_date || approval.ai_data?.offer_metadata?.expiry_date || null,
+        comparison_note: approval.ai_data?.comparison_note || null,
+        tracks: Array.isArray(approval.ai_data?.tracks) ? approval.ai_data.tracks : [],
+      }));
+
+      const response = await base44.functions.invoke('generateApprovalInsights', {
+        approvals: payload,
+        client_name: users.find((u) => u.email === selectedClient)?.full_name || selectedClient || null,
+      });
+
+      const insights = response?.data?.insights || response?.insights;
+      if (!insights) {
+        toast.error('לא התקבלו תובנות מה-AI');
+        return;
+      }
+
+      setInsightsForm((prev) => ({
+        ...prev,
+        admin_summary: insights.admin_summary || '',
+        client_summary: insights.client_summary || '',
+        market_context: insights.market_context || '',
+        strengths: Array.isArray(insights.strengths) ? insights.strengths.join('\n') : '',
+        watchouts: Array.isArray(insights.watchouts) ? insights.watchouts.join('\n') : '',
+        financial_flags: Array.isArray(insights.financial_flags) ? insights.financial_flags.join('\n') : '',
+      }));
+
+      toast.success('טיוטת תובנות נוצרה. אפשר לערוך לפני פרסום ללקוח.');
+    } catch (error) {
+      toast.error(error?.message || 'שגיאה ביצירת תובנות AI');
+    } finally {
+      setGeneratingInsights(false);
+    }
+  };
+
+  const handleSaveInsights = async () => {
+    const hostApproval = getApprovalInsightsHost(approvals);
+    if (!hostApproval) {
+      toast.error('אין אישור לשמירת התובנות');
+      return;
+    }
+
+    setSavingInsights(true);
+
+    try {
+      const sharedInsights = {
+        admin_summary: insightsForm.admin_summary.trim(),
+        client_summary: insightsForm.client_summary.trim(),
+        market_context: insightsForm.market_context.trim(),
+        strengths: insightsForm.strengths.split('\n').map((item) => item.trim()).filter(Boolean),
+        watchouts: insightsForm.watchouts.split('\n').map((item) => item.trim()).filter(Boolean),
+        financial_flags: insightsForm.financial_flags.split('\n').map((item) => item.trim()).filter(Boolean),
+        publish_to_client: !!insightsForm.publish_to_client,
+        generated_at: new Date().toISOString(),
+      };
+
+      const updatedApproval = buildApprovalWithSharedInsights(hostApproval, sharedInsights);
+      await base44.entities.BankApproval.update(hostApproval.id, {
+        ai_data: updatedApproval.ai_data,
+      });
+
+      toast.success(insightsForm.publish_to_client ? 'התובנות נשמרו ונחשפו ללקוח' : 'התובנות נשמרו בטיוטה פנימית');
+      await load();
+    } catch (error) {
+      toast.error(error?.message || 'שגיאה בשמירת התובנות');
+    } finally {
+      setSavingInsights(false);
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
 
   return (
     <div>
@@ -257,156 +294,76 @@ export default function AdminBankApprovals({ selectedClient }) {
             <Building2 className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold">אישורי בנקים</h2>
           </div>
-
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                אישור חדש
-              </Button>
+              <Button className="gap-2"><Plus className="w-4 h-4" />אישור חדש</Button>
             </DialogTrigger>
-
             <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>הוספת אישור בנק</DialogTitle>
-              </DialogHeader>
-
+              <DialogHeader><DialogTitle>הוספת אישור בנק</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-4">
                 <div>
                   <Label>לקוח</Label>
                   <Select value={form.client_email} onValueChange={(v) => setForm({ ...form, client_email: v })}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="בחר לקוח" />
-                    </SelectTrigger>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
                     <SelectContent>
-                      {users.map((u) => (
-                        <SelectItem key={u.id} value={u.email}>
-                          {u.full_name || u.email}
-                        </SelectItem>
-                      ))}
+                      {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div>
                   <Label>שם הבנק</Label>
-                  <Select value={form.bank_name} onValueChange={(v) => setForm({ ...form, bank_name: v })}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="בחר בנק" />
-                    </SelectTrigger>
+                  <Select value={form.bank_name} onValueChange={v => setForm({ ...form, bank_name: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
                     <SelectContent>
-                      {BANKS.map((b) => (
-                        <SelectItem key={b} value={b}>
-                          {b}
-                        </SelectItem>
-                      ))}
+                      {BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div>
                   <Label>כותרת האישור</Label>
-                  <Input
-                    value={form.approval_title}
-                    onChange={(e) => setForm({ ...form, approval_title: e.target.value })}
-                    placeholder="למשל: אישור עקרוני למשכנתא"
-                    className="mt-1"
-                  />
+                  <Input value={form.approval_title} onChange={e => setForm({ ...form, approval_title: e.target.value })} placeholder="למשל: אישור עקרוני למשכנתא" className="mt-1" />
                 </div>
-
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label>סכום (₪)</Label>
-                    <Input
-                      type="number"
-                      value={form.amount}
-                      onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                      placeholder="0"
-                      className="mt-1"
-                      dir="ltr"
-                    />
+                    <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
                   </div>
                   <div>
                     <Label>החזר חודשי (₪)</Label>
-                    <Input
-                      type="number"
-                      value={form.monthly_payment}
-                      onChange={(e) => setForm({ ...form, monthly_payment: e.target.value })}
-                      placeholder="0"
-                      className="mt-1"
-                      dir="ltr"
-                    />
+                    <Input type="number" value={form.monthly_payment} onChange={e => setForm({ ...form, monthly_payment: e.target.value })} placeholder="0" className="mt-1" dir="ltr" />
                   </div>
                   <div>
                     <Label>שנות משכנתא</Label>
-                    <Input
-                      type="number"
-                      value={form.mortgage_years}
-                      onChange={(e) => setForm({ ...form, mortgage_years: e.target.value })}
-                      placeholder="30"
-                      className="mt-1"
-                      dir="ltr"
-                    />
+                    <Input type="number" value={form.mortgage_years} onChange={e => setForm({ ...form, mortgage_years: e.target.value })} placeholder="30" className="mt-1" dir="ltr" />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>תוקף ההצעה</Label>
-                    <Input
-                      type="date"
-                      value={form.manual_expiry_date}
-                      onChange={(e) => setForm({ ...form, manual_expiry_date: e.target.value })}
-                      className="mt-1"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <Label>עלות כוללת / סך החזר משוער</Label>
-                    <Input
-                      type="number"
-                      value={form.manual_total_repayment}
-                      onChange={(e) => setForm({ ...form, manual_total_repayment: e.target.value })}
-                      placeholder="0"
-                      className="mt-1"
-                      dir="ltr"
-                    />
-                  </div>
+                <div>
+                  <Label>תוקף ההצעה</Label>
+                  <Input type="date" value={form.offer_expiry_date} onChange={e => setForm({ ...form, offer_expiry_date: e.target.value })} className="mt-1" dir="ltr" />
                 </div>
-
                 <div>
                   <Label>הערות</Label>
-                  <Textarea
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="הוסף פרטים..."
-                    className="mt-1"
-                  />
+                  <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="הוסף פרטים..." className="mt-1" />
                 </div>
-
                 <div>
                   <Label>מסמך</Label>
                   <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
-                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, false)} disabled={uploading} />
+                    <input type="file" className="hidden" onChange={e => handleFileUpload(e, false)} disabled={uploading} />
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
                     <span className="text-sm text-muted-foreground">{form.file_name || 'העלה מסמך'}</span>
                   </label>
+                  {form.ai_data?.tracks?.length ? (
+                    <p className="mt-2 text-xs text-emerald-600">זוהה תמהיל מוצע של {form.ai_data.tracks.length} מסלולים מהמסמך.</p>
+                  ) : null}
                 </div>
-
-                <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">
-                  הוסף אישור
-                </Button>
+                <Button onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">הוסף אישור</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-
         {users.length > 0 && selectedClient && (
           <div className="bg-muted/30 rounded-lg px-3 py-2 text-sm text-muted-foreground mt-3">
-            מציג אישורים עבור:{' '}
-            <span className="font-medium text-foreground">
-              {users.find((u) => u.email === selectedClient)?.full_name || selectedClient}
-            </span>
+            מציג אישורים עבור: <span className="font-medium text-foreground">{users.find(u => u.email === selectedClient)?.full_name || selectedClient}</span>
           </div>
         )}
       </div>
@@ -417,173 +374,187 @@ export default function AdminBankApprovals({ selectedClient }) {
         </div>
       )}
 
-      {approvals.length === 0 ? (
-        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-          אין אישורי בנקים
+      {approvals.length > 0 && (
+        <div className="mb-6 bg-card rounded-xl border border-border p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="font-bold text-foreground">תובנות AI על ההצעות</h3>
+              <p className="text-sm text-muted-foreground">
+                ה-AI יוצר טיוטה מקצועית, ואתה מחליט מה לחשוף ללקוח.
+              </p>
+            </div>
+            <Button onClick={handleGenerateInsights} disabled={generatingInsights}>
+              {generatingInsights ? 'מייצר תובנות...' : 'צור טיוטת תובנות'}
+            </Button>
+          </div>
+
+          <div>
+            <Label>סיכום פנימי לאדמין</Label>
+            <Textarea
+              value={insightsForm.admin_summary}
+              onChange={(e) => setInsightsForm((f) => ({ ...f, admin_summary: e.target.value }))}
+              className="mt-1"
+              rows={5}
+            />
+          </div>
+
+          <div>
+            <Label>סיכום שיוצג ללקוח</Label>
+            <Textarea
+              value={insightsForm.client_summary}
+              onChange={(e) => setInsightsForm((f) => ({ ...f, client_summary: e.target.value }))}
+              className="mt-1"
+              rows={4}
+            />
+          </div>
+
+          <div>
+            <Label>הקשר שוק / מיקום יחסי</Label>
+            <Textarea
+              value={insightsForm.market_context}
+              onChange={(e) => setInsightsForm((f) => ({ ...f, market_context: e.target.value }))}
+              className="mt-1"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <Label>מה טוב בהצעות</Label>
+              <Textarea
+                value={insightsForm.strengths}
+                onChange={(e) => setInsightsForm((f) => ({ ...f, strengths: e.target.value }))}
+                className="mt-1"
+                rows={5}
+                placeholder="כל נקודה בשורה חדשה"
+              />
+            </div>
+            <div>
+              <Label>על מה לשים לב</Label>
+              <Textarea
+                value={insightsForm.watchouts}
+                onChange={(e) => setInsightsForm((f) => ({ ...f, watchouts: e.target.value }))}
+                className="mt-1"
+                rows={5}
+                placeholder="כל נקודה בשורה חדשה"
+              />
+            </div>
+            <div>
+              <Label>דגלים פיננסיים</Label>
+              <Textarea
+                value={insightsForm.financial_flags}
+                onChange={(e) => setInsightsForm((f) => ({ ...f, financial_flags: e.target.value }))}
+                className="mt-1"
+                rows={5}
+                placeholder="כל נקודה בשורה חדשה"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button
+              type="button"
+              variant={insightsForm.publish_to_client ? 'default' : 'outline'}
+              onClick={() => setInsightsForm((f) => ({ ...f, publish_to_client: !f.publish_to_client }))}
+            >
+              {insightsForm.publish_to_client ? 'גלוי ללקוח' : 'טיוטה פנימית בלבד'}
+            </Button>
+
+            <Button onClick={handleSaveInsights} disabled={savingInsights}>
+              {savingInsights ? 'שומר...' : 'שמור תובנות'}
+            </Button>
+          </div>
         </div>
+      )}
+
+      {approvals.length === 0 ? (
+        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">אין אישורי בנקים</div>
       ) : (
         <div className="space-y-3">
-          {approvals.map((a) => {
-            const metadata = extractMetadataFromNotes(a.notes || '');
-
-            return (
-              <div key={a.id} className="bg-card rounded-xl border border-border p-4">
-                {editingId === a.id ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">שם הבנק</Label>
-                        <Input
-                          value={editForm.bank_name}
-                          onChange={(e) => setEditForm((f) => ({ ...f, bank_name: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">כותרת</Label>
-                        <Input
-                          value={editForm.approval_title}
-                          onChange={(e) => setEditForm((f) => ({ ...f, approval_title: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <Label className="text-xs">סכום (₪)</Label>
-                        <Input
-                          type="number"
-                          value={editForm.amount}
-                          onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">החזר חודשי (₪)</Label>
-                        <Input
-                          type="number"
-                          value={editForm.monthly_payment}
-                          onChange={(e) => setEditForm((f) => ({ ...f, monthly_payment: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">שנות משכנתא</Label>
-                        <Input
-                          type="number"
-                          value={editForm.mortgage_years}
-                          onChange={(e) => setEditForm((f) => ({ ...f, mortgage_years: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">תוקף ההצעה</Label>
-                        <Input
-                          type="date"
-                          value={editForm.manual_expiry_date || ''}
-                          onChange={(e) => setEditForm((f) => ({ ...f, manual_expiry_date: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">עלות כוללת / סך החזר משוער</Label>
-                        <Input
-                          type="number"
-                          value={editForm.manual_total_repayment || ''}
-                          onChange={(e) => setEditForm((f) => ({ ...f, manual_total_repayment: e.target.value }))}
-                          className="mt-1 h-8 text-sm"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-
+          {approvals.map(a => (
+            <div key={a.id} className="bg-card rounded-xl border border-border p-4">
+              {editingId === a.id ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">הערות</Label>
-                      <Textarea
-                        value={editForm.notes}
-                        onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
-                        className="mt-1 text-sm"
-                        rows={2}
-                      />
+                      <Label className="text-xs">שם הבנק</Label>
+                      <Input value={editForm.bank_name} onChange={e => setEditForm(f => ({ ...f, bank_name: e.target.value }))} className="mt-1 h-8 text-sm" />
                     </div>
-
                     <div>
-                      <Label className="text-xs">מסמך</Label>
-                      <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-2 cursor-pointer hover:border-primary/50 transition-all">
-                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, true)} disabled={editUploading} />
-                        {editUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-muted-foreground" />}
-                        <span className="text-xs text-muted-foreground">{editForm.file_name || 'החלף מסמך'}</span>
-                      </label>
-                      {editForm.file_url && (
-                        <a href={editForm.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
-                          <Download className="w-3 h-3" />
-                          {editForm.file_name || 'הורד מסמך'}
-                        </a>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleSaveEdit} className="gap-1">
-                        <Check className="w-3 h-3" />
-                        שמור
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="gap-1">
-                        <X className="w-3 h-3" />
-                        ביטול
-                      </Button>
+                      <Label className="text-xs">כותרת</Label>
+                      <Input value={editForm.approval_title} onChange={e => setEditForm(f => ({ ...f, approval_title: e.target.value }))} className="mt-1 h-8 text-sm" />
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{a.bank_name}</span>
-                        {a.approval_title && <span className="text-sm text-muted-foreground">- {a.approval_title}</span>}
-                        <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{a.client_email}</span>
-                      </div>
-                      <div className="flex gap-3 mt-1 flex-wrap">
-                        {a.amount && <span className="text-xs text-emerald-600">₪{a.amount.toLocaleString()}</span>}
-                        {a.monthly_payment && <span className="text-xs text-blue-600">החזר חודשי: ₪{a.monthly_payment.toLocaleString()}</span>}
-                        {a.mortgage_years && <span className="text-xs text-purple-600">{a.mortgage_years} שנים</span>}
-                        {metadata.manual_expiry_date && (
-                          <span className="text-xs text-amber-700">
-                            תוקף: {new Date(metadata.manual_expiry_date).toLocaleDateString('he-IL')}
-                          </span>
-                        )}
-                        {metadata.manual_total_repayment && (
-                          <span className="text-xs text-emerald-700">
-                            עלות כוללת: ₪{Number(metadata.manual_total_repayment).toLocaleString('he-IL')}
-                          </span>
-                        )}
-                      </div>
-                      {a.file_url && (
-                        <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
-                          <Download className="w-3 h-3" />
-                          {a.file_name || 'הורד מסמך'}
-                        </a>
-                      )}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label className="text-xs">סכום (₪)</Label>
+                      <Input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button size="icon" variant="ghost" onClick={() => startEdit(a)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(a.id)} className="text-destructive hover:bg-destructive/10">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div>
+                      <Label className="text-xs">החזר חודשי (₪)</Label>
+                      <Input type="number" value={editForm.monthly_payment} onChange={e => setEditForm(f => ({ ...f, monthly_payment: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">שנות משכנתא</Label>
+                      <Input type="number" value={editForm.mortgage_years} onChange={e => setEditForm(f => ({ ...f, mortgage_years: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div>
+                    <Label className="text-xs">תוקף ההצעה</Label>
+                    <Input type="date" value={editForm.offer_expiry_date || ''} onChange={e => setEditForm(f => ({ ...f, offer_expiry_date: e.target.value }))} className="mt-1 h-8 text-sm" dir="ltr" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">הערות</Label>
+                    <Textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className="mt-1 text-sm" rows={2} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">מסמך</Label>
+                    <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-2 cursor-pointer hover:border-primary/50 transition-all">
+                      <input type="file" className="hidden" onChange={e => handleFileUpload(e, true)} disabled={editUploading} />
+                      {editUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <span className="text-xs text-muted-foreground">{editForm.file_name || 'החלף מסמך'}</span>
+                    </label>
+                    {editForm.file_url && (
+                      <a href={editForm.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
+                        <Download className="w-3 h-3" />{editForm.file_name || 'הורד מסמך'}
+                      </a>
+                    )}
+                    {editForm.ai_data?.tracks?.length ? (
+                      <p className="mt-2 text-xs text-emerald-600">זוהה תמהיל מוצע של {editForm.ai_data.tracks.length} מסלולים מהמסמך.</p>
+                    ) : null}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveEdit} className="gap-1"><Check className="w-3 h-3" />שמור</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="gap-1"><X className="w-3 h-3" />ביטול</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{a.bank_name}</span>
+                      {a.approval_title && <span className="text-sm text-muted-foreground">- {a.approval_title}</span>}
+                      <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{a.client_email}</span>
+                    </div>
+                    <div className="flex gap-3 mt-1 flex-wrap">
+                      {a.amount && <span className="text-xs text-emerald-600">₪{a.amount.toLocaleString()}</span>}
+                      {a.monthly_payment && <span className="text-xs text-blue-600">החזר חודשי: ₪{a.monthly_payment.toLocaleString()}</span>}
+                      {a.mortgage_years && <span className="text-xs text-purple-600">{a.mortgage_years} שנים</span>}
+                    </div>
+                    {a.file_url && (
+                      <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
+                        <Download className="w-3 h-3" />{a.file_name || 'הורד מסמך'}
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" onClick={() => startEdit(a)}><Edit2 className="w-4 h-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => handleDelete(a.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
