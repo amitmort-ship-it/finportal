@@ -12,6 +12,16 @@ async function createDriveFolder(name, parentId, authHeader) {
   return data.id;
 }
 
+async function driveFolderExists(folderId, authHeader) {
+  if (!folderId) return false;
+
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name`, {
+    headers: authHeader,
+  });
+
+  return res.ok;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -26,32 +36,37 @@ Deno.serve(async (req) => {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
     const authHeader = { Authorization: `Bearer ${accessToken}` };
 
-    // Get or create one root folder per client
     const folders = await base44.asServiceRole.entities.DriveFolder.filter({ client_email });
     let record = folders[0];
-    let clientFolderId;
+    let clientFolderId = record?.folder_id || null;
 
-    if (!record) {
+    const folderStillExists = await driveFolderExists(clientFolderId, authHeader);
+
+    if (!record || !folderStillExists) {
       clientFolderId = await createDriveFolder(client_email, null, authHeader);
-      record = await base44.asServiceRole.entities.DriveFolder.create({
-        client_email,
-        folder_id: clientFolderId,
-        folder_name: client_email,
-        category_folders: {},
-      });
-    } else {
-      clientFolderId = record.folder_id;
+
+      if (!record) {
+        record = await base44.asServiceRole.entities.DriveFolder.create({
+          client_email,
+          folder_id: clientFolderId,
+          folder_name: client_email,
+          category_folders: {},
+        });
+      } else {
+        record = await base44.asServiceRole.entities.DriveFolder.update(record.id, {
+          folder_id: clientFolderId,
+          folder_name: client_email,
+          category_folders: {},
+        });
+      }
     }
 
-    // Always upload directly into the client's main folder
     const targetFolderId = clientFolderId;
 
-    // Download file from base44 storage
     const fileRes = await fetch(file_url);
     const fileBlob = await fileRes.blob();
     const mimeType = fileBlob.type || 'application/octet-stream';
 
-    // Upload to Drive using multipart upload
     const metadata = { name: file_name, parents: [targetFolderId] };
     const boundary = 'boundary_' + Date.now();
     const metadataPart = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n`;
@@ -82,7 +97,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Drive upload failed', details: uploaded }, { status: 500 });
     }
 
-    return Response.json({ success: true, drive_file_id: uploaded.id });
+    return Response.json({ success: true, drive_file_id: uploaded.id, folder_id: clientFolderId });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
