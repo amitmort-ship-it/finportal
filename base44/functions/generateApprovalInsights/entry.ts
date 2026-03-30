@@ -23,45 +23,99 @@ const INSIGHTS_SCHEMA = {
   },
 } as const;
 
+function cleanNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+
+  const normalized = value.replace(/[^\d.,-]/g, '').replace(/,(?=\d{3}\b)/g, '').replace(/,/g, '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function cleanText(value: unknown, max = 500) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, max);
+}
+
+function normalizeTrack(track: any) {
+  return {
+    name: cleanText(track?.name, 120),
+    amount: cleanNumber(track?.amount),
+    years: cleanNumber(track?.years),
+    interest_rate: cleanNumber(track?.interest_rate),
+    monthly_payment: cleanNumber(track?.monthly_payment),
+    rate_type: cleanText(track?.rate_type, 80),
+    linkage_type: cleanText(track?.linkage_type, 80),
+    balloon_type: cleanText(track?.balloon_type, 80),
+    notes: cleanText(track?.notes, 180),
+  };
+}
+
+function normalizeApproval(approval: any) {
+  const ai = approval?.ai_data || {};
+  const summary = ai?.summary_metrics || {};
+  const offer = ai?.offer_metadata || {};
+
+  return {
+    bank_name: cleanText(approval?.bank_name, 120),
+    approval_title: cleanText(approval?.approval_title, 160),
+    amount: cleanNumber(approval?.amount) ?? cleanNumber(summary?.amount),
+    monthly_payment: cleanNumber(approval?.monthly_payment) ?? cleanNumber(summary?.first_monthly_payment),
+    mortgage_years: cleanNumber(approval?.mortgage_years),
+    total_repayment_forecast: cleanNumber(summary?.total_repayment_forecast),
+    weighted_interest_rate: cleanNumber(summary?.weighted_interest_rate),
+    expiry_date: cleanText(approval?.offer_expiry_date || offer?.expiry_date, 80),
+    comparison_note: cleanText(ai?.comparison_note, 250),
+    tracks: Array.isArray(ai?.tracks) ? ai.tracks.slice(0, 8).map(normalizeTrack) : [],
+  };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
     if (user?.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+      return Response.json({ error: 'Admin access required', stage: 'auth' }, { status: 403 });
     }
 
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      return Response.json({ error: 'Missing OPENAI_API_KEY' }, { status: 500 });
+      return Response.json({ error: 'Missing OPENAI_API_KEY', stage: 'secret' }, { status: 500 });
     }
 
     const { approvals, client_name } = await req.json();
     if (!Array.isArray(approvals) || approvals.length === 0) {
-      return Response.json({ error: 'Missing approvals list' }, { status: 400 });
+      return Response.json({ error: 'Missing approvals list', stage: 'input' }, { status: 400 });
     }
+
+    const normalizedApprovals = approvals.slice(0, 8).map(normalizeApproval);
 
     const prompt = `
 אתה יועץ פיננסי מנוסה למשכנתאות בישראל.
 
 המטרה:
-לנתח כמה אישורים עקרוניים ולהפיק תובנות תומכות החלטה.
+לנתח אישורים עקרוניים למשכנתא ולהפיק תובנות תומכות החלטה עבור אדמין ולקוח.
 
-חשוב:
+כללים:
 - אל תכתוב הבטחות או ייעוץ משפטי.
 - אל תמציא נתוני שוק שלא ניתנו במפורש.
-- אם אין לך מידע להשוואה לשוק, כתוב זאת בזהירות תחת market_context.
-- admin_summary צריך להיות מפורט יותר ומקצועי.
-- client_summary צריך להיות ברור, מרגיע, וללא ניסוחים טכניים מדי.
-- strengths = נקודות חיוביות מרכזיות.
-- watchouts = על מה חשוב לשים לב.
-- financial_flags = דגלים פיננסיים כמו קפיצה עתידית בהחזר, תקופה ארוכה, עלות כוללת גבוהה, תוקף קרוב וכו'.
+- אם אין מספיק מידע להשוואה לשוק, כתוב זאת בזהירות ב-market_context.
+- admin_summary צריך להיות מקצועי, חד, וממוקד בהחלטה.
+- client_summary צריך להיות ברור, פשוט, ולא מאיים.
+- strengths = נקודות חוזקה עיקריות בהצעות.
+- watchouts = סיכונים / נקודות לבדיקה / דברים שדורשים תשומת לב.
+- financial_flags = דגלים פיננסיים מהותיים כמו עלות כוללת גבוהה, סיכון לעליית החזר, תקופה ארוכה, תלות במסלולים משתנים, תוקף קרוב.
 
-שם הלקוח: ${client_name || 'לא סופק'}
+שם הלקוח:
+${client_name || 'לא סופק'}
 
-הצעות לניתוח:
-${JSON.stringify(approvals, null, 2)}
+נתונים לניתוח:
+${JSON.stringify(normalizedApprovals, null, 2)}
+
+החזר JSON בלבד לפי הסכמה הנתונה.
 `.trim();
 
     const openAiRes = await fetch('https://api.openai.com/v1/responses', {
@@ -90,6 +144,7 @@ ${JSON.stringify(approvals, null, 2)}
     });
 
     const responseJson = await openAiRes.json();
+
     if (!openAiRes.ok) {
       const upstreamMessage =
         responseJson?.error?.message ||
@@ -106,7 +161,7 @@ ${JSON.stringify(approvals, null, 2)}
       );
     }
 
-    const rawText = responseJson.output_text;
+    const rawText = responseJson?.output_text;
     if (!rawText) {
       return Response.json(
         {
