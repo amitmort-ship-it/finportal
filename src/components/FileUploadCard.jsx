@@ -27,7 +27,6 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         setRequest(event.data);
       }
     });
-
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
@@ -42,20 +41,15 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     if (!file) return;
 
     setUploading(true);
-
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-      const newFiles = [
-        ...uploadedFiles,
-        {
-          file_url,
-          file_name: file.name,
-          uploaded_by_email: user?.email || null,
-          uploaded_by_name: user?.full_name || user?.email || null,
-          uploaded_at: new Date().toISOString(),
-        },
-      ];
+      const newFiles = [...uploadedFiles, {
+        file_url,
+        file_name: file.name,
+        uploaded_by_email: user?.email || null,
+        uploaded_by_name: user?.full_name || user?.email || null,
+        uploaded_at: new Date().toISOString(),
+      }];
 
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
@@ -64,18 +58,22 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
 
       setRequest(updatedDoc);
 
-      base44.functions.invoke('uploadToDrive', {
+      const driveRes = await base44.functions.invoke('uploadToDrive', {
         file_url,
         file_name: file.name,
         client_email: request.client_email,
         category: request.category,
-      }).catch((err) => console.error('Drive upload failed:', err));
+      });
+
+      if (driveRes?.data?.error) {
+        throw new Error(driveRes.data.error);
+      }
 
       toast.success('הקובץ הועלה בהצלחה');
       onUpdate?.();
     } catch (err) {
       console.error(err);
-      toast.error('שגיאה בהעלאה');
+      toast.error(err?.message || 'שגיאה בהעלאה');
     } finally {
       setUploading(false);
     }
@@ -87,7 +85,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
 
     const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
-      status: newStatus,
+      status: newStatus
     });
 
     setRequest(updatedDoc);
@@ -115,21 +113,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a
-                href={file.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate flex-1"
-              >
+              <a href={file.file_url} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1">
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => handleDeleteFile(idx)}
-                  className="text-destructive h-6 w-6"
-                >
+                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive h-6 w-6">
                   <Trash2 className="w-3 h-3" />
                 </Button>
               )}
