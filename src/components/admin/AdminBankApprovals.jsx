@@ -283,21 +283,34 @@ export default function AdminBankApprovals({ selectedClient }) {
 
       setApprovals(updatedApprovals);
 
-      await Promise.all(
-        updatedApprovals.map((approval) => {
+      const saveResults = await Promise.all(
+        updatedApprovals.map(async (approval) => {
           const updatedApproval = buildApprovalWithSharedInsights(approval, sharedInsights);
-          return base44.entities.BankApproval.update(approval.id, {
-            ai_data: updatedApproval.ai_data,
-          });
+
+          try {
+            const result = await base44.entities.BankApproval.update(approval.id, {
+              ai_data: updatedApproval.ai_data,
+            });
+
+            console.log('saved approval result', approval.id, result);
+            return result;
+          } catch (error) {
+            console.error('failed saving approval', approval.id, error);
+            throw error;
+          }
         }),
       );
+
+      console.log('all save results', saveResults);
 
       toast.success(
         insightsForm.publish_to_client ? 'התובנות נשמרו ונחשפו ללקוח' : 'התובנות נשמרו בטיוטה פנימית',
       );
 
       await load();
+      console.log('reload after save finished');
     } catch (error) {
+      console.error('handleSaveInsights error', error);
       toast.error(getErrorMessage(error, 'שגיאה בשמירת התובנות'));
     } finally {
       setSavingInsights(false);
