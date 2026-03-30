@@ -6,12 +6,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
 function getInvokeError(result) {
-  return (
-    result?.error ||
-    result?.data?.error ||
-    result?.response?.data?.error ||
-    null
-  );
+  return result?.error || result?.data?.error || result?.response?.data?.error || null;
 }
 
 const statusConfig = {
@@ -36,6 +31,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         setRequest(event.data);
       }
     });
+
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
@@ -50,15 +46,20 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     if (!file) return;
 
     setUploading(true);
+
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newFiles = [...uploadedFiles, {
-        file_url,
-        file_name: file.name,
-        uploaded_by_email: user?.email || null,
-        uploaded_by_name: user?.full_name || user?.email || null,
-        uploaded_at: new Date().toISOString(),
-      }];
+
+      const newFiles = [
+        ...uploadedFiles,
+        {
+          file_url,
+          file_name: file.name,
+          uploaded_by_email: user?.email || null,
+          uploaded_by_name: user?.full_name || user?.email || null,
+          uploaded_at: new Date().toISOString(),
+        },
+      ];
 
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
@@ -79,13 +80,13 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         throw new Error(invokeError);
       }
 
-      console.log('uploadToDrive result', driveRes);
+      console.log('uploadToDrive result', driveRes?.data || driveRes);
 
       toast.success('הקובץ הועלה בהצלחה');
       onUpdate?.();
     } catch (err) {
       console.error(err);
-      toast.error(err?.message || 'שגיאה בהעלאה');
+      toast.error('שגיאה בהעלאה');
     } finally {
       setUploading(false);
     }
@@ -97,7 +98,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
 
     const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
-      status: newStatus
+      status: newStatus,
     });
 
     setRequest(updatedDoc);
@@ -110,48 +111,61 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="font-semibold text-foreground">{request.title}</h3>
-          {request.description && (
+          {request.description ? (
             <p className="text-sm text-muted-foreground mt-1">{request.description}</p>
-          )}
+          ) : null}
         </div>
+
         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
           <StatusIcon className="w-3 h-3" />
           {config.label}
         </span>
       </div>
 
-      {uploadedFiles.length > 0 && (
+      {uploadedFiles.length > 0 ? (
         <div className="space-y-2 mb-3">
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a href={file.file_url} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate flex-1">
+              <a
+                href={file.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1"
+              >
                 {file.file_name}
               </a>
-              {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
-                <Button size="icon" variant="ghost" onClick={() => handleDeleteFile(idx)} className="text-destructive h-6 w-6">
+
+              {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleDeleteFile(idx)}
+                  className="text-destructive h-6 w-6"
+                >
                   <Trash2 className="w-3 h-3" />
                 </Button>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
-      {(request.status === 'pending' || request.status === 'rejected') && (
+      {(request.status === 'pending' || request.status === 'rejected') ? (
         <label className="flex flex-col items-center gap-2 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
           <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+
           {uploading ? (
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           ) : (
             <Upload className="w-8 h-8 text-muted-foreground" />
           )}
+
           <span className="text-sm text-muted-foreground">
             {uploading ? 'מעלה...' : 'לחץ להעלאת קובץ'}
           </span>
         </label>
-      )}
+      ) : null}
     </div>
   );
 }
