@@ -251,6 +251,13 @@ export default function AdminBankApprovals({ selectedClient }) {
   };
 
   const handleSaveInsights = async () => {
+    console.log('handleSaveInsights clicked', {
+      selectedClient,
+      approvalsCount: approvals.length,
+      insightsForm,
+    });
+    toast.info('לחצת על שמור תובנות');
+
     if (!approvals.length) {
       toast.error('אין אישור לשמירת התובנות');
       return;
