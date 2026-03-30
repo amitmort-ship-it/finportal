@@ -9,6 +9,9 @@ async function createDriveFolder(name, parentId, authHeader) {
     body: JSON.stringify(body),
   });
   const data = await res.json();
+  if (!res.ok || !data?.id) {
+    throw new Error(data?.error?.message || 'Failed to create Drive folder');
+  }
   return data.id;
 }
 
@@ -39,11 +42,13 @@ Deno.serve(async (req) => {
     const folders = await base44.asServiceRole.entities.DriveFolder.filter({ client_email });
     let record = folders[0];
     let clientFolderId = record?.folder_id || null;
+    let createdNewFolder = false;
 
     const folderStillExists = await driveFolderExists(clientFolderId, authHeader);
 
     if (!record || !folderStillExists) {
       clientFolderId = await createDriveFolder(client_email, null, authHeader);
+      createdNewFolder = true;
 
       if (!record) {
         record = await base44.asServiceRole.entities.DriveFolder.create({
@@ -64,6 +69,9 @@ Deno.serve(async (req) => {
     const targetFolderId = clientFolderId;
 
     const fileRes = await fetch(file_url);
+    if (!fileRes.ok) {
+      throw new Error('Failed to download file from storage');
+    }
     const fileBlob = await fileRes.blob();
     const mimeType = fileBlob.type || 'application/octet-stream';
 
@@ -97,7 +105,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Drive upload failed', details: uploaded }, { status: 500 });
     }
 
-    return Response.json({ success: true, drive_file_id: uploaded.id, folder_id: clientFolderId });
+    return Response.json({
+      success: true,
+      drive_file_id: uploaded.id,
+      folder_id: clientFolderId,
+      created_new_folder: createdNewFolder,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
