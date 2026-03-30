@@ -91,12 +91,31 @@ ${JSON.stringify(approvals, null, 2)}
 
     const responseJson = await openAiRes.json();
     if (!openAiRes.ok) {
-      return Response.json({ error: 'OpenAI insight generation failed', details: responseJson }, { status: 500 });
+      const upstreamMessage =
+        responseJson?.error?.message ||
+        responseJson?.message ||
+        'OpenAI insight generation failed';
+
+      return Response.json(
+        {
+          error: upstreamMessage,
+          stage: 'openai_request',
+          details: responseJson,
+        },
+        { status: 500 },
+      );
     }
 
     const rawText = responseJson.output_text;
     if (!rawText) {
-      return Response.json({ error: 'No structured output returned from OpenAI', details: responseJson }, { status: 500 });
+      return Response.json(
+        {
+          error: 'No structured output returned from OpenAI',
+          stage: 'openai_response',
+          details: responseJson,
+        },
+        { status: 500 },
+      );
     }
 
     const parsed = JSON.parse(rawText);
@@ -106,6 +125,12 @@ ${JSON.stringify(approvals, null, 2)}
       insights: parsed,
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json(
+      {
+        error: error?.message || 'Unexpected generateApprovalInsights failure',
+        stage: 'unknown',
+      },
+      { status: 500 },
+    );
   }
 });
