@@ -8,12 +8,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 function getInvokeError(result) {
-  return result?.error || result?.data?.error || result?.response?.data?.error || null;
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
 }
 
 export default function AdminViewDocuments({ selectedClient }) {
+  const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
@@ -33,10 +40,7 @@ export default function AdminViewDocuments({ selectedClient }) {
       base44.functions.invoke('getAllClients', {}),
     ]);
 
-    const filtered = selectedClient
-      ? data.filter((r) => r.client_email === selectedClient)
-      : data;
-
+    const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
     const withFiles = filtered.filter((r) => r.uploaded_files && r.uploaded_files.length > 0);
 
     setRequests(withFiles);
@@ -81,6 +85,7 @@ export default function AdminViewDocuments({ selectedClient }) {
             file_name: file.name,
             client_email: form.client_email,
             category: form.category || resolvedTitle,
+            viewer_email: user?.email || null,
           });
 
           const invokeError = getInvokeError(driveRes);
@@ -135,11 +140,7 @@ export default function AdminViewDocuments({ selectedClient }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
   }
 
   return (
@@ -166,17 +167,14 @@ export default function AdminViewDocuments({ selectedClient }) {
             <div className="space-y-4 pt-4">
               <div>
                 <Label>לקוח</Label>
-                <Select
-                  value={form.client_email}
-                  onValueChange={(value) => setForm((prev) => ({ ...prev, client_email: value }))}
-                >
+                <Select value={form.client_email} onValueChange={(value) => setForm((prev) => ({ ...prev, client_email: value }))}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="בחר לקוח" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.email}>
-                        {user.full_name || user.email}
+                    {users.map((userItem) => (
+                      <SelectItem key={userItem.id} value={userItem.email}>
+                        {userItem.full_name || userItem.email}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -220,19 +218,10 @@ export default function AdminViewDocuments({ selectedClient }) {
                     type="file"
                     multiple
                     className="hidden"
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        files: Array.from(e.target.files || []),
-                      }))
-                    }
+                    onChange={(e) => setForm((prev) => ({ ...prev, files: Array.from(e.target.files || []) }))}
                     disabled={uploading}
                   />
-                  {uploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Upload className="w-4 h-4 text-muted-foreground" />
-                  )}
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
                   <span className="text-sm text-muted-foreground">
                     {form.files.length === 0
                       ? 'בחר קובץ אחד או יותר'
@@ -251,20 +240,8 @@ export default function AdminViewDocuments({ selectedClient }) {
                 ) : null}
               </div>
 
-              <Button
-                type="button"
-                onClick={handleManualUpload}
-                disabled={uploading || !form.client_email || !form.files.length}
-                className="w-full gap-2"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    מעלה...
-                  </>
-                ) : (
-                  'העלה מסמכים'
-                )}
+              <Button type="button" onClick={handleManualUpload} disabled={uploading || !form.client_email || !form.files.length} className="w-full gap-2">
+                {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
               </Button>
             </div>
           </DialogContent>
@@ -284,24 +261,13 @@ export default function AdminViewDocuments({ selectedClient }) {
                   <div className="font-semibold">{req.title}</div>
                   <div className="text-sm text-muted-foreground">{req.client_email}</div>
                 </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                    req.status === 'uploaded'
-                      ? 'bg-blue-50 text-blue-600'
-                      : req.status === 'approved'
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : req.status === 'rejected'
-                          ? 'bg-red-50 text-red-600'
-                          : 'bg-amber-50 text-amber-600'
-                  }`}
-                >
-                  {req.status === 'pending'
-                    ? 'ממתין'
-                    : req.status === 'uploaded'
-                      ? 'הועלה'
-                      : req.status === 'approved'
-                        ? 'אושר'
-                        : 'נדחה'}
+                <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                  req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
+                  req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                  req.status === 'rejected' ? 'bg-red-50 text-red-600' :
+                  'bg-amber-50 text-amber-600'
+                }`}>
+                  {req.status === 'pending' ? 'ממתין' : req.status === 'uploaded' ? 'הועלה' : req.status === 'approved' ? 'אושר' : 'נדחה'}
                 </span>
               </div>
 
