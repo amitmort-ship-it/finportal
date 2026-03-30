@@ -14,6 +14,7 @@ import AdminBankApprovals from '../components/admin/AdminBankApprovals';
 import AdminProcessStage from '../components/admin/AdminProcessStage';
 import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
+import AdminNotifications from '../components/admin/AdminNotifications';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -49,6 +50,8 @@ export default function AdminPanel() {
           </SelectContent>
         </Select>
       </div>
+
+      <AdminNotifications selectedClient={selectedClient} />
 
       <Tabs defaultValue="clients" className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9 mb-6 h-auto">
