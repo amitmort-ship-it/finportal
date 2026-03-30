@@ -29,6 +29,12 @@ const mergeParsedIntoForm = (currentForm, parsedResult) => {
   };
 };
 
+const getErrorMessage = (error, fallback) =>
+  error?.data?.error ||
+  error?.response?.data?.error ||
+  error?.message ||
+  fallback;
+
 export default function AdminBankApprovals({ selectedClient }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -243,7 +249,7 @@ export default function AdminBankApprovals({ selectedClient }) {
 
       toast.success('טיוטת תובנות נוצרה. אפשר לערוך לפני פרסום ללקוח.');
     } catch (error) {
-      toast.error(error?.message || 'שגיאה ביצירת תובנות AI');
+      toast.error(getErrorMessage(error, 'שגיאה ביצירת תובנות AI'));
     } finally {
       setGeneratingInsights(false);
     }
@@ -278,7 +284,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       toast.success(insightsForm.publish_to_client ? 'התובנות נשמרו ונחשפו ללקוח' : 'התובנות נשמרו בטיוטה פנימית');
       await load();
     } catch (error) {
-      toast.error(error?.message || 'שגיאה בשמירת התובנות');
+      toast.error(getErrorMessage(error, 'שגיאה בשמירת התובנות'));
     } finally {
       setSavingInsights(false);
     }
