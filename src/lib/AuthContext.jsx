@@ -97,7 +97,6 @@ export const AuthProvider = ({ children }) => {
       if (currentUser.role !== 'admin' && resolvedCase?.email) {
         const sessionKey = `admin-login-notified:${String(currentUser.email || resolvedCase.email).toLowerCase()}`;
         if (!sessionStorage.getItem(sessionKey)) {
-          sessionStorage.setItem(sessionKey, '1');
           try {
             const notificationRes = await base44.functions.invoke('createAdminNotification', {
               event_type: 'login',
@@ -110,6 +109,7 @@ export const AuthProvider = ({ children }) => {
               throw new Error(notificationError);
             }
 
+            sessionStorage.setItem(sessionKey, '1');
             console.log('createAdminNotification result', notificationRes?.data || notificationRes);
           } catch (notificationError) {
             console.error('Failed to create admin login notification:', notificationError);
@@ -218,6 +218,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
+    if (user?.email) {
+      const sessionKey = `admin-login-notified:${String(user.email).toLowerCase()}`;
+      sessionStorage.removeItem(sessionKey);
+    }
+
     setUser(null);
     setActiveCase(null);
     setCaseMembers([]);
