@@ -8,8 +8,29 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
+const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
+const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
+const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
+
+function parseAdminNotification(update) {
+  const message = String(update?.message || '');
+  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
+  const clientMatch = message.match(CLIENT_REGEX);
+
+  return {
+    ...update,
+    eventType: eventTypeMatch?.[1] || 'general',
+    relatedClientEmail: clientMatch?.[1] || null,
+    cleanMessage: message
+      .replace(EVENT_TYPE_REGEX, '')
+      .replace(CLIENT_REGEX, '')
+      .trim(),
+  };
+}
+
 export default function AdminUpdates({ selectedClient }) {
   const [updates, setUpdates] = useState([]);
+  const [adminNotifications, setAdminNotifications] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -18,33 +39,37 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [data, userList] = await Promise.all([
+      const [data, adminEvents, userList] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
+        base44.entities.ClientUpdate.filter({ client_email: ADMIN_NOTIFICATIONS_EMAIL }, '-created_date'),
         base44.entities.User.filter({}),
       ]);
-      
-      // אם נבחר "כל הלקוחות" (all) או שלא נבחר כלום - מציגים הכל. אחרת מסננים לפי אימייל.
-      const filtered = (client === 'all' || !client) 
-        ? data 
-        : data.filter(u => u.client_email === client);
-        
+
+      const filtered = (client === 'all' || !client)
+        ? data.filter((u) => u.client_email !== ADMIN_NOTIFICATIONS_EMAIL)
+        : data.filter((u) => u.client_email === client);
+
+      const parsedAdminEvents = adminEvents.map(parseAdminNotification);
+      const filteredAdminEvents = (client === 'all' || !client)
+        ? parsedAdminEvents
+        : parsedAdminEvents.filter((event) => event.relatedClientEmail === client);
+
       setUpdates(filtered);
-      setUsers(userList.filter(u => u.role !== 'admin'));
+      setAdminNotifications(filteredAdminEvents);
+      setUsers(userList.filter((u) => u.role !== 'admin'));
     } catch (err) {
-      console.error("Failed to load data:", err);
-      toast.error("שגיאה בטעינת הנתונים");
+      console.error('Failed to load data:', err);
+      toast.error('שגיאה בטעינת הנתונים');
     } finally {
       setLoading(false);
     }
   };
 
-  // עדכון ה-State כשה-Prop מבחוץ משתנה
   useEffect(() => {
     const val = selectedClient && selectedClient !== '_all' ? selectedClient : 'all';
     setClient(val);
   }, [selectedClient]);
 
-  // טעינת נתונים בכל פעם שהלקוח הנבחר משתנה
   useEffect(() => {
     load();
   }, [client]);
@@ -52,35 +77,41 @@ export default function AdminUpdates({ selectedClient }) {
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
+
     try {
       if (client === 'all') {
-        // שליחה לכל המשתמשים ברשימה
         await Promise.all(
           users.map(async (u) => {
-            const update = await base44.entities.ClientUpdate.create({ 
-              client_email: u.email, 
-              message: message.trim() 
+            const update = await base44.entities.ClientUpdate.create({
+              client_email: u.email,
+              message: message.trim()
             });
-            return base44.functions.invoke('sendUpdateEmail', { 
-              data: { ...update, app_url: window.location.origin } 
+
+            return base44.functions.invoke('sendUpdateEmail', {
+              data: { ...update, app_url: window.location.origin }
             });
           })
         );
+
         toast.success('עדכון נשלח לכל הלקוחות');
       } else {
         if (!client) {
           setSending(false);
           return;
         }
-        const update = await base44.entities.ClientUpdate.create({ 
-          client_email: client, 
-          message: message.trim() 
+
+        const update = await base44.entities.ClientUpdate.create({
+          client_email: client,
+          message: message.trim()
         });
-        await base44.functions.invoke('sendUpdateEmail', { 
-          data: { ...update, app_url: window.location.origin } 
+
+        await base44.functions.invoke('sendUpdateEmail', {
+          data: { ...update, app_url: window.location.origin }
         });
+
         toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
       }
+
       setMessage('');
       load();
     } catch (err) {
@@ -116,10 +147,11 @@ export default function AdminUpdates({ selectedClient }) {
             <SelectValue placeholder="בחר לקוח" />
           </SelectTrigger>
           <SelectContent>
-            {/* שינוי הערך ל-all כדי שיהיה תואם ללוגיקה */}
             <SelectItem value="all">📢 כל הלקוחות</SelectItem>
-            {users.map(u => (
-              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
+            {users.map((u) => (
+              <SelectItem key={u.id} value={u.email}>
+                {u.full_name || u.email}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -148,27 +180,71 @@ export default function AdminUpdates({ selectedClient }) {
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
           בחר לקוח כדי לשלוח עדכונים
         </div>
-      ) : updates.length === 0 ? (
-        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-          אין עדכונים ללקוח זה
-        </div>
       ) : (
-        <div className="space-y-3">
-          {updates.map(u => (
-            <div key={u.id} className="bg-card rounded-xl border border-border p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-foreground break-words">{u.message}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {u.created_date ? format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
-                  </p>
-                </div>
-                <Button size="icon" variant="ghost" onClick={() => handleDelete(u.id)} className="text-destructive hover:bg-destructive/10 shrink-0">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold mb-3">התראות מערכת</h3>
+            {adminNotifications.length === 0 ? (
+              <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                אין התראות מערכת ללקוח זה
               </div>
-            </div>
-          ))}
+            ) : (
+              <div className="space-y-3">
+                {adminNotifications.map((item) => (
+                  <div key={item.id} className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-foreground break-words">{item.cleanMessage}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {item.created_date ? format(new Date(item.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-destructive hover:bg-destructive/10 shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3">עדכונים ללקוח</h3>
+            {updates.length === 0 ? (
+              <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                אין עדכונים ללקוח זה
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {updates.map((u) => (
+                  <div key={u.id} className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-foreground break-words">{u.message}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {u.created_date ? format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(u.id)}
+                        className="text-destructive hover:bg-destructive/10 shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
