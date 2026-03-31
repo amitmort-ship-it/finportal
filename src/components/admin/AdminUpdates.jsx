@@ -61,6 +61,30 @@ function buildFileUploadNotifications(requests) {
     .filter(Boolean);
 }
 
+function getNotificationStyles(eventType) {
+  if (eventType === 'login') {
+    return {
+      card: 'border-sky-200 bg-sky-50/80',
+      badge: 'bg-sky-100 text-sky-700',
+      label: 'כניסה למערכת',
+    };
+  }
+
+  if (eventType === 'file_upload') {
+    return {
+      card: 'border-emerald-200 bg-emerald-50/80',
+      badge: 'bg-emerald-100 text-emerald-700',
+      label: 'העלאת מסמך',
+    };
+  }
+
+  return {
+    card: 'border-border bg-card',
+    badge: 'bg-muted text-muted-foreground',
+    label: 'התראה',
+  };
+}
+
 export default function AdminUpdates({ selectedClient }) {
   const [updates, setUpdates] = useState([]);
   const [adminNotifications, setAdminNotifications] = useState([]);
@@ -242,11 +266,14 @@ export default function AdminUpdates({ selectedClient }) {
                 אין התראות מערכת ללקוח זה
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
                 {adminNotifications.map((item) => (
-                  <div key={item.id} className="bg-card rounded-xl border border-border p-4">
+                  <div key={item.id} className={`rounded-xl border p-4 ${getNotificationStyles(item.eventType).card}`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mb-2 ${getNotificationStyles(item.eventType).badge}`}>
+                          {getNotificationStyles(item.eventType).label}
+                        </span>
                         <p className="text-foreground break-words">{item.cleanMessage}</p>
                         <p className="text-xs text-muted-foreground mt-2">
                           {item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
@@ -275,7 +302,7 @@ export default function AdminUpdates({ selectedClient }) {
                 אין עדכונים ללקוח זה
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
                 {updates.map((u) => (
                   <div key={u.id} className="bg-card rounded-xl border border-border p-4">
                     <div className="flex items-start justify-between gap-4">
