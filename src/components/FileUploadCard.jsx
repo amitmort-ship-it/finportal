@@ -21,8 +21,6 @@ const statusConfig = {
   rejected: { label: 'נדחה', icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 };
 
-const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
-
 export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
@@ -85,9 +83,10 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
       console.log('uploadToDrive result', driveRes?.data || driveRes);
 
       if (user?.role !== 'admin') {
-        await base44.entities.ClientUpdate.create({
-          client_email: ADMIN_NOTIFICATIONS_EMAIL,
-          message: `[[admin_event:file_upload]][[client:${request.client_email}]] ${user?.full_name || user?.email || 'לקוח'} העלה/תה מסמך: ${file.name}`,
+        await base44.functions.invoke('createAdminNotification', {
+          event_type: 'file_upload',
+          client_email: request.client_email,
+          message: `${user?.full_name || user?.email || 'לקוח'} העלה/תה מסמך: ${file.name}`,
         });
       }
 
@@ -135,8 +134,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a href={file.file_url} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate flex-1">
+              <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
