@@ -270,22 +270,22 @@ function buildLoanInsights(loansWithMetrics) {
     {
       title: 'הכי נוחה תזרימית',
       text: `${lowestMonthly.name} מציגה את ההחזר החודשי הנמוך ביותר: ${formatCurrency(lowestMonthly.metrics.monthlyPayment)}.`,
-      tone: 'bg-blue-50 border-blue-200 text-blue-700',
+      tone: 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/25 dark:border-blue-900/50 dark:text-blue-300',
     },
     {
       title: 'הכי זולה לאורך זמן',
       text: `${lowestTotalCost.name} מציגה את העלות הכוללת הנמוכה ביותר: ${formatCurrency(lowestTotalCost.metrics.totalCost)}.`,
-      tone: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      tone: 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/25 dark:border-emerald-900/50 dark:text-emerald-300',
     },
     {
       title: 'העלות היחסית הנמוכה ביותר',
       text: `${lowestCostPerShekel.name} מציגה את העלות היחסית הנמוכה ביותר: ${lowestCostPerShekel.metrics.costPerBorrowedShekel.toFixed(3)} ₪ לכל 1 ₪ הלוואה.`,
-      tone: 'bg-amber-50 border-amber-200 text-amber-700',
+      tone: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/25 dark:border-amber-900/50 dark:text-amber-300',
     },
     {
       title: 'איזון טוב בין החזר לעלות',
       text: `${balanced.name} נראית כאפשרות מאוזנת יחסית בין החזר חודשי לעלות כוללת.`,
-      tone: 'bg-violet-50 border-violet-200 text-violet-700',
+      tone: 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300',
     },
   ];
 }
@@ -346,7 +346,6 @@ function calculatePropertyPurchaseCosts(form) {
     showMortgageCosts,
   };
 }
-
 function CompoundInterestCalculator() {
   const isMobile = useIsMobile();
   const [form, setForm] = useState({
@@ -371,19 +370,19 @@ function CompoundInterestCalculator() {
       title: 'הסכום העתידי שלך',
       value: formatCurrency(results.finalBalance),
       icon: TrendingUp,
-      tone: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      tone: 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/25 dark:border-emerald-900/50 dark:text-emerald-300',
     },
     {
       title: 'סך כל ההפקדות',
       value: formatCurrency(results.totalDeposits),
       icon: PiggyBank,
-      tone: 'bg-blue-50 border-blue-200 text-blue-700',
+      tone: 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/25 dark:border-blue-900/50 dark:text-blue-300',
     },
     {
       title: 'רווח מהריבית',
       value: formatCurrency(results.totalInterest),
       icon: Landmark,
-      tone: 'bg-amber-50 border-amber-200 text-amber-700',
+      tone: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/25 dark:border-amber-900/50 dark:text-amber-300',
     },
   ];
 
@@ -442,7 +441,7 @@ function CompoundInterestCalculator() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {summaryCards.map(({ title, value, icon: Icon, tone }) => (
               <div key={title} className={`rounded-2xl border p-4 md:p-5 text-right ${tone}`}>
-                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
+                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/70 dark:bg-slate-950/70 flex items-center justify-center mb-3">
                   <Icon className="w-5 h-5" />
                 </div>
                 <p className="text-sm font-medium opacity-90">{title}</p>
@@ -589,7 +588,6 @@ function CompoundInterestCalculator() {
     </div>
   );
 }
-
 function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
   return (
     <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
@@ -601,7 +599,7 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
           </p>
         </div>
         {loan.isExisting ? (
-          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-medium">
+          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-3 py-1 text-xs font-medium">
             הלוואה קיימת
           </span>
         ) : null}
@@ -820,7 +818,6 @@ function LoanComparisonCalculator() {
           />
         ))}
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {activeLoans.map((loan) => {
           const { metrics } = loan;
@@ -1180,7 +1177,7 @@ function LoanComparisonCalculator() {
                 <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">כרגע מסומנת כבסיס להשוואה מול יתר ההצעות</p>
               </div>
 
-              <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+              <div className="rounded-xl bg-blue-50 border border-blue-200 dark:bg-blue-950/25 dark:border-blue-900/50 p-4">
                 <div className="font-semibold text-foreground">{benchmarkLoan.name}</div>
                 <div className="text-xs md:text-sm text-muted-foreground mt-1">החזר חודשי: {formatCurrency(benchmarkLoan.metrics.monthlyPayment)}</div>
                 <div className="text-xs md:text-sm text-muted-foreground mt-1">עלות כוללת: {formatCurrency(benchmarkLoan.metrics.totalCost)}</div>
@@ -1195,7 +1192,6 @@ function LoanComparisonCalculator() {
     </div>
   );
 }
-
 function PropertyPurchaseCostsCalculator() {
   const [form, setForm] = useState({
     propertyPrice: 2000000,
@@ -1343,6 +1339,7 @@ function PropertyPurchaseCostsCalculator() {
               </div>
             </div>
           </div>
+
           <div>
             <Label>עלות שיפוץ</Label>
             <Input
@@ -1407,18 +1404,18 @@ function PropertyPurchaseCostsCalculator() {
 
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-right">
-              <p className="text-sm font-medium text-amber-800">סך העלויות הנלוות</p>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/25 dark:border-amber-900/50 p-5 text-right">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">סך העלויות הנלוות</p>
               <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatCurrency(results.totalAdditionalCosts)}</p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-right">
-              <p className="text-sm font-medium text-emerald-800">עלות כוללת של העסקה</p>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/25 dark:border-emerald-900/50 p-5 text-right">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">עלות כוללת של העסקה</p>
               <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatCurrency(results.totalDealCost)}</p>
             </div>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-right">
-              <p className="text-sm font-medium text-blue-800">אחוז עלויות נלוות</p>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 dark:bg-blue-950/25 dark:border-blue-900/50 p-5 text-right">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-300">אחוז עלויות נלוות</p>
               <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatPercent(results.additionalCostsPercent, 1)}</p>
             </div>
           </div>
@@ -1440,18 +1437,18 @@ function PropertyPurchaseCostsCalculator() {
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-3">
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-4">
-              <span className="font-semibold text-amber-900">סך העלויות הנלוות</span>
+            <div className="flex items-center justify-between gap-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/25 dark:border-amber-900/50 px-4 py-4">
+              <span className="font-semibold text-amber-900 dark:text-amber-300">סך העלויות הנלוות</span>
               <span className="font-bold text-foreground">{formatCurrency(results.totalAdditionalCosts)}</span>
             </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-4">
-              <span className="font-semibold text-emerald-900">העלות הכוללת של העסקה</span>
+            <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50 px-4 py-4">
+              <span className="font-semibold text-emerald-900 dark:text-emerald-300">העלות הכוללת של העסקה</span>
               <span className="font-bold text-foreground">{formatCurrency(results.totalDealCost)}</span>
             </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-4">
-              <span className="font-semibold text-blue-900">אחוז העלויות מתוך מחיר הנכס</span>
+            <div className="flex items-center justify-between gap-4 rounded-xl bg-blue-50 border border-blue-200 dark:bg-blue-950/25 dark:border-blue-900/50 px-4 py-4">
+              <span className="font-semibold text-blue-900 dark:text-blue-300">אחוז העלויות מתוך מחיר הנכס</span>
               <span className="font-bold text-foreground">{formatPercent(results.additionalCostsPercent, 1)}</span>
             </div>
           </div>
