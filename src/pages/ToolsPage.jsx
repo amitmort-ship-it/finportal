@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Calculator, TrendingUp, PiggyBank, Landmark } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -10,6 +11,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart';
 
 function formatCurrency(value) {
   const rounded = Math.round(Number(value || 0));
@@ -82,6 +90,7 @@ function calculateCompoundInterest({
       yearlyData.push({
         year: Number((month / 12).toFixed(2)),
         balance,
+        deposits: totalDeposits,
         totalDeposits,
         totalInterest,
       });
@@ -137,6 +146,17 @@ export default function ToolsPage() {
       tone: 'bg-amber-50 border-amber-200 text-amber-700',
     },
   ];
+
+  const chartConfig = {
+    balance: {
+      label: 'יתרה',
+      color: '#059669',
+    },
+    deposits: {
+      label: 'סך הפקדות',
+      color: '#2563eb',
+    },
+  };
 
   return (
     <div className="space-y-6">
@@ -242,6 +262,81 @@ export default function ToolsPage() {
                     <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-card rounded-2xl border border-border p-5">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground">גרף צמיחה</h3>
+                    <p className="text-sm text-muted-foreground mt-1">השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן</p>
+                  </div>
+                </div>
+
+                {results.yearlyData.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-8 text-center">
+                    הזן מספר שנים גדול מאפס כדי לראות גרף
+                  </div>
+                ) : (
+                  <ChartContainer config={chartConfig} className="h-[320px] w-full">
+                    <AreaChart data={results.yearlyData} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
+                      <defs>
+                        <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--color-balance)" stopOpacity={0.28} />
+                          <stop offset="95%" stopColor="var(--color-balance)" stopOpacity={0.04} />
+                        </linearGradient>
+                        <linearGradient id="fillDeposits" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--color-deposits)" stopOpacity={0.18} />
+                          <stop offset="95%" stopColor="var(--color-deposits)" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="year"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => formatCurrency(value)}
+                        width={90}
+                      />
+                      <ChartTooltip
+                        content={(
+                          <ChartTooltipContent
+                            formatter={(value, name) => (
+                              <>
+                                <span className="text-muted-foreground">
+                                  {name === 'balance' ? 'יתרה' : 'סך הפקדות'}
+                                </span>
+                                <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                              </>
+                            )}
+                            labelFormatter={(label) => `שנה ${label}`}
+                          />
+                        )}
+                      />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Area
+                        type="monotone"
+                        dataKey="deposits"
+                        name="deposits"
+                        stroke="var(--color-deposits)"
+                        fill="url(#fillDeposits)"
+                        strokeWidth={2}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="balance"
+                        name="balance"
+                        stroke="var(--color-balance)"
+                        fill="url(#fillBalance)"
+                        strokeWidth={3}
+                      />
+                    </AreaChart>
+                  </ChartContainer>
+                )}
               </div>
 
               <div className="bg-card rounded-2xl border border-border p-5">
