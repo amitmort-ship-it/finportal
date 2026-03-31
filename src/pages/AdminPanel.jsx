@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminClients from '../components/admin/AdminClients';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
-import AdminFileRequests from '../components/admin/AdminFileRequests';
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminPackages from '../components/admin/AdminPackages';
 import AdminBankApprovals from '../components/admin/AdminBankApprovals';
@@ -159,10 +158,9 @@ export default function AdminPanel() {
       <AdminNotifications selectedClient={selectedClient} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
           <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
-          <TabsTrigger value="file-requests" className="text-xs md:text-sm">בקשות</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
           <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
           <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
@@ -180,7 +178,6 @@ export default function AdminPanel() {
 
         <TabsContent value="clients"><AdminClients /></TabsContent>
         <TabsContent value="document-request"><AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} /></TabsContent>
-        <TabsContent value="file-requests"><AdminFileRequests selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="documents"><AdminViewDocuments selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="packages"><AdminPackages selectedClient={selectedClient} /></TabsContent>
