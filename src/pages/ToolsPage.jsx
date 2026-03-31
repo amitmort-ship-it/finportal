@@ -412,30 +412,59 @@ function CompoundInterestCalculator() {
 
           <div>
             <Label>סכום התחלתי</Label>
-            <Input type="text" inputMode="numeric" value={formatInputNumber(form.initialAmount)} onChange={handleChange('initialAmount')} className="mt-1" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatInputNumber(form.initialAmount)}
+              onChange={handleChange('initialAmount')}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>הפקדה חודשית קבועה</Label>
-            <Input type="text" inputMode="numeric" value={formatInputNumber(form.monthlyContribution)} onChange={handleChange('monthlyContribution')} className="mt-1" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatInputNumber(form.monthlyContribution)}
+              onChange={handleChange('monthlyContribution')}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>ריבית שנתית באחוזים</Label>
             <div className="relative mt-1">
-              <Input type="text" inputMode="decimal" value={formatInputNumber(form.annualRate)} onChange={handleChange('annualRate')} className="pl-10" />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={formatInputNumber(form.annualRate)}
+                onChange={handleChange('annualRate')}
+                className="pl-10"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                %
+              </span>
             </div>
           </div>
 
           <div>
             <Label>תקופת השקעה בשנים</Label>
-            <Input type="text" inputMode="numeric" value={formatInputNumber(form.years)} onChange={handleChange('years')} className="mt-1" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatInputNumber(form.years)}
+              onChange={handleChange('years')}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>תדירות חישוב ריבית</Label>
-            <Select value={form.compoundingFrequency} onValueChange={(value) => setForm((prev) => ({ ...prev, compoundingFrequency: value }))}>
+            <Select
+              value={form.compoundingFrequency}
+              onValueChange={(value) => setForm((prev) => ({ ...prev, compoundingFrequency: value }))}
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -450,12 +479,14 @@ function CompoundInterestCalculator() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {summaryCards.map(({ title, value, icon: Icon, tone }) => (
-              <div key={title} className={`rounded-2xl border p-5 text-right ${tone}`}>
-                <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
+              <div key={title} className={`rounded-2xl border p-4 md:p-5 text-right ${tone}`}>
+                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
                   <Icon className="w-5 h-5" />
                 </div>
                 <p className="text-sm font-medium opacity-90">{title}</p>
-                <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
+                <p className="text-base md:text-xl font-bold mt-1 text-foreground leading-tight">
+                  {value}
+                </p>
               </div>
             ))}
           </div>
@@ -469,12 +500,14 @@ function CompoundInterestCalculator() {
             </div>
 
             {results.yearlyData.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות גרף</div>
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                הזן מספר שנים גדול מאפס כדי לראות גרף
+              </div>
             ) : (
-              <ChartContainer config={chartConfig} className="h-[220px] md:h-[320px] w-full">
+              <ChartContainer config={chartConfig} className="h-[180px] md:h-[320px] w-full">
                 <AreaChart
                   data={results.yearlyData}
-                  margin={{ top: 8, right: isMobile ? 0 : 16, left: isMobile ? 0 : 12, bottom: isMobile ? 6 : 12 }}
+                  margin={{ top: 4, right: isMobile ? 0 : 16, left: isMobile ? 0 : 12, bottom: isMobile ? 2 : 12 }}
                 >
                   <defs>
                     <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
@@ -486,13 +519,13 @@ function CompoundInterestCalculator() {
                       <stop offset="95%" stopColor="var(--color-deposits)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} />
+                  <CartesianGrid vertical={false} horizontal={!isMobile} />
                   <XAxis
                     dataKey="year"
                     tickLine={false}
                     axisLine={false}
-                    tickMargin={isMobile ? 4 : 8}
-                    minTickGap={isMobile ? 12 : 24}
+                    tickMargin={isMobile ? 2 : 8}
+                    minTickGap={isMobile ? 18 : 24}
                     tick={{ fontSize: isMobile ? 12 : 14 }}
                   />
                   <YAxis
@@ -503,27 +536,45 @@ function CompoundInterestCalculator() {
                     width={90}
                   />
                   <ChartTooltip
-                    content={(
+                    content={
                       <ChartTooltipContent
                         formatter={(value, name) => (
                           <>
-                            <span className="text-muted-foreground">{name === 'balance' ? 'יתרה' : 'סך הפקדות'}</span>
-                            <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                            <span className="text-muted-foreground">
+                              {name === 'balance' ? 'יתרה' : 'סך הפקדות'}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(value)}
+                            </span>
                           </>
                         )}
                         labelFormatter={(label) => `שנה ${label}`}
                       />
-                    )}
+                    }
                   />
                   {!isMobile ? <ChartLegend content={<ChartLegendContent />} /> : null}
-                  <Area type="monotone" dataKey="deposits" name="deposits" stroke="var(--color-deposits)" fill="url(#fillDeposits)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="balance" name="balance" stroke="var(--color-balance)" fill="url(#fillBalance)" strokeWidth={3} />
+                  <Area
+                    type="monotone"
+                    dataKey="deposits"
+                    name="deposits"
+                    stroke="var(--color-deposits)"
+                    fill="url(#fillDeposits)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="balance"
+                    name="balance"
+                    stroke="var(--color-balance)"
+                    fill="url(#fillBalance)"
+                    strokeWidth={3}
+                  />
                 </AreaChart>
               </ChartContainer>
             )}
 
             {results.yearlyData.length > 0 && isMobile ? (
-              <div className="flex items-center justify-center gap-4 pt-3 text-sm">
+              <div className="flex items-center justify-center gap-4 pt-2 text-xs">
                 <div className="flex items-center gap-2 text-foreground">
                   <span className="h-3 w-3 rounded-sm bg-[#059669]" />
                   יתרה
@@ -543,7 +594,9 @@ function CompoundInterestCalculator() {
             </div>
 
             {results.yearlyData.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות תחזית</div>
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                הזן מספר שנים גדול מאפס כדי לראות תחזית
+              </div>
             ) : (
               <>
                 <div className="space-y-3 md:hidden">
@@ -1098,8 +1151,8 @@ function LoanComparisonCalculator() {
                 <BarChart
                   data={comparisonChartData}
                   margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
-                  barCategoryGap={isMobile ? '22%' : '42%'}
-                  barGap={isMobile ? 10 : 18}
+                  barCategoryGap={isMobile ? '22%' : '24%'}
+                  barGap={isMobile ? 10 : 8}
                 >
                   <CartesianGrid vertical={false} horizontal={false} />
                   <XAxis
@@ -1136,7 +1189,7 @@ function LoanComparisonCalculator() {
                     dataKey="monthlyPayment"
                     name="monthlyPayment"
                     radius={[6, 6, 0, 0]}
-                    maxBarSize={isMobile ? 42 : 46}
+                    maxBarSize={isMobile ? 42 : 72}
                   >
                     {comparisonChartData.map((entry) => (
                       <Cell
@@ -1164,8 +1217,8 @@ function LoanComparisonCalculator() {
                 <BarChart
                   data={comparisonChartData}
                   margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
-                  barCategoryGap={isMobile ? '22%' : '42%'}
-                  barGap={isMobile ? 10 : 18}
+                  barCategoryGap={isMobile ? '22%' : '24%'}
+                  barGap={isMobile ? 10 : 8}
                 >
                   <CartesianGrid vertical={false} horizontal={false} />
                   <XAxis
@@ -1202,7 +1255,7 @@ function LoanComparisonCalculator() {
                     dataKey="totalCost"
                     name="totalCost"
                     radius={[6, 6, 0, 0]}
-                    maxBarSize={isMobile ? 42 : 46}
+                    maxBarSize={isMobile ? 42 : 72}
                   >
                     {comparisonChartData.map((entry) => (
                       <Cell
@@ -1231,8 +1284,8 @@ function LoanComparisonCalculator() {
               <BarChart
                 data={comparisonChartData}
                 margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
-                barCategoryGap={isMobile ? '22%' : '42%'}
-                barGap={isMobile ? 10 : 18}
+                barCategoryGap={isMobile ? '22%' : '24%'}
+                barGap={isMobile ? 10 : 8}
               >
                 <CartesianGrid vertical={false} horizontal={false} />
                 <XAxis
@@ -1274,7 +1327,7 @@ function LoanComparisonCalculator() {
                   dataKey="costPerBorrowedShekel"
                   name="costPerBorrowedShekel"
                   radius={[6, 6, 0, 0]}
-                  maxBarSize={isMobile ? 42 : 46}
+                  maxBarSize={isMobile ? 42 : 72}
                 >
                   {comparisonChartData.map((entry) => (
                     <Cell
