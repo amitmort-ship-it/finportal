@@ -92,17 +92,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser(currentUser);
-      const resolvedCase = await loadCaseAccess(currentUser);
+      await loadCaseAccess(currentUser);
 
-      if (currentUser.role !== 'admin' && resolvedCase?.email) {
-        const sessionKey = `admin-login-notified:${String(currentUser.email || resolvedCase.email).toLowerCase()}`;
+      if (currentUser.role !== 'admin' && currentUser.email) {
+        const sessionKey = `admin-login-notified:${String(currentUser.email).toLowerCase()}`;
         if (!sessionStorage.getItem(sessionKey)) {
           try {
-            const notificationRes = await base44.functions.invoke('createAdminNotification', {
-              event_type: 'login',
-              client_email: resolvedCase.email,
-              message: `${currentUser.full_name || currentUser.email} נכנס/ה למערכת עבור תיק ${resolvedCase.full_name || resolvedCase.email}`,
-            });
+            const notificationRes = await base44.functions.invoke('trackClientLogin', {});
 
             const notificationError = getInvokeError(notificationRes);
             if (notificationError) {
@@ -110,9 +106,9 @@ export const AuthProvider = ({ children }) => {
             }
 
             sessionStorage.setItem(sessionKey, '1');
-            console.log('createAdminNotification result', notificationRes?.data || notificationRes);
+            console.log('trackClientLogin result', notificationRes?.data || notificationRes);
           } catch (notificationError) {
-            console.error('Failed to create admin login notification:', notificationError);
+            console.error('Failed to track client login:', notificationError);
           }
         }
       }
