@@ -39,12 +39,12 @@ export default function AdminNotifications({ selectedClient }) {
 
   const load = async () => {
     try {
-      const data = await base44.entities.ClientUpdate.filter(
-        { client_email: ADMIN_NOTIFICATIONS_EMAIL },
-        '-created_date',
-      );
+      const data = await base44.entities.ClientUpdate.filter({}, '-created_date');
 
-      const parsed = (data || []).map(parseNotification);
+      const parsed = (data || [])
+        .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
+        .map(parseNotification);
+
       const filtered = selectedClient
         ? parsed.filter((item) => item.relatedClientEmail === selectedClient)
         : parsed;
@@ -65,7 +65,6 @@ export default function AdminNotifications({ selectedClient }) {
   useEffect(() => {
     const unsubscribe = base44.entities.ClientUpdate.subscribe((event) => {
       if (event.type !== 'create' && event.type !== 'delete') return;
-      if (event.data?.client_email !== ADMIN_NOTIFICATIONS_EMAIL) return;
       load();
     });
 
