@@ -13,10 +13,9 @@ export default function ClientFiles() {
       setLoading(false);
       return;
     }
-
     try {
       const data = await base44.entities.FileRequest.list('-created_date');
-      const pending = data.filter((r) => r.client_email === caseEmail);
+      const pending = data.filter(r => r.client_email === caseEmail);
       setRequests(pending);
     } catch (error) {
       console.error('Error loading requests:', error);
@@ -31,11 +30,9 @@ export default function ClientFiles() {
 
   useEffect(() => {
     if (!caseEmail) return;
-
-    const unsubscribe = base44.entities.FileRequest.subscribe(() => {
+    const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
       load();
     });
-
     return unsubscribe;
   }, [caseEmail]);
 
@@ -49,20 +46,21 @@ export default function ClientFiles() {
 
   const CATEGORIES = ['לווה 1', 'לווה 2', 'משותף'];
   const CATEGORY_COLORS = {
-    'לווה 1': 'bg-blue-50 border-blue-200',
-    'לווה 2': 'bg-purple-50 border-purple-200',
-    'משותף': 'bg-emerald-50 border-emerald-200',
+    'לווה 1': 'bg-blue-50 border-blue-200 dark:bg-blue-950/25 dark:border-blue-900/50',
+    'לווה 2': 'bg-purple-50 border-purple-200 dark:bg-purple-950/25 dark:border-purple-900/50',
+    'משותף': 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50',
   };
   const CATEGORY_TITLE_COLORS = {
-    'לווה 1': 'text-blue-700',
-    'לווה 2': 'text-purple-700',
-    'משותף': 'text-emerald-700',
+    'לווה 1': 'text-blue-700 dark:text-blue-300',
+    'לווה 2': 'text-purple-700 dark:text-purple-300',
+    'משותף': 'text-emerald-700 dark:text-emerald-300',
   };
 
   const grouped = CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = requests.filter((r) => r.category === cat);
+    acc[cat] = requests.filter(r => r.category === cat);
     return acc;
   }, {});
+  const uncategorized = requests.filter(r => !r.category);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -74,12 +72,12 @@ export default function ClientFiles() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {CATEGORIES.map((cat) => (
+          {CATEGORIES.map(cat => (
             <div key={cat} className={`rounded-xl border p-5 ${CATEGORY_COLORS[cat]}`}>
               <h2 className={`font-bold text-base mb-4 ${CATEGORY_TITLE_COLORS[cat]}`}>{cat}</h2>
               {grouped[cat]?.length > 0 ? (
                 <div className="space-y-3">
-                  {grouped[cat].map((request) => (
+                  {grouped[cat].map(request => (
                     <FileUploadCard key={request.id} request={request} onUpdate={load} />
                   ))}
                 </div>
