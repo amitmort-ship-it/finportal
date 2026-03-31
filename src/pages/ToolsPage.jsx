@@ -324,9 +324,7 @@ function calculatePropertyPurchaseCosts(form) {
   }
 
   const mortgageOpeningCost = showMortgageCosts ? 360 : 0;
-  const mortgageCostsTotal = showMortgageCosts
-    ? mortgageOpeningCost + mortgageRegistryCost
-    : 0;
+  const mortgageCostsTotal = showMortgageCosts ? mortgageOpeningCost + mortgageRegistryCost : 0;
 
   const totalAdditionalCosts =
     purchaseTax +
@@ -338,8 +336,7 @@ function calculatePropertyPurchaseCosts(form) {
     mortgageCostsTotal;
 
   const totalDealCost = propertyPrice + totalAdditionalCosts;
-  const additionalCostsPercent =
-    propertyPrice > 0 ? (totalAdditionalCosts / propertyPrice) * 100 : 0;
+  const additionalCostsPercent = propertyPrice > 0 ? (totalAdditionalCosts / propertyPrice) * 100 : 0;
 
   return {
     propertyPrice,
@@ -410,68 +407,35 @@ function CompoundInterestCalculator() {
         <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">נתוני חישוב</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              מלא את הפרטים ונחשב את הצמיחה הצפויה
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">מלא את הפרטים ונחשב את הצמיחה הצפויה</p>
           </div>
 
           <div>
             <Label>סכום התחלתי</Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={formatInputNumber(form.initialAmount)}
-              onChange={handleChange('initialAmount')}
-              className="mt-1"
-            />
+            <Input type="text" inputMode="numeric" value={formatInputNumber(form.initialAmount)} onChange={handleChange('initialAmount')} className="mt-1" />
           </div>
 
           <div>
             <Label>הפקדה חודשית קבועה</Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={formatInputNumber(form.monthlyContribution)}
-              onChange={handleChange('monthlyContribution')}
-              className="mt-1"
-            />
+            <Input type="text" inputMode="numeric" value={formatInputNumber(form.monthlyContribution)} onChange={handleChange('monthlyContribution')} className="mt-1" />
           </div>
 
           <div>
             <Label>ריבית שנתית באחוזים</Label>
             <div className="relative mt-1">
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={formatInputNumber(form.annualRate)}
-                onChange={handleChange('annualRate')}
-                className="pl-10"
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                %
-              </span>
+              <Input type="text" inputMode="decimal" value={formatInputNumber(form.annualRate)} onChange={handleChange('annualRate')} className="pl-10" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
             </div>
           </div>
 
           <div>
             <Label>תקופת השקעה בשנים</Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={formatInputNumber(form.years)}
-              onChange={handleChange('years')}
-              className="mt-1"
-            />
+            <Input type="text" inputMode="numeric" value={formatInputNumber(form.years)} onChange={handleChange('years')} className="mt-1" />
           </div>
 
           <div>
             <Label>תדירות חישוב ריבית</Label>
-            <Select
-              value={form.compoundingFrequency}
-              onValueChange={(value) =>
-                setForm((prev) => ({ ...prev, compoundingFrequency: value }))
-              }
-            >
+            <Select value={form.compoundingFrequency} onValueChange={(value) => setForm((prev) => ({ ...prev, compoundingFrequency: value }))}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -491,9 +455,7 @@ function CompoundInterestCalculator() {
                   <Icon className="w-5 h-5" />
                 </div>
                 <p className="text-sm font-medium opacity-90">{title}</p>
-                <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">
-                  {value}
-                </p>
+                <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
               </div>
             ))}
           </div>
@@ -501,20 +463,18 @@ function CompoundInterestCalculator() {
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-xl font-semibold text-foreground">גרף צמיחה</h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1 leading-6">
                 השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן
               </p>
             </div>
 
             {results.yearlyData.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                הזן מספר שנים גדול מאפס כדי לראות גרף
-              </div>
+              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות גרף</div>
             ) : (
-              <ChartContainer config={chartConfig} className="h-[240px] md:h-[320px] w-full">
+              <ChartContainer config={chartConfig} className="h-[220px] md:h-[320px] w-full">
                 <AreaChart
                   data={results.yearlyData}
-                  margin={{ top: 12, right: isMobile ? 8 : 16, left: isMobile ? 8 : 12, bottom: 12 }}
+                  margin={{ top: 8, right: isMobile ? 0 : 16, left: isMobile ? 0 : 12, bottom: isMobile ? 6 : 12 }}
                 >
                   <defs>
                     <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
@@ -531,7 +491,8 @@ function CompoundInterestCalculator() {
                     dataKey="year"
                     tickLine={false}
                     axisLine={false}
-                    tickMargin={8}
+                    tickMargin={isMobile ? 4 : 8}
+                    minTickGap={isMobile ? 12 : 24}
                     tick={{ fontSize: isMobile ? 12 : 14 }}
                   />
                   <YAxis
@@ -542,56 +503,47 @@ function CompoundInterestCalculator() {
                     width={90}
                   />
                   <ChartTooltip
-                    content={
+                    content={(
                       <ChartTooltipContent
                         formatter={(value, name) => (
                           <>
-                            <span className="text-muted-foreground">
-                              {name === 'balance' ? 'יתרה' : 'סך הפקדות'}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {formatCurrency(value)}
-                            </span>
+                            <span className="text-muted-foreground">{name === 'balance' ? 'יתרה' : 'סך הפקדות'}</span>
+                            <span className="font-medium text-foreground">{formatCurrency(value)}</span>
                           </>
                         )}
                         labelFormatter={(label) => `שנה ${label}`}
                       />
-                    }
+                    )}
                   />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Area
-                    type="monotone"
-                    dataKey="deposits"
-                    name="deposits"
-                    stroke="var(--color-deposits)"
-                    fill="url(#fillDeposits)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="balance"
-                    name="balance"
-                    stroke="var(--color-balance)"
-                    fill="url(#fillBalance)"
-                    strokeWidth={3}
-                  />
+                  {!isMobile ? <ChartLegend content={<ChartLegendContent />} /> : null}
+                  <Area type="monotone" dataKey="deposits" name="deposits" stroke="var(--color-deposits)" fill="url(#fillDeposits)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="balance" name="balance" stroke="var(--color-balance)" fill="url(#fillBalance)" strokeWidth={3} />
                 </AreaChart>
               </ChartContainer>
             )}
+
+            {results.yearlyData.length > 0 && isMobile ? (
+              <div className="flex items-center justify-center gap-4 pt-3 text-sm">
+                <div className="flex items-center gap-2 text-foreground">
+                  <span className="h-3 w-3 rounded-sm bg-[#059669]" />
+                  יתרה
+                </div>
+                <div className="flex items-center gap-2 text-foreground">
+                  <span className="h-3 w-3 rounded-sm bg-[#2563eb]" />
+                  סך הפקדות
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-xl font-semibold text-foreground">טבלת צמיחה שנתית</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                פירוט לפי שנה של היתרה, ההפקדות והרווח
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">פירוט לפי שנה של היתרה, ההפקדות והרווח</p>
             </div>
 
             {results.yearlyData.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                הזן מספר שנים גדול מאפס כדי לראות תחזית
-              </div>
+              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות תחזית</div>
             ) : (
               <>
                 <div className="space-y-3 md:hidden">
@@ -600,21 +552,15 @@ function CompoundInterestCalculator() {
                       <div className="font-semibold text-foreground">שנה {row.year}</div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">יתרה</span>
-                        <span className="text-foreground font-medium">
-                          {formatCurrency(row.balance)}
-                        </span>
+                        <span className="text-foreground font-medium">{formatCurrency(row.balance)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">סך הפקדות</span>
-                        <span className="text-foreground font-medium">
-                          {formatCurrency(row.totalDeposits)}
-                        </span>
+                        <span className="text-foreground font-medium">{formatCurrency(row.totalDeposits)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">רווח מהריבית</span>
-                        <span className="text-emerald-700 font-medium">
-                          {formatCurrency(row.totalInterest)}
-                        </span>
+                        <span className="text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</span>
                       </div>
                     </div>
                   ))}
@@ -635,12 +581,8 @@ function CompoundInterestCalculator() {
                         <tr key={row.year} className="border-b border-border last:border-b-0">
                           <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
                           <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
-                          <td className="py-3 px-2 text-muted-foreground">
-                            {formatCurrency(row.totalDeposits)}
-                          </td>
-                          <td className="py-3 px-2 text-emerald-700 font-medium">
-                            {formatCurrency(row.totalInterest)}
-                          </td>
+                          <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
+                          <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -662,9 +604,7 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
     <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base md:text-lg font-semibold text-foreground">
-            הלוואה {index + 1}
-          </h2>
+          <h2 className="text-base md:text-lg font-semibold text-foreground">הלוואה {index + 1}</h2>
           <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
             הזן את הנתונים כדי להשוות מול ההלוואות האחרות
           </p>
@@ -678,73 +618,35 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
 
       <div>
         <Label>שם הלוואה</Label>
-        <Input
-          value={loan.name}
-          onChange={(event) => onChange('name', event.target.value)}
-          className="mt-1"
-        />
+        <Input value={loan.name} onChange={(event) => onChange('name', event.target.value)} className="mt-1" />
       </div>
 
       <div>
         <Label>סכום הלוואה / יתרה</Label>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={formatInputNumber(loan.amount)}
-          onChange={(event) => onChange('amount', event.target.value.replace(/,/g, ''))}
-          className="mt-1"
-        />
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.amount)} onChange={(event) => onChange('amount', event.target.value.replace(/,/g, ''))} className="mt-1" />
       </div>
 
       <div>
         <Label>ריבית שנתית</Label>
         <div className="relative mt-1">
-          <Input
-            type="text"
-            inputMode="decimal"
-            value={formatInputNumber(loan.annualRate)}
-            onChange={(event) => onChange('annualRate', event.target.value.replace(/,/g, ''))}
-            className="pl-10"
-          />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-            %
-          </span>
+          <Input type="text" inputMode="decimal" value={formatInputNumber(loan.annualRate)} onChange={(event) => onChange('annualRate', event.target.value.replace(/,/g, ''))} className="pl-10" />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
         </div>
       </div>
 
       <div>
         <Label>תקופה בחודשים</Label>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={formatInputNumber(loan.months)}
-          onChange={(event) => onChange('months', event.target.value.replace(/,/g, ''))}
-          className="mt-1"
-        />
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.months)} onChange={(event) => onChange('months', event.target.value.replace(/,/g, ''))} className="mt-1" />
       </div>
 
       <div>
         <Label>עלויות חד פעמיות</Label>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={formatInputNumber(loan.oneTimeCosts)}
-          onChange={(event) => onChange('oneTimeCosts', event.target.value.replace(/,/g, ''))}
-          className="mt-1"
-        />
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.oneTimeCosts)} onChange={(event) => onChange('oneTimeCosts', event.target.value.replace(/,/g, ''))} className="mt-1" />
       </div>
 
       <div>
         <Label>פירעון חלקי</Label>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={formatInputNumber(loan.partialRepayment)}
-          onChange={(event) =>
-            onChange('partialRepayment', event.target.value.replace(/,/g, ''))
-          }
-          className="mt-1"
-        />
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.partialRepayment)} onChange={(event) => onChange('partialRepayment', event.target.value.replace(/,/g, ''))} className="mt-1" />
       </div>
 
       <div>
@@ -775,11 +677,7 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
       ) : null}
 
       <label className="flex items-center gap-2 text-sm text-foreground">
-        <input
-          type="checkbox"
-          checked={loan.isExisting}
-          onChange={(event) => onToggleExisting(event.target.checked)}
-        />
+        <input type="checkbox" checked={loan.isExisting} onChange={(event) => onToggleExisting(event.target.checked)} />
         סמן כהלוואה קיימת
       </label>
     </div>
@@ -1200,6 +1098,8 @@ function LoanComparisonCalculator() {
                 <BarChart
                   data={comparisonChartData}
                   margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
+                  barCategoryGap={isMobile ? '22%' : '42%'}
+                  barGap={isMobile ? 10 : 18}
                 >
                   <CartesianGrid vertical={false} horizontal={false} />
                   <XAxis
@@ -1232,7 +1132,12 @@ function LoanComparisonCalculator() {
                       />
                     }
                   />
-                  <Bar dataKey="monthlyPayment" name="monthlyPayment" radius={[6, 6, 0, 0]}>
+                  <Bar
+                    dataKey="monthlyPayment"
+                    name="monthlyPayment"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={isMobile ? 42 : 46}
+                  >
                     {comparisonChartData.map((entry) => (
                       <Cell
                         key={`${entry.name}-monthly`}
@@ -1259,6 +1164,8 @@ function LoanComparisonCalculator() {
                 <BarChart
                   data={comparisonChartData}
                   margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
+                  barCategoryGap={isMobile ? '22%' : '42%'}
+                  barGap={isMobile ? 10 : 18}
                 >
                   <CartesianGrid vertical={false} horizontal={false} />
                   <XAxis
@@ -1291,7 +1198,12 @@ function LoanComparisonCalculator() {
                       />
                     }
                   />
-                  <Bar dataKey="totalCost" name="totalCost" radius={[6, 6, 0, 0]}>
+                  <Bar
+                    dataKey="totalCost"
+                    name="totalCost"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={isMobile ? 42 : 46}
+                  >
                     {comparisonChartData.map((entry) => (
                       <Cell
                         key={`${entry.name}-total`}
@@ -1319,6 +1231,8 @@ function LoanComparisonCalculator() {
               <BarChart
                 data={comparisonChartData}
                 margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
+                barCategoryGap={isMobile ? '22%' : '42%'}
+                barGap={isMobile ? 10 : 18}
               >
                 <CartesianGrid vertical={false} horizontal={false} />
                 <XAxis
@@ -1360,6 +1274,7 @@ function LoanComparisonCalculator() {
                   dataKey="costPerBorrowedShekel"
                   name="costPerBorrowedShekel"
                   radius={[6, 6, 0, 0]}
+                  maxBarSize={isMobile ? 42 : 46}
                 >
                   {comparisonChartData.map((entry) => (
                     <Cell
