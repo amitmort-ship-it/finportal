@@ -13,6 +13,7 @@ import AdminBankApprovals from '../components/admin/AdminBankApprovals';
 import AdminProcessStage from '../components/admin/AdminProcessStage';
 import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
+import AdminNotifications from '../components/admin/AdminNotifications';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
@@ -145,11 +146,17 @@ export default function AdminPanel() {
 
       <div className="bg-card rounded-xl border border-border p-4 mb-6">
         <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
-        <Select value={selectedClient || '_all'} onValueChange={v => setSelectedClient(v === '_all' ? null : v)}>
-          <SelectTrigger className="w-full md:w-80"><SelectValue placeholder="כל הלקוחות" /></SelectTrigger>
+        <Select value={selectedClient || '_all'} onValueChange={(v) => setSelectedClient(v === '_all' ? null : v)}>
+          <SelectTrigger className="w-full md:w-80">
+            <SelectValue placeholder="כל הלקוחות" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="_all">כל הלקוחות</SelectItem>
-            {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
+            {users.map((u) => (
+              <SelectItem key={u.id} value={u.email}>
+                {u.full_name || u.email}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -173,7 +180,10 @@ export default function AdminPanel() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="clients"><AdminClients /></TabsContent>
+        <TabsContent value="clients">
+          <AdminNotifications selectedClient={selectedClient} />
+          <AdminClients />
+        </TabsContent>
         <TabsContent value="document-request"><AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} /></TabsContent>
         <TabsContent value="documents"><AdminViewDocuments selectedClient={selectedClient} /></TabsContent>
         <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
