@@ -95,14 +95,14 @@ export const AuthProvider = ({ children }) => {
       const resolvedCase = await loadCaseAccess(currentUser);
 
       if (currentUser.role !== 'admin' && resolvedCase?.email) {
-        const sessionKey = `admin-login-notified:${String(resolvedCase.email).toLowerCase()}`;
+        const sessionKey = `admin-login-notified:${String(currentUser.email || resolvedCase.email).toLowerCase()}`;
         if (!sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, '1');
           try {
             const notificationRes = await base44.functions.invoke('createAdminNotification', {
               event_type: 'login',
               client_email: resolvedCase.email,
-              message: `${resolvedCase.full_name || currentUser.full_name || currentUser.email} נכנס/ה למערכת`,
+              message: `${currentUser.full_name || currentUser.email} נכנס/ה למערכת עבור תיק ${resolvedCase.full_name || resolvedCase.email}`,
             });
 
             const notificationError = getInvokeError(notificationRes);
