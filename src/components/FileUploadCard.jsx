@@ -36,6 +36,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         setRequest(event.data);
       }
     });
+
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
@@ -50,6 +51,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     if (!file) return;
 
     setUploading(true);
+
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const newFiles = [...uploadedFiles, {
@@ -83,11 +85,18 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
       console.log('uploadToDrive result', driveRes?.data || driveRes);
 
       if (user?.role !== 'admin') {
-        await base44.functions.invoke('createAdminNotification', {
+        const notificationRes = await base44.functions.invoke('createAdminNotification', {
           event_type: 'file_upload',
           client_email: request.client_email,
           message: `${user?.full_name || user?.email || 'לקוח'} העלה/תה מסמך: ${file.name}`,
         });
+
+        const notificationError = getInvokeError(notificationRes);
+        if (notificationError) {
+          throw new Error(notificationError);
+        }
+
+        console.log('createAdminNotification result', notificationRes?.data || notificationRes);
       }
 
       toast.success('הקובץ הועלה בהצלחה');
