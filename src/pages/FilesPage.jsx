@@ -8,9 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CATEGORIES = ['לווה 1', 'לווה 2', 'משותף'];
 const CATEGORY_STYLES = {
-  'לווה 1': { bg: 'bg-blue-50 border-blue-200', title: 'text-blue-600' },
-  'לווה 2': { bg: 'bg-purple-50 border-purple-200', title: 'text-purple-600' },
-  'משותף': { bg: 'bg-emerald-50 border-emerald-200', title: 'text-emerald-600' },
+  'לווה 1': {
+    bg: 'bg-blue-50 border-blue-200 dark:bg-blue-950/25 dark:border-blue-900/50',
+    title: 'text-blue-600 dark:text-blue-300',
+  },
+  'לווה 2': {
+    bg: 'bg-purple-50 border-purple-200 dark:bg-purple-950/25 dark:border-purple-900/50',
+    title: 'text-purple-600 dark:text-purple-300',
+  },
+  'משותף': {
+    bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50',
+    title: 'text-emerald-600 dark:text-emerald-300',
+  },
 };
 
 function getUploadedFiles(request) {
@@ -38,14 +47,14 @@ function getUploaderBadge(request) {
   if (isAdminUploadedRequest(request)) {
     return {
       label: 'הועלה בידי עמית',
-      className: 'bg-blue-50 text-blue-600',
+      className: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300',
       icon: Briefcase,
     };
   }
 
   return {
     label: 'הועלה על ידך',
-    className: 'bg-emerald-50 text-emerald-600',
+    className: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300',
     icon: User,
   };
 }
@@ -85,23 +94,21 @@ export default function FilesPage() {
 
   return (
     <div>
-      <div className="mb-8 text-right">
+      <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">מסמכים</h1>
       </div>
 
       <Tabs defaultValue="required" className="w-full">
-        <div className="flex justify-center mb-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-2">
-            <TabsTrigger value="required" className="gap-2">
-              <Inbox className="w-4 h-4" />
-              מסמכים נדרשים
-            </TabsTrigger>
-            <TabsTrigger value="uploaded" className="gap-2">
-              <FileText className="w-4 h-4" />
-              מסמכים שהועלו למערכת
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="grid w-full max-w-xl grid-cols-2 mb-6">
+          <TabsTrigger value="required" className="gap-2">
+            <Inbox className="w-4 h-4" />
+            מסמכים נדרשים
+          </TabsTrigger>
+          <TabsTrigger value="uploaded" className="gap-2">
+            <FileText className="w-4 h-4" />
+            מסמכים שהועלו למערכת
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="required">
           {requiredRequests.length === 0 ? (
