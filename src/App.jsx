@@ -1,7 +1,7 @@
-import { Toaster } from "@/components/ui/toaster";
-import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClientInstance } from '@/lib/query-client';
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { Toaster } from "@/components/ui/toaster"
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClientInstance } from '@/lib/query-client'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -17,6 +17,7 @@ const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ClientFiles = lazy(() => import('./pages/ClientFiles'));
 const JoinCasePage = lazy(() => import('./pages/JoinCasePage'));
+const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -26,16 +27,12 @@ const PageLoader = () => (
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return <PageLoader />;
   }
 
-  // Allow the join-case page to render even for unregistered users
-  const isJoinCasePath = location.pathname === '/join-case';
-
-  if (authError && !isJoinCasePath) {
+  if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
@@ -55,6 +52,7 @@ const AuthenticatedApp = () => {
           <Route path="/collaterals" element={<CollateralsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/my-files" element={<ClientFiles />} />
+          <Route path="/tools" element={<ToolsPage />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/join-case" element={<JoinCasePage />} />
         </Route>
@@ -74,7 +72,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  );
+  )
 }
 
-export default App;
+export default App
