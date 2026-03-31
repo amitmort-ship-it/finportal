@@ -10,16 +10,10 @@ export default function Dashboard() {
   const { user, caseEmail } = useAuth();
   const navigate = useNavigate();
   const [processStage, setProcessStage] = useState(null);
-  const [counts, setCounts] = useState({
-    approvals: 0,
-    files: 0,
-    collaterals: 0,
-    packages: 0,
-  });
+  const [counts, setCounts] = useState({ approvals: 0, files: 0, collaterals: 0, packages: 0 });
 
   useEffect(() => {
     if (!caseEmail) return;
-
     const load = async () => {
       const [stages, approvals, fileRequests, collaterals, packages] = await Promise.all([
         base44.entities.ProcessStage.filter({ client_email: caseEmail }),
@@ -28,11 +22,7 @@ export default function Dashboard() {
         base44.entities.Collateral.filter({ client_email: caseEmail }),
         base44.entities.SelectedPackage.filter({ client_email: caseEmail }),
       ]);
-
-      if (stages.length > 0) {
-        setProcessStage(stages[0]);
-      }
-
+      if (stages.length > 0) setProcessStage(stages[0]);
       setCounts({
         approvals: approvals.length,
         files: fileRequests.length,
@@ -40,7 +30,6 @@ export default function Dashboard() {
         packages: packages.length,
       });
     };
-
     load();
   }, [caseEmail]);
 
@@ -49,32 +38,32 @@ export default function Dashboard() {
       label: 'אישורים עקרוניים',
       count: counts.approvals,
       icon: Building2,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50 border-blue-200',
+      color: 'text-blue-600 dark:text-blue-300',
+      bg: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/50',
       route: '/approvals',
     },
     {
       label: 'מסמכים',
       count: counts.files,
       icon: FileText,
-      color: 'text-violet-600',
-      bg: 'bg-violet-50 border-violet-200',
+      color: 'text-violet-600 dark:text-violet-300',
+      bg: 'bg-violet-50 border-violet-200 dark:bg-violet-950/25 dark:border-violet-900/50',
       route: '/files',
     },
     {
       label: 'בטחונות',
       count: counts.collaterals,
       icon: Shield,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50 border-emerald-200',
+      color: 'text-emerald-600 dark:text-emerald-300',
+      bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50',
       route: '/collaterals',
     },
     {
       label: 'תמהילים',
       count: counts.packages,
       icon: Package,
-      color: 'text-orange-600',
-      bg: 'bg-orange-50 border-orange-200',
+      color: 'text-orange-600 dark:text-orange-300',
+      bg: 'bg-orange-50 border-orange-200 dark:bg-orange-950/25 dark:border-orange-900/50',
       route: '/package',
     },
   ];
@@ -103,7 +92,7 @@ export default function Dashboard() {
             onClick={() => navigate(route)}
             className={`rounded-xl border p-5 text-right hover:shadow-md transition-all duration-200 cursor-pointer ${bg}`}
           >
-            <div className="w-10 h-10 rounded-lg bg-white/70 flex items-center justify-center mb-3">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/70 dark:bg-slate-950/70">
               <Icon className={`w-5 h-5 ${color}`} />
             </div>
             <p className="text-2xl font-bold text-foreground">{count}</p>
