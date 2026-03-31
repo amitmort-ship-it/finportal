@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   Calculator,
@@ -19,6 +19,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,6 +69,32 @@ function CalculatorDisclaimer({ text }) {
       {text || 'החישובים הינם להערכה בלבד ואינם מהווים התחייבות או ייעוץ מקצועי.'}
     </div>
   );
+}
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < breakpoint;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const update = (event) => setIsMobile(event.matches);
+
+    setIsMobile(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, [breakpoint]);
+
+  return isMobile;
 }
 
 function calculateCompoundInterest({
@@ -367,7 +394,7 @@ function CompoundInterestCalculator() {
   return (
     <div className="space-y-6">
       <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-6 items-start">
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">נתוני חישוב</h2>
             <p className="text-sm text-muted-foreground mt-1">מלא את הפרטים ונחשב את הצמיחה הצפויה</p>
@@ -411,7 +438,7 @@ function CompoundInterestCalculator() {
         </div>
 
         <div className="space-y-6">
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {summaryCards.map(({ title, value, icon: Icon, tone }) => (
               <div key={title} className={`rounded-2xl border p-5 text-right ${tone}`}>
                 <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
@@ -423,7 +450,7 @@ function CompoundInterestCalculator() {
             ))}
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-xl font-semibold text-foreground">גרף צמיחה</h3>
               <p className="text-sm text-muted-foreground mt-1">השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן</p>
@@ -468,7 +495,7 @@ function CompoundInterestCalculator() {
             )}
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-xl font-semibold text-foreground">טבלת צמיחה שנתית</h3>
               <p className="text-sm text-muted-foreground mt-1">פירוט לפי שנה של היתרה, ההפקדות והרווח</p>
@@ -477,28 +504,50 @@ function CompoundInterestCalculator() {
             {results.yearlyData.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות תחזית</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-right py-3 px-2 font-medium">שנה</th>
-                      <th className="text-right py-3 px-2 font-medium">יתרה</th>
-                      <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
-                      <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.yearlyData.map((row) => (
-                      <tr key={row.year} className="border-b border-border last:border-b-0">
-                        <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
-                        <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
-                        <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
-                        <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+              <>
+                <div className="space-y-3 md:hidden">
+                  {results.yearlyData.map((row) => (
+                    <div key={row.year} className="rounded-xl border border-border p-4 space-y-2">
+                      <div className="font-semibold text-foreground">שנה {row.year}</div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">יתרה</span>
+                        <span className="text-foreground font-medium">{formatCurrency(row.balance)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">סך הפקדות</span>
+                        <span className="text-foreground font-medium">{formatCurrency(row.totalDeposits)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">רווח מהריבית</span>
+                        <span className="text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="text-right py-3 px-2 font-medium">שנה</th>
+                        <th className="text-right py-3 px-2 font-medium">יתרה</th>
+                        <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
+                        <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {results.yearlyData.map((row) => (
+                        <tr key={row.year} className="border-b border-border last:border-b-0">
+                          <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
+                          <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
+                          <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
+                          <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -511,7 +560,7 @@ function CompoundInterestCalculator() {
 
 function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+    <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-base md:text-lg font-semibold text-foreground">הלוואה {index + 1}</h2>
@@ -595,6 +644,7 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
 }
 
 function LoanComparisonCalculator() {
+  const isMobile = useIsMobile();
   const [loans, setLoans] = useState([
     {
       id: 'loan-1',
@@ -707,20 +757,20 @@ function LoanComparisonCalculator() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-foreground">השוואת הלוואות</h2>
           <p className="text-sm text-muted-foreground mt-1">השווה בין עד 3 הלוואות לפי החזר, עלות, ריבית ועלויות חד פעמיות</p>
         </div>
 
         {!loans[2].enabled ? (
-          <Button type="button" variant="outline" onClick={() => setLoanValue('loan-3', 'enabled', true)}>
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setLoanValue('loan-3', 'enabled', true)}>
             הוסף הלוואה
           </Button>
         ) : null}
       </div>
 
-      <div className="grid xl:grid-cols-3 gap-5 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start">
         {activeLoans.map((loan, index) => (
           <LoanInputCard
             key={loan.id}
@@ -739,7 +789,7 @@ function LoanComparisonCalculator() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {activeLoans.map((loan) => {
           const { metrics } = loan;
           const badges = [
@@ -749,7 +799,7 @@ function LoanComparisonCalculator() {
           ].filter(Boolean);
 
           return (
-            <div key={loan.id} className="bg-card rounded-2xl border border-border p-5 space-y-4">
+            <div key={loan.id} className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base md:text-lg font-semibold text-foreground">{loan.name}</h3>
@@ -831,13 +881,41 @@ function LoanComparisonCalculator() {
         })}
       </div>
 
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
         <div className="mb-4">
           <h3 className="text-lg md:text-xl font-semibold text-foreground">טבלת השוואה</h3>
           <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">השוואה ישירה בין כל ההלוואות הפעילות</p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="space-y-3 md:hidden">
+          {activeLoans.map((loan) => (
+            <div key={loan.id} className="rounded-xl border border-border p-4 space-y-2">
+              <div className="font-semibold text-foreground">{loan.name}</div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">החזר חודשי</span>
+                <span className="font-medium">{formatCurrency(loan.metrics.monthlyPayment)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">סך תשלום</span>
+                <span className="font-medium">{formatCurrency(loan.metrics.totalPayments)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">סך ריבית</span>
+                <span className="font-medium">{formatCurrency(loan.metrics.totalInterest)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">עלות כוללת</span>
+                <span className="font-medium">{formatCurrency(loan.metrics.totalCost)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">עלות לכל 1 ₪</span>
+                <span className="font-medium">{loan.metrics.costPerBorrowedShekel.toFixed(3)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[780px] text-xs md:text-sm">
             <thead>
               <tr className="border-b border-border text-muted-foreground">
@@ -879,20 +957,21 @@ function LoanComparisonCalculator() {
         </div>
       </div>
 
-      <div className="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
         <div className="space-y-6">
-          <div className="grid xl:grid-cols-2 gap-6">
-            <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
               <div className="mb-4">
                 <h3 className="text-lg md:text-xl font-semibold text-foreground">השוואת החזר חודשי</h3>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">השוואה בין גובה התשלום החודשי בכל חלופה</p>
               </div>
 
               <ChartContainer config={monthlyPaymentChartConfig} className="h-[260px] md:h-[320px] w-full">
-                <BarChart data={comparisonChartData} margin={{ top: 24, right: 28, left: 12, bottom: 12 }}>
+                <BarChart data={comparisonChartData} margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: isMobile ? 12 : 14 }} />
                   <YAxis
+                    hide={isMobile}
                     orientation="right"
                     tickLine={false}
                     axisLine={false}
@@ -925,17 +1004,18 @@ function LoanComparisonCalculator() {
               </ChartContainer>
             </div>
 
-            <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
               <div className="mb-4">
                 <h3 className="text-lg md:text-xl font-semibold text-foreground">השוואת עלות כוללת</h3>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">השוואה בין העלות הכוללת של כל חלופה לאורך כל התקופה</p>
               </div>
 
               <ChartContainer config={totalCostChartConfig} className="h-[260px] md:h-[320px] w-full">
-                <BarChart data={comparisonChartData} margin={{ top: 24, right: 28, left: 12, bottom: 12 }}>
+                <BarChart data={comparisonChartData} margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: isMobile ? 12 : 14 }} />
                   <YAxis
+                    hide={isMobile}
                     orientation="right"
                     tickLine={false}
                     axisLine={false}
@@ -969,17 +1049,18 @@ function LoanComparisonCalculator() {
             </div>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-lg md:text-xl font-semibold text-foreground">עלות לכל שקל הלוואה</h3>
               <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">כמה משלם הלקוח בפועל על כל 1 ₪ שהוא לווה</p>
             </div>
 
             <ChartContainer config={ratioChartConfig} className="h-[260px] md:h-[320px] w-full">
-              <BarChart data={comparisonChartData} margin={{ top: 24, right: 28, left: 12, bottom: 12 }}>
+              <BarChart data={comparisonChartData} margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}>
                 <CartesianGrid vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: isMobile ? 12 : 14 }} />
                 <YAxis
+                  hide={isMobile}
                   orientation="right"
                   tickLine={false}
                   axisLine={false}
@@ -1015,7 +1096,7 @@ function LoanComparisonCalculator() {
         </div>
 
         <div className="space-y-4">
-          <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-lg md:text-xl font-semibold text-foreground">תובנות</h3>
               <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">סיכום מהיר של היתרונות היחסיים בכל חלופה</p>
@@ -1032,7 +1113,7 @@ function LoanComparisonCalculator() {
           </div>
 
           {benchmarkLoan ? (
-            <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
               <div className="mb-4">
                 <h3 className="text-lg md:text-xl font-semibold text-foreground">הלוואה קיימת להשוואה</h3>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">כרגע מסומנת כבסיס להשוואה מול יתר ההצעות</p>
@@ -1099,7 +1180,7 @@ function PropertyPurchaseCostsCalculator() {
   return (
     <div className="space-y-6">
       <div className="grid lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">נתוני עסקה</h2>
             <p className="text-sm text-muted-foreground mt-1">הזן את פרטי העסקה וקבל הערכה לכל העלויות הנלוות</p>
@@ -1142,7 +1223,7 @@ function PropertyPurchaseCostsCalculator() {
             </div>
           ) : null}
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>האם יש עורך דין?</Label>
               <Select value={form.hasLawyer} onValueChange={(value) => setForm((prev) => ({ ...prev, hasLawyer: value }))}>
@@ -1172,7 +1253,7 @@ function PropertyPurchaseCostsCalculator() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>האם יש מתווך?</Label>
               <Select value={form.hasBroker} onValueChange={(value) => setForm((prev) => ({ ...prev, hasBroker: value }))}>
@@ -1263,7 +1344,7 @@ function PropertyPurchaseCostsCalculator() {
         </div>
 
         <div className="space-y-6">
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-right">
               <p className="text-sm font-medium text-amber-800">סך העלויות הנלוות</p>
               <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatCurrency(results.totalAdditionalCosts)}</p>
@@ -1280,7 +1361,7 @@ function PropertyPurchaseCostsCalculator() {
             </div>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-lg md:text-xl font-semibold text-foreground">פירוט עלויות</h3>
               <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">פירוט מלא של רכיבי העלות מעבר למחיר הנכס</p>
@@ -1296,7 +1377,7 @@ function PropertyPurchaseCostsCalculator() {
             </div>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+          <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-3">
             <div className="flex items-center justify-between gap-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-4">
               <span className="font-semibold text-amber-900">סך העלויות הנלוות</span>
               <span className="font-bold text-foreground">{formatCurrency(results.totalAdditionalCosts)}</span>
@@ -1321,7 +1402,12 @@ function PropertyPurchaseCostsCalculator() {
 }
 
 export default function ToolsPage() {
-  const [activeTool, setActiveTool] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTool, setActiveTool] = useState(searchParams.get('tool') || null);
+
+  useEffect(() => {
+    setActiveTool(searchParams.get('tool') || null);
+  }, [searchParams]);
 
   const toolCards = [
     {
@@ -1349,7 +1435,7 @@ export default function ToolsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">כלים שימושיים</h1>
           <p className="text-muted-foreground mt-1">
@@ -1362,8 +1448,11 @@ export default function ToolsPage() {
         {activeTool ? (
           <Button
             type="button"
-            className="gap-2 shrink-0 bg-red-600 hover:bg-red-700 text-white border-red-600"
-            onClick={() => setActiveTool(null)}
+            className="gap-2 shrink-0 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white border-red-600"
+            onClick={() => {
+              setActiveTool(null);
+              setSearchParams({});
+            }}
           >
             <ArrowRight className="w-4 h-4" />
             חזרה לכל הכלים
@@ -1377,7 +1466,10 @@ export default function ToolsPage() {
             <button
               key={id}
               type="button"
-              onClick={() => setActiveTool(id)}
+              onClick={() => {
+                setActiveTool(id);
+                setSearchParams({ tool: id });
+              }}
               className={`rounded-2xl border p-6 text-right transition-all hover:shadow-md hover:-translate-y-0.5 ${tone}`}
             >
               <div className="flex items-start justify-between gap-4">
