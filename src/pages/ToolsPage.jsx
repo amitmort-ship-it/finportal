@@ -1,6 +1,22 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, Calculator, ChevronRight, Landmark, PiggyBank, TrendingUp } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import {
+  ArrowRight,
+  Calculator,
+  ChevronRight,
+  Landmark,
+  PiggyBank,
+  Scale,
+  TrendingUp,
+} from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,13 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
 } from '@/components/ui/chart';
 
 function formatCurrency(value) {
@@ -106,8 +121,92 @@ function calculateCompoundInterest({
   };
 }
 
-export default function ToolsPage() {
-  const [activeTool, setActiveTool] = useState(null);
+function calculateLoanMetrics(loan) {
+  const principal = Math.max(0, sanitizeNumber(loan.amount) - sanitizeNumber(loan.partialRepayment));
+  const annualRate = sanitizeNumber(loan.annualRate);
+  const months = Math.max(0, Math.round(sanitizeNumber(loan.months)));
+  const oneTimeCosts = sanitizeNumber(loan.oneTimeCosts);
+
+  if (!principal || !months) {
+    return {
+      principal,
+      monthlyPayment: 0,
+      totalPayment: 0,
+      totalInterest: 0,
+      totalCost: oneTimeCosts,
+      oneTimeCosts,
+      months,
+      annualRate,
+    };
+  }
+
+  const monthlyRate = annualRate / 100 / 12;
+  let monthlyPayment = 0;
+
+  if (monthlyRate === 0) {
+    monthlyPayment = principal / months;
+  } else {
+    monthlyPayment =
+      (principal * monthlyRate * (1 + monthlyRate) ** months) /
+      ((1 + monthlyRate) ** months - 1);
+  }
+
+  const totalPayment = monthlyPayment * months;
+  const totalInterest = totalPayment - principal;
+  const totalCost = totalPayment + oneTimeCosts;
+
+  return {
+    principal,
+    monthlyPayment,
+    totalPayment,
+    totalInterest,
+    totalCost,
+    oneTimeCosts,
+    months,
+    annualRate,
+  };
+}
+
+function buildLoanInsights(loansWithMetrics) {
+  const activeLoans = loansWithMetrics.filter((loan) => loan.enabled && loan.metrics.principal > 0 && loan.metrics.months > 0);
+  if (activeLoans.length < 2) {
+    return [];
+  }
+
+  const lowestMonthly = [...activeLoans].sort((a, b) => a.metrics.monthlyPayment - b.metrics.monthlyPayment)[0];
+  const lowestTotalCost = [...activeLoans].sort((a, b) => a.metrics.totalCost - b.metrics.totalCost)[0];
+  const lowestInterest = [...activeLoans].sort((a, b) => a.metrics.totalInterest - b.metrics.totalInterest)[0];
+  const balanced = [...activeLoans].sort((a, b) => {
+    const aScore = a.metrics.monthlyPayment * 0.45 + a.metrics.totalCost * 0.55;
+    const bScore = b.metrics.monthlyPayment * 0.45 + b.metrics.totalCost * 0.55;
+    return aScore - bScore;
+  })[0];
+
+  return [
+    {
+      title: 'הכי נוחה תזרימית',
+      text: `${lowestMonthly.name} מציגה את ההחזר החודשי הנמוך ביותר: ${formatCurrency(lowestMonthly.metrics.monthlyPayment)}.`,
+      tone: 'bg-blue-50 border-blue-200 text-blue-700',
+    },
+    {
+      title: 'הכי זולה לאורך זמן',
+      text: `${lowestTotalCost.name} מציגה את העלות הכוללת הנמוכה ביותר: ${formatCurrency(lowestTotalCost.metrics.totalCost)}.`,
+      tone: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    },
+    {
+      title: 'הכי חסכונית בריבית',
+      text: `${lowestInterest.name} גובה את סך הריבית הנמוך ביותר: ${formatCurrency(lowestInterest.metrics.totalInterest)}.`,
+      tone: 'bg-amber-50 border-amber-200 text-amber-700',
+    },
+    {
+      title: 'איזון טוב בין החזר לעלות',
+      text: `${balanced.name} נראית כאפשרות מאוזנת יחסית בין החזר חודשי לעלות כוללת.`,
+      tone: 'bg-violet-50 border-violet-200 text-violet-700',
+    },
+  ];
+}
+
+function CompoundInterestCalculator() {
   const [form, setForm] = useState({
     initialAmount: 100000,
     monthlyContribution: 1000,
@@ -116,10 +215,7 @@ export default function ToolsPage() {
     compoundingFrequency: 'monthly',
   });
 
-  const results = useMemo(
-    () => calculateCompoundInterest(form),
-    [form],
-  );
+  const results = useMemo(() => calculateCompoundInterest(form), [form]);
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({
@@ -150,15 +246,510 @@ export default function ToolsPage() {
   ];
 
   const chartConfig = {
-    balance: {
-      label: 'יתרה',
-      color: '#059669',
-    },
-    deposits: {
-      label: 'סך הפקדות',
-      color: '#2563eb',
-    },
+    balance: { label: 'יתרה', color: '#059669' },
+    deposits: { label: 'סך הפקדות', color: '#2563eb' },
   };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-6 items-start">
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">נתוני חישוב</h2>
+            <p className="text-sm text-muted-foreground mt-1">מלא את הפרטים ונחשב את הצמיחה הצפויה</p>
+          </div>
+
+          <div>
+            <Label>סכום התחלתי</Label>
+            <Input type="text" inputMode="numeric" value={formatInputNumber(form.initialAmount)} onChange={handleChange('initialAmount')} className="mt-1" />
+          </div>
+
+          <div>
+            <Label>הפקדה חודשית קבועה</Label>
+            <Input type="text" inputMode="numeric" value={formatInputNumber(form.monthlyContribution)} onChange={handleChange('monthlyContribution')} className="mt-1" />
+          </div>
+
+          <div>
+            <Label>ריבית שנתית באחוזים</Label>
+            <div className="relative mt-1">
+              <Input type="text" inputMode="decimal" value={formatInputNumber(form.annualRate)} onChange={handleChange('annualRate')} className="pl-10" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+            </div>
+          </div>
+
+          <div>
+            <Label>תקופת השקעה בשנים</Label>
+            <Input type="text" inputMode="numeric" value={formatInputNumber(form.years)} onChange={handleChange('years')} className="mt-1" />
+          </div>
+
+          <div>
+            <Label>תדירות חישוב ריבית</Label>
+            <Select value={form.compoundingFrequency} onValueChange={(value) => setForm((prev) => ({ ...prev, compoundingFrequency: value }))}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">חודשי</SelectItem>
+                <SelectItem value="yearly">שנתי</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-4">
+            {summaryCards.map(({ title, value, icon: Icon, tone }) => (
+              <div key={title} className={`rounded-2xl border p-5 text-right ${tone}`}>
+                <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <p className="text-sm font-medium opacity-90">{title}</p>
+                <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-foreground">גרף צמיחה</h3>
+              <p className="text-sm text-muted-foreground mt-1">השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן</p>
+            </div>
+
+            {results.yearlyData.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות גרף</div>
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[320px] w-full">
+                <AreaChart data={results.yearlyData} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
+                  <defs>
+                    <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-balance)" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="var(--color-balance)" stopOpacity={0.04} />
+                    </linearGradient>
+                    <linearGradient id="fillDeposits" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-deposits)" stopOpacity={0.18} />
+                      <stop offset="95%" stopColor="var(--color-deposits)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} width={90} />
+                  <ChartTooltip
+                    content={(
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <>
+                            <span className="text-muted-foreground">{name === 'balance' ? 'יתרה' : 'סך הפקדות'}</span>
+                            <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                          </>
+                        )}
+                        labelFormatter={(label) => `שנה ${label}`}
+                      />
+                    )}
+                  />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Area type="monotone" dataKey="deposits" name="deposits" stroke="var(--color-deposits)" fill="url(#fillDeposits)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="balance" name="balance" stroke="var(--color-balance)" fill="url(#fillBalance)" strokeWidth={3} />
+                </AreaChart>
+              </ChartContainer>
+            )}
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-foreground">טבלת צמיחה שנתית</h3>
+              <p className="text-sm text-muted-foreground mt-1">פירוט לפי שנה של היתרה, ההפקדות והרווח</p>
+            </div>
+
+            {results.yearlyData.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות תחזית</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="text-right py-3 px-2 font-medium">שנה</th>
+                      <th className="text-right py-3 px-2 font-medium">יתרה</th>
+                      <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
+                      <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.yearlyData.map((row) => (
+                      <tr key={row.year} className="border-b border-border last:border-b-0">
+                        <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
+                        <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
+                        <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
+                        <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
+  return (
+    <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">הלוואה {index + 1}</h2>
+          <p className="text-sm text-muted-foreground mt-1">הזן את הנתונים כדי להשוות מול ההלוואות האחרות</p>
+        </div>
+        {loan.isExisting ? (
+          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-medium">
+            הלוואה קיימת
+          </span>
+        ) : null}
+      </div>
+
+      <div>
+        <Label>שם הלוואה</Label>
+        <Input value={loan.name} onChange={(event) => onChange('name', event.target.value)} className="mt-1" />
+      </div>
+
+      <div>
+        <Label>סכום הלוואה / יתרה</Label>
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.amount)} onChange={(event) => onChange('amount', event.target.value.replace(/,/g, ''))} className="mt-1" />
+      </div>
+
+      <div>
+        <Label>ריבית שנתית</Label>
+        <div className="relative mt-1">
+          <Input type="text" inputMode="decimal" value={formatInputNumber(loan.annualRate)} onChange={(event) => onChange('annualRate', event.target.value.replace(/,/g, ''))} className="pl-10" />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+        </div>
+      </div>
+
+      <div>
+        <Label>תקופה בחודשים</Label>
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.months)} onChange={(event) => onChange('months', event.target.value.replace(/,/g, ''))} className="mt-1" />
+      </div>
+
+      <div>
+        <Label>עלויות חד פעמיות</Label>
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.oneTimeCosts)} onChange={(event) => onChange('oneTimeCosts', event.target.value.replace(/,/g, ''))} className="mt-1" />
+      </div>
+
+      <div>
+        <Label>פירעון חלקי</Label>
+        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.partialRepayment)} onChange={(event) => onChange('partialRepayment', event.target.value.replace(/,/g, ''))} className="mt-1" />
+      </div>
+
+      <label className="flex items-center gap-2 text-sm text-foreground">
+        <input type="checkbox" checked={loan.isExisting} onChange={(event) => onToggleExisting(event.target.checked)} />
+        סמן כהלוואה קיימת
+      </label>
+    </div>
+  );
+}
+
+function LoanComparisonCalculator() {
+  const [loans, setLoans] = useState([
+    {
+      id: 'loan-1',
+      name: 'הלוואה 1',
+      amount: 250000,
+      annualRate: 6.5,
+      months: 60,
+      oneTimeCosts: 0,
+      partialRepayment: 0,
+      isExisting: true,
+      enabled: true,
+    },
+    {
+      id: 'loan-2',
+      name: 'הלוואה 2',
+      amount: 250000,
+      annualRate: 5.9,
+      months: 72,
+      oneTimeCosts: 1500,
+      partialRepayment: 0,
+      isExisting: false,
+      enabled: true,
+    },
+    {
+      id: 'loan-3',
+      name: 'הלוואה 3',
+      amount: 250000,
+      annualRate: 5.2,
+      months: 84,
+      oneTimeCosts: 2500,
+      partialRepayment: 0,
+      isExisting: false,
+      enabled: false,
+    },
+  ]);
+
+  const setLoanValue = (loanId, field, value) => {
+    setLoans((prev) =>
+      prev.map((loan) => (loan.id === loanId ? { ...loan, [field]: value } : loan)),
+    );
+  };
+
+  const loansWithMetrics = useMemo(
+    () => loans.map((loan) => ({ ...loan, metrics: calculateLoanMetrics(loan) })),
+    [loans],
+  );
+
+  const activeLoans = loansWithMetrics.filter((loan) => loan.enabled);
+  const benchmarkLoan = activeLoans.find((loan) => loan.isExisting) || null;
+
+  const lowestMonthlyPaymentId = activeLoans.reduce((best, loan) => (
+    !best || loan.metrics.monthlyPayment < best.metrics.monthlyPayment ? loan : best
+  ), null)?.id;
+
+  const lowestTotalCostId = activeLoans.reduce((best, loan) => (
+    !best || loan.metrics.totalCost < best.metrics.totalCost ? loan : best
+  ), null)?.id;
+
+  const lowestInterestId = activeLoans.reduce((best, loan) => (
+    !best || loan.metrics.totalInterest < best.metrics.totalInterest ? loan : best
+  ), null)?.id;
+
+  const insights = buildLoanInsights(loansWithMetrics);
+
+  const comparisonChartData = activeLoans.map((loan) => ({
+    name: loan.name,
+    monthlyPayment: Math.round(loan.metrics.monthlyPayment),
+    totalCost: Math.round(loan.metrics.totalCost),
+  }));
+
+  const comparisonChartConfig = {
+    monthlyPayment: { label: 'החזר חודשי', color: '#2563eb' },
+    totalCost: { label: 'עלות כוללת', color: '#059669' },
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">השוואת הלוואות</h2>
+          <p className="text-sm text-muted-foreground mt-1">השווה בין עד 3 הלוואות לפי החזר, עלות, ריבית ועלויות חד פעמיות</p>
+        </div>
+
+        {!loans[2].enabled ? (
+          <Button type="button" variant="outline" onClick={() => setLoanValue('loan-3', 'enabled', true)}>
+            הוסף הלוואה
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="grid xl:grid-cols-3 gap-5 items-start">
+        {activeLoans.map((loan, index) => (
+          <LoanInputCard
+            key={loan.id}
+            loan={loan}
+            index={index}
+            onChange={(field, value) => setLoanValue(loan.id, field, value)}
+            onToggleExisting={(checked) => {
+              setLoans((prev) =>
+                prev.map((item) => ({
+                  ...item,
+                  isExisting: item.id === loan.id ? checked : checked ? false : item.isExisting,
+                })),
+              );
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {activeLoans.map((loan) => {
+          const { metrics } = loan;
+          const badges = [
+            loan.id === lowestMonthlyPaymentId ? 'החזר חודשי נמוך ביותר' : null,
+            loan.id === lowestTotalCostId ? 'עלות כוללת נמוכה ביותר' : null,
+            loan.id === lowestInterestId ? 'ריבית כוללת נמוכה ביותר' : null,
+          ].filter(Boolean);
+
+          return (
+            <div key={loan.id} className="bg-card rounded-2xl border border-border p-5 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">{loan.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {loan.isExisting ? 'מסומנת כהלוואה קיימת' : 'אפשרות להשוואה'}
+                  </p>
+                </div>
+                <Scale className="w-5 h-5 text-primary shrink-0" />
+              </div>
+
+              {badges.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {badges.map((badge) => (
+                    <span key={badge} className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">החזר חודשי</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(metrics.monthlyPayment)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">סך תשלום</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(metrics.totalPayment)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">סך ריבית</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(metrics.totalInterest)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">עלות כוללת</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(metrics.totalCost)}</span>
+                </div>
+              </div>
+
+              {benchmarkLoan && benchmarkLoan.id !== loan.id ? (
+                <div className="pt-3 border-t border-border space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">פער בהחזר חודשי</span>
+                    <span className={loan.metrics.monthlyPayment <= benchmarkLoan.metrics.monthlyPayment ? 'text-emerald-700 font-medium' : 'text-red-600 font-medium'}>
+                      {loan.metrics.monthlyPayment - benchmarkLoan.metrics.monthlyPayment >= 0 ? '+' : ''}
+                      {formatCurrency(loan.metrics.monthlyPayment - benchmarkLoan.metrics.monthlyPayment)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">פער בעלות כוללת</span>
+                    <span className={loan.metrics.totalCost <= benchmarkLoan.metrics.totalCost ? 'text-emerald-700 font-medium' : 'text-red-600 font-medium'}>
+                      {loan.metrics.totalCost - benchmarkLoan.metrics.totalCost >= 0 ? '+' : ''}
+                      {formatCurrency(loan.metrics.totalCost - benchmarkLoan.metrics.totalCost)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">פער במשך</span>
+                    <span className="font-medium text-foreground">
+                      {loan.metrics.months - benchmarkLoan.metrics.months >= 0 ? '+' : ''}
+                      {loan.metrics.months - benchmarkLoan.metrics.months} חוד'
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-foreground">טבלת השוואה</h3>
+          <p className="text-sm text-muted-foreground mt-1">השוואה ישירה בין כל ההלוואות הפעילות</p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="text-right py-3 px-2 font-medium">הלוואה</th>
+                <th className="text-right py-3 px-2 font-medium">החזר חודשי</th>
+                <th className="text-right py-3 px-2 font-medium">סך תשלום</th>
+                <th className="text-right py-3 px-2 font-medium">סך ריבית</th>
+                <th className="text-right py-3 px-2 font-medium">עלויות חד פעמיות</th>
+                <th className="text-right py-3 px-2 font-medium">עלות כוללת</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeLoans.map((loan) => (
+                <tr key={loan.id} className="border-b border-border last:border-b-0">
+                  <td className="py-3 px-2 font-medium text-foreground">{loan.name}</td>
+                  <td className={`py-3 px-2 ${loan.id === lowestMonthlyPaymentId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
+                    {formatCurrency(loan.metrics.monthlyPayment)}
+                  </td>
+                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalPayment)}</td>
+                  <td className={`py-3 px-2 ${loan.id === lowestInterestId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
+                    {formatCurrency(loan.metrics.totalInterest)}
+                  </td>
+                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.oneTimeCosts)}</td>
+                  <td className={`py-3 px-2 ${loan.id === lowestTotalCostId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
+                    {formatCurrency(loan.metrics.totalCost)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
+        <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold text-foreground">גרף השוואה</h3>
+            <p className="text-sm text-muted-foreground mt-1">השוואה בין החזר חודשי לבין עלות כוללת</p>
+          </div>
+
+          <ChartContainer config={comparisonChartConfig} className="h-[320px] w-full">
+            <BarChart data={comparisonChartData} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+              <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} width={90} />
+              <ChartTooltip
+                content={(
+                  <ChartTooltipContent
+                    formatter={(value, name) => (
+                      <>
+                        <span className="text-muted-foreground">{name === 'monthlyPayment' ? 'החזר חודשי' : 'עלות כוללת'}</span>
+                        <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                      </>
+                    )}
+                  />
+                )}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="monthlyPayment" name="monthlyPayment" fill="var(--color-monthlyPayment)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="totalCost" name="totalCost" fill="var(--color-totalCost)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-foreground">תובנות</h3>
+              <p className="text-sm text-muted-foreground mt-1">סיכום מהיר של היתרונות היחסיים בכל חלופה</p>
+            </div>
+
+            <div className="space-y-3">
+              {insights.map((insight) => (
+                <div key={insight.title} className={`rounded-xl border p-4 ${insight.tone}`}>
+                  <div className="font-semibold">{insight.title}</div>
+                  <p className="text-sm mt-1 leading-6">{insight.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {benchmarkLoan ? (
+            <div className="bg-card rounded-2xl border border-border p-5">
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold text-foreground">הלוואה קיימת להשוואה</h3>
+                <p className="text-sm text-muted-foreground mt-1">כרגע מסומנת כבסיס להשוואה מול יתר ההצעות</p>
+              </div>
+
+              <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
+                <div className="font-semibold text-foreground">{benchmarkLoan.name}</div>
+                <div className="text-sm text-muted-foreground mt-1">החזר חודשי: {formatCurrency(benchmarkLoan.metrics.monthlyPayment)}</div>
+                <div className="text-sm text-muted-foreground mt-1">עלות כוללת: {formatCurrency(benchmarkLoan.metrics.totalCost)}</div>
+                <div className="text-sm text-muted-foreground mt-1">משך: {benchmarkLoan.metrics.months} חודשים</div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ToolsPage() {
+  const [activeTool, setActiveTool] = useState(null);
 
   const toolCards = [
     {
@@ -168,16 +759,40 @@ export default function ToolsPage() {
       icon: Calculator,
       tone: 'bg-emerald-50 border-emerald-200 text-emerald-700',
     },
+    {
+      id: 'loan-comparison',
+      title: 'מחשבון כדאיות הלוואה',
+      description: 'השוואה בין עד 3 הלוואות לפי החזר חודשי, עלות כוללת, ריבית ועלויות חד פעמיות.',
+      icon: Scale,
+      tone: 'bg-blue-50 border-blue-200 text-blue-700',
+    },
   ];
 
-  if (!activeTool) {
-    return (
-      <div className="space-y-6">
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">כלים שימושיים</h1>
-          <p className="text-muted-foreground mt-1">מרכז כלים ומחשבונים שיעזרו לך לקבל החלטות פיננסיות בצורה חכמה יותר</p>
+          <p className="text-muted-foreground mt-1">
+            {activeTool
+              ? 'מחשבונים פרקטיים לקבלת החלטות פיננסיות חכמות'
+              : 'מרכז כלים ומחשבונים שיעזרו לך לקבל החלטות פיננסיות בצורה חכמה יותר'}
+          </p>
         </div>
 
+        {activeTool ? (
+          <Button
+            type="button"
+            className="gap-2 shrink-0 bg-red-600 hover:bg-red-700 text-white border-red-600"
+            onClick={() => setActiveTool(null)}
+          >
+            <ArrowRight className="w-4 h-4" />
+            חזרה לכל הכלים
+          </Button>
+        ) : null}
+      </div>
+
+      {!activeTool ? (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
           {toolCards.map(({ id, title, description, icon: Icon, tone }) => (
             <button
@@ -197,239 +812,10 @@ export default function ToolsPage() {
             </button>
           ))}
         </div>
-      </div>
-    );
-  }
+      ) : null}
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">כלים שימושיים</h1>
-          <p className="text-muted-foreground mt-1">מחשבונים פרקטיים לקבלת החלטות פיננסיות חכמות</p>
-        </div>
-
-        <Button type="button" variant="outline" className="gap-2 shrink-0" onClick={() => setActiveTool(null)}>
-          <ArrowRight className="w-4 h-4" />
-          חזרה לכל הכלים
-        </Button>
-      </div>
-
-      <Tabs defaultValue="compound-interest" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-1 mb-6 mr-0">
-          <TabsTrigger value="compound-interest" className="gap-2 justify-center text-sm md:text-base">
-            <Calculator className="w-4 h-4" />
-            מחשבון ריבית דריבית
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="compound-interest" className="space-y-6">
-          <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-6 items-start">
-            <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground">נתוני חישוב</h2>
-                <p className="text-sm text-muted-foreground mt-1">מלא את הפרטים ונחשב את הצמיחה הצפויה</p>
-              </div>
-
-              <div>
-                <Label>סכום התחלתי</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  min="0"
-                  value={formatInputNumber(form.initialAmount)}
-                  onChange={handleChange('initialAmount')}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>הפקדה חודשית קבועה</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  min="0"
-                  value={formatInputNumber(form.monthlyContribution)}
-                  onChange={handleChange('monthlyContribution')}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>ריבית שנתית באחוזים</Label>
-                <div className="relative mt-1">
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    min="0"
-                    value={formatInputNumber(form.annualRate)}
-                    onChange={handleChange('annualRate')}
-                    className="pl-10"
-                  />
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    %
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <Label>תקופת השקעה בשנים</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  min="0"
-                  value={formatInputNumber(form.years)}
-                  onChange={handleChange('years')}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>תדירות חישוב ריבית</Label>
-                <Select
-                  value={form.compoundingFrequency}
-                  onValueChange={(value) => setForm((prev) => ({ ...prev, compoundingFrequency: value }))}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">חודשי</SelectItem>
-                    <SelectItem value="yearly">שנתי</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-4">
-                {summaryCards.map(({ title, value, icon: Icon, tone }) => (
-                  <div key={title} className={`rounded-2xl border p-5 text-right ${tone}`}>
-                    <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <p className="text-sm font-medium opacity-90">{title}</p>
-                    <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-card rounded-2xl border border-border p-5">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">גרף צמיחה</h3>
-                    <p className="text-sm text-muted-foreground mt-1">השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן</p>
-                  </div>
-                </div>
-
-                {results.yearlyData.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-8 text-center">
-                    הזן מספר שנים גדול מאפס כדי לראות גרף
-                  </div>
-                ) : (
-                  <ChartContainer config={chartConfig} className="h-[320px] w-full">
-                    <AreaChart data={results.yearlyData} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
-                      <defs>
-                        <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--color-balance)" stopOpacity={0.28} />
-                          <stop offset="95%" stopColor="var(--color-balance)" stopOpacity={0.04} />
-                        </linearGradient>
-                        <linearGradient id="fillDeposits" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--color-deposits)" stopOpacity={0.18} />
-                          <stop offset="95%" stopColor="var(--color-deposits)" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="year"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => formatCurrency(value)}
-                        width={90}
-                      />
-                      <ChartTooltip
-                        content={(
-                          <ChartTooltipContent
-                            formatter={(value, name) => (
-                              <>
-                                <span className="text-muted-foreground">
-                                  {name === 'balance' ? 'יתרה' : 'סך הפקדות'}
-                                </span>
-                                <span className="font-medium text-foreground">{formatCurrency(value)}</span>
-                              </>
-                            )}
-                            labelFormatter={(label) => `שנה ${label}`}
-                          />
-                        )}
-                      />
-                      <ChartLegend content={<ChartLegendContent />} />
-                      <Area
-                        type="monotone"
-                        dataKey="deposits"
-                        name="deposits"
-                        stroke="var(--color-deposits)"
-                        fill="url(#fillDeposits)"
-                        strokeWidth={2}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="balance"
-                        name="balance"
-                        stroke="var(--color-balance)"
-                        fill="url(#fillBalance)"
-                        strokeWidth={3}
-                      />
-                    </AreaChart>
-                  </ChartContainer>
-                )}
-              </div>
-
-              <div className="bg-card rounded-2xl border border-border p-5">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">טבלת צמיחה שנתית</h3>
-                    <p className="text-sm text-muted-foreground mt-1">פירוט לפי שנה של היתרה, ההפקדות והרווח</p>
-                  </div>
-                </div>
-
-                {results.yearlyData.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-8 text-center">
-                    הזן מספר שנים גדול מאפס כדי לראות תחזית
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground">
-                          <th className="text-right py-3 px-2 font-medium">שנה</th>
-                          <th className="text-right py-3 px-2 font-medium">יתרה</th>
-                          <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
-                          <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {results.yearlyData.map((row) => (
-                          <tr key={row.year} className="border-b border-border last:border-b-0">
-                            <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
-                            <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
-                            <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
-                            <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {activeTool === 'compound-interest' ? <CompoundInterestCalculator /> : null}
+      {activeTool === 'loan-comparison' ? <LoanComparisonCalculator /> : null}
     </div>
   );
 }
