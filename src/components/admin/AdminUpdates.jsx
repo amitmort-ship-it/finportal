@@ -88,6 +88,7 @@ function getNotificationStyles(eventType) {
 export default function AdminUpdates({ selectedClient }) {
   const [updates, setUpdates] = useState([]);
   const [adminNotifications, setAdminNotifications] = useState([]);
+  const [clientNames, setClientNames] = useState({});
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -96,11 +97,16 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [data, fileRequests, userList] = await Promise.all([
+      const [data, fileRequests, userList, profiles] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
         base44.entities.FileRequest.filter({}, '-created_date'),
         base44.entities.User.filter({}),
+        base44.entities.ClientProfile.filter({}),
       ]);
+
+      const profileMap = Object.fromEntries(
+        (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
+      );
 
       const clientFacingUpdates = data.filter((item) => item.client_email !== ADMIN_NOTIFICATIONS_EMAIL);
       const adminEvents = data
@@ -122,6 +128,7 @@ export default function AdminUpdates({ selectedClient }) {
 
       setUpdates(filteredUpdates);
       setAdminNotifications(filteredAdminEvents);
+      setClientNames(profileMap);
       setUsers(userList.filter((u) => u.role !== 'admin'));
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -274,6 +281,9 @@ export default function AdminUpdates({ selectedClient }) {
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mb-2 ${getNotificationStyles(item.eventType).badge}`}>
                           {getNotificationStyles(item.eventType).label}
                         </span>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">
+                          תיק לקוח: {clientNames[String(item.relatedClientEmail || '').toLowerCase()] || item.relatedClientEmail || 'לא ידוע'}
+                        </div>
                         <p className="text-foreground break-words">{item.cleanMessage}</p>
                         <p className="text-xs text-muted-foreground mt-2">
                           {item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
