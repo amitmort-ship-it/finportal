@@ -98,14 +98,20 @@ function getNotificationStyles(type) {
 
 export default function AdminNotifications({ selectedClient }) {
   const [notifications, setNotifications] = useState([]);
+  const [clientNames, setClientNames] = useState({});
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
-      const [updates, fileRequests] = await Promise.all([
+      const [updates, fileRequests, profiles] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
         base44.entities.FileRequest.filter({}, '-created_date'),
+        base44.entities.ClientProfile.filter({}),
       ]);
+
+      const profileMap = Object.fromEntries(
+        (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
+      );
 
       const loginNotifications = (updates || [])
         .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
@@ -121,6 +127,7 @@ export default function AdminNotifications({ selectedClient }) {
           return bDate - aDate;
         });
 
+      setClientNames(profileMap);
       setNotifications(merged);
     } catch (error) {
       console.error('Failed to load admin notifications:', error);
@@ -191,6 +198,8 @@ export default function AdminNotifications({ selectedClient }) {
           {notifications.map((notification) => {
             const Icon = getNotificationIcon(notification.type);
             const styles = getNotificationStyles(notification.type);
+            const clientKey = String(notification.clientEmail || '').toLowerCase();
+            const clientLabel = clientNames[clientKey] || notification.clientEmail || 'לא ידוע';
 
             return (
               <div key={notification.id} className={`rounded-xl border p-4 ${styles.card}`}>
@@ -203,6 +212,9 @@ export default function AdminNotifications({ selectedClient }) {
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mb-2 ${styles.badge}`}>
                         {styles.label}
                       </span>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">
+                        תיק לקוח: {clientLabel}
+                      </div>
                       <p className="text-sm text-foreground break-words">{notification.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {notification.createdAt
