@@ -19,7 +19,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +36,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { useSearchParams } from 'react-router-dom';
 
 function formatCurrency(value) {
   const rounded = Math.round(Number(value || 0));
@@ -252,14 +252,23 @@ function calculateLoanMetrics(loan) {
 }
 
 function buildLoanInsights(loansWithMetrics) {
-  const activeLoans = loansWithMetrics.filter((loan) => loan.enabled && loan.metrics.netLoanAmount > 0 && loan.metrics.months > 0);
+  const activeLoans = loansWithMetrics.filter(
+    (loan) => loan.enabled && loan.metrics.netLoanAmount > 0 && loan.metrics.months > 0,
+  );
+
   if (activeLoans.length < 2) {
     return [];
   }
 
-  const lowestMonthly = [...activeLoans].sort((a, b) => a.metrics.monthlyPayment - b.metrics.monthlyPayment)[0];
-  const lowestTotalCost = [...activeLoans].sort((a, b) => a.metrics.totalCost - b.metrics.totalCost)[0];
-  const lowestCostPerShekel = [...activeLoans].sort((a, b) => a.metrics.costPerBorrowedShekel - b.metrics.costPerBorrowedShekel)[0];
+  const lowestMonthly = [...activeLoans].sort(
+    (a, b) => a.metrics.monthlyPayment - b.metrics.monthlyPayment,
+  )[0];
+  const lowestTotalCost = [...activeLoans].sort(
+    (a, b) => a.metrics.totalCost - b.metrics.totalCost,
+  )[0];
+  const lowestCostPerShekel = [...activeLoans].sort(
+    (a, b) => a.metrics.costPerBorrowedShekel - b.metrics.costPerBorrowedShekel,
+  )[0];
   const balanced = [...activeLoans].sort((a, b) => {
     const aScore = a.metrics.monthlyPayment * 0.45 + a.metrics.totalCost * 0.55;
     const bScore = b.metrics.monthlyPayment * 0.45 + b.metrics.totalCost * 0.55;
@@ -315,7 +324,9 @@ function calculatePropertyPurchaseCosts(form) {
   }
 
   const mortgageOpeningCost = showMortgageCosts ? 360 : 0;
-  const mortgageCostsTotal = showMortgageCosts ? mortgageOpeningCost + mortgageRegistryCost : 0;
+  const mortgageCostsTotal = showMortgageCosts
+    ? mortgageOpeningCost + mortgageRegistryCost
+    : 0;
 
   const totalAdditionalCosts =
     purchaseTax +
@@ -327,7 +338,8 @@ function calculatePropertyPurchaseCosts(form) {
     mortgageCostsTotal;
 
   const totalDealCost = propertyPrice + totalAdditionalCosts;
-  const additionalCostsPercent = propertyPrice > 0 ? (totalAdditionalCosts / propertyPrice) * 100 : 0;
+  const additionalCostsPercent =
+    propertyPrice > 0 ? (totalAdditionalCosts / propertyPrice) * 100 : 0;
 
   return {
     propertyPrice,
@@ -348,6 +360,7 @@ function calculatePropertyPurchaseCosts(form) {
 }
 
 function CompoundInterestCalculator() {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({
     initialAmount: 100000,
     monthlyContribution: 1000,
@@ -397,35 +410,68 @@ function CompoundInterestCalculator() {
         <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">נתוני חישוב</h2>
-            <p className="text-sm text-muted-foreground mt-1">מלא את הפרטים ונחשב את הצמיחה הצפויה</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              מלא את הפרטים ונחשב את הצמיחה הצפויה
+            </p>
           </div>
 
           <div>
             <Label>סכום התחלתי</Label>
-            <Input type="text" inputMode="numeric" value={formatInputNumber(form.initialAmount)} onChange={handleChange('initialAmount')} className="mt-1" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatInputNumber(form.initialAmount)}
+              onChange={handleChange('initialAmount')}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>הפקדה חודשית קבועה</Label>
-            <Input type="text" inputMode="numeric" value={formatInputNumber(form.monthlyContribution)} onChange={handleChange('monthlyContribution')} className="mt-1" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatInputNumber(form.monthlyContribution)}
+              onChange={handleChange('monthlyContribution')}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>ריבית שנתית באחוזים</Label>
             <div className="relative mt-1">
-              <Input type="text" inputMode="decimal" value={formatInputNumber(form.annualRate)} onChange={handleChange('annualRate')} className="pl-10" />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={formatInputNumber(form.annualRate)}
+                onChange={handleChange('annualRate')}
+                className="pl-10"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                %
+              </span>
             </div>
           </div>
 
           <div>
             <Label>תקופת השקעה בשנים</Label>
-            <Input type="text" inputMode="numeric" value={formatInputNumber(form.years)} onChange={handleChange('years')} className="mt-1" />
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={formatInputNumber(form.years)}
+              onChange={handleChange('years')}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>תדירות חישוב ריבית</Label>
-            <Select value={form.compoundingFrequency} onValueChange={(value) => setForm((prev) => ({ ...prev, compoundingFrequency: value }))}>
+            <Select
+              value={form.compoundingFrequency}
+              onValueChange={(value) =>
+                setForm((prev) => ({ ...prev, compoundingFrequency: value }))
+              }
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -445,7 +491,9 @@ function CompoundInterestCalculator() {
                   <Icon className="w-5 h-5" />
                 </div>
                 <p className="text-sm font-medium opacity-90">{title}</p>
-                <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
+                <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">
+                  {value}
+                </p>
               </div>
             ))}
           </div>
@@ -453,14 +501,21 @@ function CompoundInterestCalculator() {
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-xl font-semibold text-foreground">גרף צמיחה</h3>
-              <p className="text-sm text-muted-foreground mt-1">השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                השוואה בין היתרה המצטברת לבין סך ההפקדות לאורך הזמן
+              </p>
             </div>
 
             {results.yearlyData.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות גרף</div>
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                הזן מספר שנים גדול מאפס כדי לראות גרף
+              </div>
             ) : (
-              <ChartContainer config={chartConfig} className="h-[320px] w-full">
-                <AreaChart data={results.yearlyData} margin={{ top: 12, right: 12, left: 12, bottom: 12 }}>
+              <ChartContainer config={chartConfig} className="h-[240px] md:h-[320px] w-full">
+                <AreaChart
+                  data={results.yearlyData}
+                  margin={{ top: 12, right: isMobile ? 8 : 16, left: isMobile ? 8 : 12, bottom: 12 }}
+                >
                   <defs>
                     <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-balance)" stopOpacity={0.28} />
@@ -472,24 +527,54 @@ function CompoundInterestCalculator() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} width={90} />
+                  <XAxis
+                    dataKey="year"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tick={{ fontSize: isMobile ? 12 : 14 }}
+                  />
+                  <YAxis
+                    hide={isMobile}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => formatCurrency(value)}
+                    width={90}
+                  />
                   <ChartTooltip
-                    content={(
+                    content={
                       <ChartTooltipContent
                         formatter={(value, name) => (
                           <>
-                            <span className="text-muted-foreground">{name === 'balance' ? 'יתרה' : 'סך הפקדות'}</span>
-                            <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                            <span className="text-muted-foreground">
+                              {name === 'balance' ? 'יתרה' : 'סך הפקדות'}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(value)}
+                            </span>
                           </>
                         )}
                         labelFormatter={(label) => `שנה ${label}`}
                       />
-                    )}
+                    }
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Area type="monotone" dataKey="deposits" name="deposits" stroke="var(--color-deposits)" fill="url(#fillDeposits)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="balance" name="balance" stroke="var(--color-balance)" fill="url(#fillBalance)" strokeWidth={3} />
+                  <Area
+                    type="monotone"
+                    dataKey="deposits"
+                    name="deposits"
+                    stroke="var(--color-deposits)"
+                    fill="url(#fillDeposits)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="balance"
+                    name="balance"
+                    stroke="var(--color-balance)"
+                    fill="url(#fillBalance)"
+                    strokeWidth={3}
+                  />
                 </AreaChart>
               </ChartContainer>
             )}
@@ -498,11 +583,15 @@ function CompoundInterestCalculator() {
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-xl font-semibold text-foreground">טבלת צמיחה שנתית</h3>
-              <p className="text-sm text-muted-foreground mt-1">פירוט לפי שנה של היתרה, ההפקדות והרווח</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                פירוט לפי שנה של היתרה, ההפקדות והרווח
+              </p>
             </div>
 
             {results.yearlyData.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">הזן מספר שנים גדול מאפס כדי לראות תחזית</div>
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                הזן מספר שנים גדול מאפס כדי לראות תחזית
+              </div>
             ) : (
               <>
                 <div className="space-y-3 md:hidden">
@@ -511,15 +600,21 @@ function CompoundInterestCalculator() {
                       <div className="font-semibold text-foreground">שנה {row.year}</div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">יתרה</span>
-                        <span className="text-foreground font-medium">{formatCurrency(row.balance)}</span>
+                        <span className="text-foreground font-medium">
+                          {formatCurrency(row.balance)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">סך הפקדות</span>
-                        <span className="text-foreground font-medium">{formatCurrency(row.totalDeposits)}</span>
+                        <span className="text-foreground font-medium">
+                          {formatCurrency(row.totalDeposits)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">רווח מהריבית</span>
-                        <span className="text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</span>
+                        <span className="text-emerald-700 font-medium">
+                          {formatCurrency(row.totalInterest)}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -540,8 +635,12 @@ function CompoundInterestCalculator() {
                         <tr key={row.year} className="border-b border-border last:border-b-0">
                           <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
                           <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
-                          <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
-                          <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+                          <td className="py-3 px-2 text-muted-foreground">
+                            {formatCurrency(row.totalDeposits)}
+                          </td>
+                          <td className="py-3 px-2 text-emerald-700 font-medium">
+                            {formatCurrency(row.totalInterest)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -563,7 +662,9 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
     <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base md:text-lg font-semibold text-foreground">הלוואה {index + 1}</h2>
+          <h2 className="text-base md:text-lg font-semibold text-foreground">
+            הלוואה {index + 1}
+          </h2>
           <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
             הזן את הנתונים כדי להשוות מול ההלוואות האחרות
           </p>
@@ -577,35 +678,73 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
 
       <div>
         <Label>שם הלוואה</Label>
-        <Input value={loan.name} onChange={(event) => onChange('name', event.target.value)} className="mt-1" />
+        <Input
+          value={loan.name}
+          onChange={(event) => onChange('name', event.target.value)}
+          className="mt-1"
+        />
       </div>
 
       <div>
         <Label>סכום הלוואה / יתרה</Label>
-        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.amount)} onChange={(event) => onChange('amount', event.target.value.replace(/,/g, ''))} className="mt-1" />
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={formatInputNumber(loan.amount)}
+          onChange={(event) => onChange('amount', event.target.value.replace(/,/g, ''))}
+          className="mt-1"
+        />
       </div>
 
       <div>
         <Label>ריבית שנתית</Label>
         <div className="relative mt-1">
-          <Input type="text" inputMode="decimal" value={formatInputNumber(loan.annualRate)} onChange={(event) => onChange('annualRate', event.target.value.replace(/,/g, ''))} className="pl-10" />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={formatInputNumber(loan.annualRate)}
+            onChange={(event) => onChange('annualRate', event.target.value.replace(/,/g, ''))}
+            className="pl-10"
+          />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+            %
+          </span>
         </div>
       </div>
 
       <div>
         <Label>תקופה בחודשים</Label>
-        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.months)} onChange={(event) => onChange('months', event.target.value.replace(/,/g, ''))} className="mt-1" />
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={formatInputNumber(loan.months)}
+          onChange={(event) => onChange('months', event.target.value.replace(/,/g, ''))}
+          className="mt-1"
+        />
       </div>
 
       <div>
         <Label>עלויות חד פעמיות</Label>
-        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.oneTimeCosts)} onChange={(event) => onChange('oneTimeCosts', event.target.value.replace(/,/g, ''))} className="mt-1" />
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={formatInputNumber(loan.oneTimeCosts)}
+          onChange={(event) => onChange('oneTimeCosts', event.target.value.replace(/,/g, ''))}
+          className="mt-1"
+        />
       </div>
 
       <div>
         <Label>פירעון חלקי</Label>
-        <Input type="text" inputMode="numeric" value={formatInputNumber(loan.partialRepayment)} onChange={(event) => onChange('partialRepayment', event.target.value.replace(/,/g, ''))} className="mt-1" />
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={formatInputNumber(loan.partialRepayment)}
+          onChange={(event) =>
+            onChange('partialRepayment', event.target.value.replace(/,/g, ''))
+          }
+          className="mt-1"
+        />
       </div>
 
       <div>
@@ -636,7 +775,11 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
       ) : null}
 
       <label className="flex items-center gap-2 text-sm text-foreground">
-        <input type="checkbox" checked={loan.isExisting} onChange={(event) => onToggleExisting(event.target.checked)} />
+        <input
+          type="checkbox"
+          checked={loan.isExisting}
+          onChange={(event) => onToggleExisting(event.target.checked)}
+        />
         סמן כהלוואה קיימת
       </label>
     </div>
@@ -701,17 +844,24 @@ function LoanComparisonCalculator() {
   const activeLoans = loansWithMetrics.filter((loan) => loan.enabled);
   const benchmarkLoan = activeLoans.find((loan) => loan.isExisting) || null;
 
-  const lowestMonthlyPaymentId = activeLoans.reduce((best, loan) => (
-    !best || loan.metrics.monthlyPayment < best.metrics.monthlyPayment ? loan : best
-  ), null)?.id;
+  const lowestMonthlyPaymentId = activeLoans.reduce(
+    (best, loan) =>
+      !best || loan.metrics.monthlyPayment < best.metrics.monthlyPayment ? loan : best,
+    null,
+  )?.id;
 
-  const lowestTotalCostId = activeLoans.reduce((best, loan) => (
-    !best || loan.metrics.totalCost < best.metrics.totalCost ? loan : best
-  ), null)?.id;
+  const lowestTotalCostId = activeLoans.reduce(
+    (best, loan) => (!best || loan.metrics.totalCost < best.metrics.totalCost ? loan : best),
+    null,
+  )?.id;
 
-  const lowestCostPerShekelId = activeLoans.reduce((best, loan) => (
-    !best || loan.metrics.costPerBorrowedShekel < best.metrics.costPerBorrowedShekel ? loan : best
-  ), null)?.id;
+  const lowestCostPerShekelId = activeLoans.reduce(
+    (best, loan) =>
+      !best || loan.metrics.costPerBorrowedShekel < best.metrics.costPerBorrowedShekel
+        ? loan
+        : best,
+    null,
+  )?.id;
 
   const insights = buildLoanInsights(loansWithMetrics);
 
@@ -740,7 +890,12 @@ function LoanComparisonCalculator() {
   const renderCurrencyBarLabel = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width / 2} y={y - 8} textAnchor="middle" className="fill-foreground text-xs font-medium">
+      <text
+        x={x + width / 2}
+        y={y - 8}
+        textAnchor="middle"
+        className="fill-foreground text-xs font-medium"
+      >
         {formatCurrency(value)}
       </text>
     );
@@ -749,7 +904,12 @@ function LoanComparisonCalculator() {
   const renderRatioBarLabel = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width / 2} y={y - 8} textAnchor="middle" className="fill-foreground text-xs font-medium">
+      <text
+        x={x + width / 2}
+        y={y - 8}
+        textAnchor="middle"
+        className="fill-foreground text-xs font-medium"
+      >
         {Number(value).toFixed(3)}
       </text>
     );
@@ -760,11 +920,18 @@ function LoanComparisonCalculator() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-foreground">השוואת הלוואות</h2>
-          <p className="text-sm text-muted-foreground mt-1">השווה בין עד 3 הלוואות לפי החזר, עלות, ריבית ועלויות חד פעמיות</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            השווה בין עד 3 הלוואות לפי החזר, עלות, ריבית ועלויות חד פעמיות
+          </p>
         </div>
 
         {!loans[2].enabled ? (
-          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setLoanValue('loan-3', 'enabled', true)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => setLoanValue('loan-3', 'enabled', true)}
+          >
             הוסף הלוואה
           </Button>
         ) : null}
@@ -802,7 +969,9 @@ function LoanComparisonCalculator() {
             <div key={loan.id} className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-base md:text-lg font-semibold text-foreground">{loan.name}</h3>
+                  <h3 className="text-base md:text-lg font-semibold text-foreground">
+                    {loan.name}
+                  </h3>
                   <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
                     {loan.isExisting ? 'מסומנת כהלוואה קיימת' : 'אפשרות להשוואה'}
                   </p>
@@ -813,7 +982,10 @@ function LoanComparisonCalculator() {
               {badges.length ? (
                 <div className="flex flex-wrap gap-2">
                   {badges.map((badge) => (
-                    <span key={badge} className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">
+                    <span
+                      key={badge}
+                      className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"
+                    >
                       {badge}
                     </span>
                   ))}
@@ -823,23 +995,33 @@ function LoanComparisonCalculator() {
               <div className="space-y-2 text-xs md:text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">החזר חודשי</span>
-                  <span className="font-semibold text-foreground">{formatCurrency(metrics.monthlyPayment)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(metrics.monthlyPayment)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">סך תשלום</span>
-                  <span className="font-semibold text-foreground">{formatCurrency(metrics.totalPayments)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(metrics.totalPayments)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">סך ריבית</span>
-                  <span className="font-semibold text-foreground">{formatCurrency(metrics.totalInterest)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(metrics.totalInterest)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">עלות כוללת</span>
-                  <span className="font-semibold text-foreground">{formatCurrency(metrics.totalCost)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(metrics.totalCost)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">עלות לכל 1 ₪</span>
-                  <span className="font-semibold text-foreground">{metrics.costPerBorrowedShekel.toFixed(3)}</span>
+                  <span className="font-semibold text-foreground">
+                    {metrics.costPerBorrowedShekel.toFixed(3)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">גרייס</span>
@@ -855,14 +1037,30 @@ function LoanComparisonCalculator() {
                 <div className="pt-3 border-t border-border space-y-2 text-xs md:text-sm">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">פער בהחזר חודשי</span>
-                    <span className={loan.metrics.monthlyPayment <= benchmarkLoan.metrics.monthlyPayment ? 'text-emerald-700 font-medium' : 'text-red-600 font-medium'}>
-                      {loan.metrics.monthlyPayment - benchmarkLoan.metrics.monthlyPayment >= 0 ? '+' : ''}
-                      {formatCurrency(loan.metrics.monthlyPayment - benchmarkLoan.metrics.monthlyPayment)}
+                    <span
+                      className={
+                        loan.metrics.monthlyPayment <= benchmarkLoan.metrics.monthlyPayment
+                          ? 'text-emerald-700 font-medium'
+                          : 'text-red-600 font-medium'
+                      }
+                    >
+                      {loan.metrics.monthlyPayment - benchmarkLoan.metrics.monthlyPayment >= 0
+                        ? '+'
+                        : ''}
+                      {formatCurrency(
+                        loan.metrics.monthlyPayment - benchmarkLoan.metrics.monthlyPayment,
+                      )}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">פער בעלות כוללת</span>
-                    <span className={loan.metrics.totalCost <= benchmarkLoan.metrics.totalCost ? 'text-emerald-700 font-medium' : 'text-red-600 font-medium'}>
+                    <span
+                      className={
+                        loan.metrics.totalCost <= benchmarkLoan.metrics.totalCost
+                          ? 'text-emerald-700 font-medium'
+                          : 'text-red-600 font-medium'
+                      }
+                    >
                       {loan.metrics.totalCost - benchmarkLoan.metrics.totalCost >= 0 ? '+' : ''}
                       {formatCurrency(loan.metrics.totalCost - benchmarkLoan.metrics.totalCost)}
                     </span>
@@ -884,7 +1082,9 @@ function LoanComparisonCalculator() {
       <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
         <div className="mb-4">
           <h3 className="text-lg md:text-xl font-semibold text-foreground">טבלת השוואה</h3>
-          <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">השוואה ישירה בין כל ההלוואות הפעילות</p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+            השוואה ישירה בין כל ההלוואות הפעילות
+          </p>
         </div>
 
         <div className="space-y-3 md:hidden">
@@ -909,7 +1109,9 @@ function LoanComparisonCalculator() {
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-muted-foreground">עלות לכל 1 ₪</span>
-                <span className="font-medium">{loan.metrics.costPerBorrowedShekel.toFixed(3)}</span>
+                <span className="font-medium">
+                  {loan.metrics.costPerBorrowedShekel.toFixed(3)}
+                </span>
               </div>
             </div>
           ))}
@@ -933,16 +1135,40 @@ function LoanComparisonCalculator() {
               {activeLoans.map((loan) => (
                 <tr key={loan.id} className="border-b border-border last:border-b-0">
                   <td className="py-3 px-2 font-medium text-foreground">{loan.name}</td>
-                  <td className={`py-3 px-2 ${loan.id === lowestMonthlyPaymentId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
+                  <td
+                    className={`py-3 px-2 ${
+                      loan.id === lowestMonthlyPaymentId
+                        ? 'text-emerald-700 font-semibold'
+                        : 'text-foreground'
+                    }`}
+                  >
                     {formatCurrency(loan.metrics.monthlyPayment)}
                   </td>
-                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalPayments)}</td>
-                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalInterest)}</td>
-                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.oneTimeFees)}</td>
-                  <td className={`py-3 px-2 ${loan.id === lowestTotalCostId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
+                  <td className="py-3 px-2 text-foreground">
+                    {formatCurrency(loan.metrics.totalPayments)}
+                  </td>
+                  <td className="py-3 px-2 text-foreground">
+                    {formatCurrency(loan.metrics.totalInterest)}
+                  </td>
+                  <td className="py-3 px-2 text-foreground">
+                    {formatCurrency(loan.metrics.oneTimeFees)}
+                  </td>
+                  <td
+                    className={`py-3 px-2 ${
+                      loan.id === lowestTotalCostId
+                        ? 'text-emerald-700 font-semibold'
+                        : 'text-foreground'
+                    }`}
+                  >
                     {formatCurrency(loan.metrics.totalCost)}
                   </td>
-                  <td className={`py-3 px-2 ${loan.id === lowestCostPerShekelId ? 'text-amber-700 font-semibold' : 'text-foreground'}`}>
+                  <td
+                    className={`py-3 px-2 ${
+                      loan.id === lowestCostPerShekelId
+                        ? 'text-amber-700 font-semibold'
+                        : 'text-foreground'
+                    }`}
+                  >
                     {loan.metrics.costPerBorrowedShekel.toFixed(3)}
                   </td>
                   <td className="py-3 px-2 text-foreground">
@@ -962,14 +1188,27 @@ function LoanComparisonCalculator() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
               <div className="mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-foreground">השוואת החזר חודשי</h3>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">השוואה בין גובה התשלום החודשי בכל חלופה</p>
+                <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                  השוואת החזר חודשי
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+                  השוואה בין גובה התשלום החודשי בכל חלופה
+                </p>
               </div>
 
               <ChartContainer config={monthlyPaymentChartConfig} className="h-[260px] md:h-[320px] w-full">
-                <BarChart data={comparisonChartData} margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: isMobile ? 12 : 14 }} />
+                <BarChart
+                  data={comparisonChartData}
+                  margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
+                >
+                  <CartesianGrid vertical={false} horizontal={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tick={{ fontSize: isMobile ? 12 : 14 }}
+                  />
                   <YAxis
                     hide={isMobile}
                     orientation="right"
@@ -980,16 +1219,18 @@ function LoanComparisonCalculator() {
                     tickMargin={10}
                   />
                   <ChartTooltip
-                    content={(
+                    content={
                       <ChartTooltipContent
                         formatter={(value) => (
                           <>
                             <span className="text-muted-foreground">החזר חודשי</span>
-                            <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(value)}
+                            </span>
                           </>
                         )}
                       />
-                    )}
+                    }
                   />
                   <Bar dataKey="monthlyPayment" name="monthlyPayment" radius={[6, 6, 0, 0]}>
                     {comparisonChartData.map((entry) => (
@@ -1006,14 +1247,27 @@ function LoanComparisonCalculator() {
 
             <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
               <div className="mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-foreground">השוואת עלות כוללת</h3>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">השוואה בין העלות הכוללת של כל חלופה לאורך כל התקופה</p>
+                <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                  השוואת עלות כוללת
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+                  השוואה בין העלות הכוללת של כל חלופה לאורך כל התקופה
+                </p>
               </div>
 
               <ChartContainer config={totalCostChartConfig} className="h-[260px] md:h-[320px] w-full">
-                <BarChart data={comparisonChartData} margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: isMobile ? 12 : 14 }} />
+                <BarChart
+                  data={comparisonChartData}
+                  margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
+                >
+                  <CartesianGrid vertical={false} horizontal={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tick={{ fontSize: isMobile ? 12 : 14 }}
+                  />
                   <YAxis
                     hide={isMobile}
                     orientation="right"
@@ -1024,16 +1278,18 @@ function LoanComparisonCalculator() {
                     tickMargin={10}
                   />
                   <ChartTooltip
-                    content={(
+                    content={
                       <ChartTooltipContent
                         formatter={(value) => (
                           <>
                             <span className="text-muted-foreground">עלות כוללת</span>
-                            <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(value)}
+                            </span>
                           </>
                         )}
                       />
-                    )}
+                    }
                   />
                   <Bar dataKey="totalCost" name="totalCost" radius={[6, 6, 0, 0]}>
                     {comparisonChartData.map((entry) => (
@@ -1051,14 +1307,27 @@ function LoanComparisonCalculator() {
 
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
-              <h3 className="text-lg md:text-xl font-semibold text-foreground">עלות לכל שקל הלוואה</h3>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">כמה משלם הלקוח בפועל על כל 1 ₪ שהוא לווה</p>
+              <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                עלות לכל שקל הלוואה
+              </h3>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+                כמה משלם הלקוח בפועל על כל 1 ₪ שהוא לווה
+              </p>
             </div>
 
             <ChartContainer config={ratioChartConfig} className="h-[260px] md:h-[320px] w-full">
-              <BarChart data={comparisonChartData} margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: isMobile ? 12 : 14 }} />
+              <BarChart
+                data={comparisonChartData}
+                margin={{ top: 24, right: isMobile ? 8 : 28, left: isMobile ? 8 : 12, bottom: 12 }}
+              >
+                <CartesianGrid vertical={false} horizontal={false} />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  tick={{ fontSize: isMobile ? 12 : 14 }}
+                />
                 <YAxis
                   hide={isMobile}
                   orientation="right"
@@ -1069,26 +1338,43 @@ function LoanComparisonCalculator() {
                   tickMargin={10}
                 />
                 <ChartTooltip
-                  content={(
+                  content={
                     <ChartTooltipContent
                       formatter={(value) => (
                         <>
                           <span className="text-muted-foreground">עלות לכל 1 ₪ הלוואה</span>
-                          <span className="font-medium text-foreground">{`${Number(value).toFixed(3)} ₪`}</span>
+                          <span className="font-medium text-foreground">
+                            {`${Number(value).toFixed(3)} ₪`}
+                          </span>
                         </>
                       )}
-                      labelFormatter={(label) => `על כל 1 ₪ שנלקח, מוחזרים ${comparisonChartData.find((item) => item.name === label)?.costPerBorrowedShekel.toFixed(3)} ₪`}
+                      labelFormatter={(label) =>
+                        `על כל 1 ₪ שנלקח, מוחזרים ${comparisonChartData
+                          .find((item) => item.name === label)
+                          ?.costPerBorrowedShekel.toFixed(3)} ₪`
+                      }
                     />
-                  )}
+                  }
                 />
-                <Bar dataKey="costPerBorrowedShekel" name="costPerBorrowedShekel" radius={[6, 6, 0, 0]}>
+                <Bar
+                  dataKey="costPerBorrowedShekel"
+                  name="costPerBorrowedShekel"
+                  radius={[6, 6, 0, 0]}
+                >
                   {comparisonChartData.map((entry) => (
                     <Cell
                       key={`${entry.name}-ratio`}
-                      fill={entry.ratioLeader ? '#b45309' : 'var(--color-costPerBorrowedShekel)'}
+                      fill={
+                        entry.ratioLeader
+                          ? '#b45309'
+                          : 'var(--color-costPerBorrowedShekel)'
+                      }
                     />
                   ))}
-                  <LabelList dataKey="costPerBorrowedShekel" content={renderRatioBarLabel} />
+                  <LabelList
+                    dataKey="costPerBorrowedShekel"
+                    content={renderRatioBarLabel}
+                  />
                 </Bar>
               </BarChart>
             </ChartContainer>
@@ -1099,7 +1385,9 @@ function LoanComparisonCalculator() {
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
               <h3 className="text-lg md:text-xl font-semibold text-foreground">תובנות</h3>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">סיכום מהיר של היתרונות היחסיים בכל חלופה</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+                סיכום מהיר של היתרונות היחסיים בכל חלופה
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -1115,15 +1403,25 @@ function LoanComparisonCalculator() {
           {benchmarkLoan ? (
             <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
               <div className="mb-4">
-                <h3 className="text-lg md:text-xl font-semibold text-foreground">הלוואה קיימת להשוואה</h3>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">כרגע מסומנת כבסיס להשוואה מול יתר ההצעות</p>
+                <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                  הלוואה קיימת להשוואה
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+                  כרגע מסומנת כבסיס להשוואה מול יתר ההצעות
+                </p>
               </div>
 
               <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
                 <div className="font-semibold text-foreground">{benchmarkLoan.name}</div>
-                <div className="text-xs md:text-sm text-muted-foreground mt-1">החזר חודשי: {formatCurrency(benchmarkLoan.metrics.monthlyPayment)}</div>
-                <div className="text-xs md:text-sm text-muted-foreground mt-1">עלות כוללת: {formatCurrency(benchmarkLoan.metrics.totalCost)}</div>
-                <div className="text-xs md:text-sm text-muted-foreground mt-1">משך: {benchmarkLoan.metrics.months} חודשים</div>
+                <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  החזר חודשי: {formatCurrency(benchmarkLoan.metrics.monthlyPayment)}
+                </div>
+                <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  עלות כוללת: {formatCurrency(benchmarkLoan.metrics.totalCost)}
+                </div>
+                <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                  משך: {benchmarkLoan.metrics.months} חודשים
+                </div>
               </div>
             </div>
           ) : null}
@@ -1183,7 +1481,9 @@ function PropertyPurchaseCostsCalculator() {
         <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">נתוני עסקה</h2>
-            <p className="text-sm text-muted-foreground mt-1">הזן את פרטי העסקה וקבל הערכה לכל העלויות הנלוות</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              הזן את פרטי העסקה וקבל הערכה לכל העלויות הנלוות
+            </p>
           </div>
 
           <div>
@@ -1199,7 +1499,10 @@ function PropertyPurchaseCostsCalculator() {
 
           <div>
             <Label>סוג הרכישה</Label>
-            <Select value={form.purchaseType} onValueChange={(value) => setForm((prev) => ({ ...prev, purchaseType: value }))}>
+            <Select
+              value={form.purchaseType}
+              onValueChange={(value) => setForm((prev) => ({ ...prev, purchaseType: value }))}
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -1226,7 +1529,10 @@ function PropertyPurchaseCostsCalculator() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>האם יש עורך דין?</Label>
-              <Select value={form.hasLawyer} onValueChange={(value) => setForm((prev) => ({ ...prev, hasLawyer: value }))}>
+              <Select
+                value={form.hasLawyer}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, hasLawyer: value }))}
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -1248,7 +1554,9 @@ function PropertyPurchaseCostsCalculator() {
                   className="pl-10"
                   disabled={form.hasLawyer !== 'yes'}
                 />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  %
+                </span>
               </div>
             </div>
           </div>
@@ -1256,7 +1564,10 @@ function PropertyPurchaseCostsCalculator() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>האם יש מתווך?</Label>
-              <Select value={form.hasBroker} onValueChange={(value) => setForm((prev) => ({ ...prev, hasBroker: value }))}>
+              <Select
+                value={form.hasBroker}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, hasBroker: value }))}
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -1278,7 +1589,9 @@ function PropertyPurchaseCostsCalculator() {
                   className="pl-10"
                   disabled={form.hasBroker !== 'yes'}
                 />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  %
+                </span>
               </div>
             </div>
           </div>
@@ -1318,7 +1631,12 @@ function PropertyPurchaseCostsCalculator() {
 
           <div>
             <Label>האם להציג עלויות משכנתא?</Label>
-            <Select value={form.showMortgageCosts} onValueChange={(value) => setForm((prev) => ({ ...prev, showMortgageCosts: value }))}>
+            <Select
+              value={form.showMortgageCosts}
+              onValueChange={(value) =>
+                setForm((prev) => ({ ...prev, showMortgageCosts: value }))
+              }
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -1347,31 +1665,46 @@ function PropertyPurchaseCostsCalculator() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-right">
               <p className="text-sm font-medium text-amber-800">סך העלויות הנלוות</p>
-              <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatCurrency(results.totalAdditionalCosts)}</p>
+              <p className="text-lg md:text-xl font-bold mt-2 text-foreground">
+                {formatCurrency(results.totalAdditionalCosts)}
+              </p>
             </div>
 
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-right">
               <p className="text-sm font-medium text-emerald-800">עלות כוללת של העסקה</p>
-              <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatCurrency(results.totalDealCost)}</p>
+              <p className="text-lg md:text-xl font-bold mt-2 text-foreground">
+                {formatCurrency(results.totalDealCost)}
+              </p>
             </div>
 
             <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-right">
               <p className="text-sm font-medium text-blue-800">אחוז עלויות נלוות</p>
-              <p className="text-lg md:text-xl font-bold mt-2 text-foreground">{formatPercent(results.additionalCostsPercent, 1)}</p>
+              <p className="text-lg md:text-xl font-bold mt-2 text-foreground">
+                {formatPercent(results.additionalCostsPercent, 1)}
+              </p>
             </div>
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
             <div className="mb-4">
-              <h3 className="text-lg md:text-xl font-semibold text-foreground">פירוט עלויות</h3>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">פירוט מלא של רכיבי העלות מעבר למחיר הנכס</p>
+              <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                פירוט עלויות
+              </h3>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-5">
+                פירוט מלא של רכיבי העלות מעבר למחיר הנכס
+              </p>
             </div>
 
             <div className="space-y-3">
               {rows.map((row) => (
-                <div key={row.label} className="flex items-center justify-between gap-4 rounded-xl border border-border px-4 py-3 text-sm">
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-border px-4 py-3 text-sm"
+                >
                   <span className="text-muted-foreground">{row.label}</span>
-                  <span className="font-semibold text-foreground">{formatCurrency(row.value)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(row.value)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1380,17 +1713,23 @@ function PropertyPurchaseCostsCalculator() {
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-3">
             <div className="flex items-center justify-between gap-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-4">
               <span className="font-semibold text-amber-900">סך העלויות הנלוות</span>
-              <span className="font-bold text-foreground">{formatCurrency(results.totalAdditionalCosts)}</span>
+              <span className="font-bold text-foreground">
+                {formatCurrency(results.totalAdditionalCosts)}
+              </span>
             </div>
 
             <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-4">
               <span className="font-semibold text-emerald-900">העלות הכוללת של העסקה</span>
-              <span className="font-bold text-foreground">{formatCurrency(results.totalDealCost)}</span>
+              <span className="font-bold text-foreground">
+                {formatCurrency(results.totalDealCost)}
+              </span>
             </div>
 
             <div className="flex items-center justify-between gap-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-4">
               <span className="font-semibold text-blue-900">אחוז העלויות מתוך מחיר הנכס</span>
-              <span className="font-bold text-foreground">{formatPercent(results.additionalCostsPercent, 1)}</span>
+              <span className="font-bold text-foreground">
+                {formatPercent(results.additionalCostsPercent, 1)}
+              </span>
             </div>
           </div>
         </div>
