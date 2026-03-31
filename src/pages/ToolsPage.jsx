@@ -12,11 +12,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat('he-IL', {
-    style: 'currency',
-    currency: 'ILS',
-    maximumFractionDigits: 2,
-  }).format(Number(value || 0));
+  const rounded = Math.round(Number(value || 0));
+  return `${rounded.toLocaleString('he-IL').replace(/,/g, '')} ₪`;
 }
 
 function sanitizeNumber(value) {
@@ -139,18 +136,18 @@ export default function ToolsPage() {
       </div>
 
       <Tabs defaultValue="compound-interest" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-1 mb-6">
-          <TabsTrigger value="compound-interest" className="gap-2">
+        <TabsList className="grid w-full max-w-md grid-cols-1 mb-6 mr-0">
+          <TabsTrigger value="compound-interest" className="gap-2 justify-center text-sm md:text-base">
             <Calculator className="w-4 h-4" />
             מחשבון ריבית דריבית
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="compound-interest" className="space-y-6">
-          <div className="grid lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
+          <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-6 items-start">
             <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-foreground">נתוני חישוב</h2>
+                <h2 className="text-xl font-semibold text-foreground">נתוני חישוב</h2>
                 <p className="text-sm text-muted-foreground mt-1">מלא את הפרטים ונחשב את הצמיחה הצפויה</p>
               </div>
 
@@ -220,12 +217,12 @@ export default function ToolsPage() {
             <div className="space-y-6">
               <div className="grid md:grid-cols-3 gap-4">
                 {summaryCards.map(({ title, value, icon: Icon, tone }) => (
-                  <div key={title} className={`rounded-2xl border p-5 ${tone}`}>
+                  <div key={title} className={`rounded-2xl border p-5 text-right ${tone}`}>
                     <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center mb-3">
                       <Icon className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-medium opacity-90">{title}</p>
-                    <p className="text-2xl font-bold mt-1 text-foreground">{value}</p>
+                    <p className="text-xl md:text-2xl font-bold mt-1 text-foreground leading-tight">{value}</p>
                   </div>
                 ))}
               </div>
@@ -233,7 +230,7 @@ export default function ToolsPage() {
               <div className="bg-card rounded-2xl border border-border p-5">
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <div>
-                    <h3 className="font-semibold text-foreground">טבלת צמיחה שנתית</h3>
+                    <h3 className="text-xl font-semibold text-foreground">טבלת צמיחה שנתית</h3>
                     <p className="text-sm text-muted-foreground mt-1">פירוט לפי שנה של היתרה, ההפקדות והרווח</p>
                   </div>
                 </div>
