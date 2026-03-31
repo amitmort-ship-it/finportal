@@ -18,16 +18,20 @@ function cleanApprovalNotes(notes) {
 }
 
 const bankColors = {
-  'בנק הפועלים': { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-600' },
-  'בנק לאומי': { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600' },
-  'בנק דיסקונט': { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-600' },
-  'בנק טפחות': { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'text-orange-600' },
-  'הבנק הבינלאומי': { bg: 'bg-yellow-50', border: 'border-yellow-300', icon: 'text-yellow-600' },
-  'חוץ בנקאי': { bg: 'bg-slate-50', border: 'border-slate-200', icon: 'text-slate-500' },
+  'בנק הפועלים': { bg: 'bg-red-50 dark:bg-red-950/20', border: 'border-red-200 dark:border-red-900/40', icon: 'text-red-600 dark:text-red-300' },
+  'בנק לאומי': { bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-900/40', icon: 'text-blue-600 dark:text-blue-300' },
+  'בנק דיסקונט': { bg: 'bg-green-50 dark:bg-green-950/20', border: 'border-green-200 dark:border-green-900/40', icon: 'text-green-600 dark:text-green-300' },
+  'בנק טפחות': { bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-900/40', icon: 'text-orange-600 dark:text-orange-300' },
+  'הבנק הבינלאומי': { bg: 'bg-yellow-50 dark:bg-yellow-950/20', border: 'border-yellow-300 dark:border-yellow-900/40', icon: 'text-yellow-600 dark:text-yellow-300' },
+  'חוץ בנקאי': { bg: 'bg-slate-50 dark:bg-slate-950/60', border: 'border-slate-200 dark:border-slate-800', icon: 'text-slate-500 dark:text-slate-300' },
 };
 
 export default function BankApprovalCard({ approval }) {
-  const colors = bankColors[approval.bank_name] || { bg: 'bg-slate-50', border: 'border-slate-200', icon: 'text-slate-600' };
+  const colors = bankColors[approval.bank_name] || {
+    bg: 'bg-slate-50 dark:bg-slate-950/60',
+    border: 'border-slate-200 dark:border-slate-800',
+    icon: 'text-slate-600 dark:text-slate-300',
+  };
   const displayNotes = cleanApprovalNotes(approval.notes);
   return (
     <div className={`rounded-xl border p-5 hover:shadow-md transition-all duration-300 ${colors.bg} ${colors.border}`}>
@@ -43,17 +47,17 @@ export default function BankApprovalCard({ approval }) {
           
           <div className="flex flex-wrap gap-3 mt-3">
             {approval.amount && (
-              <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                 ₪{approval.amount.toLocaleString()}
               </span>
             )}
             {approval.monthly_payment && (
-              <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
                 החזר חודשי: ₪{approval.monthly_payment.toLocaleString()}
               </span>
             )}
             {approval.mortgage_years && (
-              <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-medium">
+              <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700 dark:bg-purple-950/30 dark:text-purple-300">
                 {approval.mortgage_years} שנות משכנתא
               </span>
             )}
@@ -64,8 +68,12 @@ export default function BankApprovalCard({ approval }) {
           )}
 
           {approval.file_url && (
-            <a href={approval.file_url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-3 text-sm text-primary hover:underline">
+            <a
+              href={approval.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-3 text-sm text-primary hover:underline"
+            >
               <Download className="w-3.5 h-3.5" />
               {approval.file_name || 'הורד מסמך'}
             </a>
