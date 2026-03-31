@@ -66,6 +66,36 @@ function getNotificationIcon(type) {
   return Bell;
 }
 
+function getNotificationStyles(type) {
+  if (type === 'login') {
+    return {
+      card: 'border-sky-200 bg-sky-50/80',
+      iconWrap: 'bg-sky-100',
+      icon: 'text-sky-700',
+      badge: 'bg-sky-100 text-sky-700',
+      label: 'כניסה למערכת',
+    };
+  }
+
+  if (type === 'file_upload') {
+    return {
+      card: 'border-emerald-200 bg-emerald-50/80',
+      iconWrap: 'bg-emerald-100',
+      icon: 'text-emerald-700',
+      badge: 'bg-emerald-100 text-emerald-700',
+      label: 'העלאת מסמך',
+    };
+  }
+
+  return {
+    card: 'border-border bg-muted/20',
+    iconWrap: 'bg-primary/10',
+    icon: 'text-primary',
+    badge: 'bg-muted text-muted-foreground',
+    label: 'התראה',
+  };
+}
+
 export default function AdminNotifications({ selectedClient }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -157,18 +187,22 @@ export default function AdminNotifications({ selectedClient }) {
           אין התראות חדשות כרגע
         </div>
       ) : (
-        <div className="space-y-3">
-          {notifications.slice(0, 10).map((notification) => {
+        <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
+          {notifications.map((notification) => {
             const Icon = getNotificationIcon(notification.type);
+            const styles = getNotificationStyles(notification.type);
 
             return (
-              <div key={notification.id} className="rounded-xl border border-border bg-muted/20 p-4">
+              <div key={notification.id} className={`rounded-xl border p-4 ${styles.card}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="rounded-full bg-primary/10 p-2 shrink-0">
-                      <Icon className="w-4 h-4 text-primary" />
+                    <div className={`rounded-full p-2 shrink-0 ${styles.iconWrap}`}>
+                      <Icon className={`w-4 h-4 ${styles.icon}`} />
                     </div>
                     <div className="min-w-0">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mb-2 ${styles.badge}`}>
+                        {styles.label}
+                      </span>
                       <p className="text-sm text-foreground break-words">{notification.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {notification.createdAt
