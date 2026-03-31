@@ -15,10 +15,30 @@ function getInvokeError(result) {
 }
 
 const statusConfig = {
-  pending: { label: 'ממתין להעלאה', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
-  uploaded: { label: 'הועלה', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
-  approved: { label: 'אושר', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  rejected: { label: 'נדחה', icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
+  pending: {
+    label: 'ממתין להעלאה',
+    icon: Clock,
+    color: 'text-amber-600 dark:text-amber-300',
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+  },
+  uploaded: {
+    label: 'הועלה',
+    icon: CheckCircle2,
+    color: 'text-blue-600 dark:text-blue-300',
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+  },
+  approved: {
+    label: 'אושר',
+    icon: CheckCircle2,
+    color: 'text-emerald-600 dark:text-emerald-300',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+  },
+  rejected: {
+    label: 'נדחה',
+    icon: XCircle,
+    color: 'text-red-600 dark:text-red-300',
+    bg: 'bg-red-50 dark:bg-red-950/30',
+  },
 };
 
 export default function FileUploadCard({ request: initialRequest, onUpdate }) {
@@ -36,7 +56,6 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         setRequest(event.data);
       }
     });
-
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
@@ -51,7 +70,6 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     if (!file) return;
 
     setUploading(true);
-
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const newFiles = [...uploadedFiles, {
@@ -61,7 +79,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         uploaded_by_name: user?.full_name || user?.email || null,
         uploaded_at: new Date().toISOString(),
       }];
-
+      
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
         status: 'uploaded',
@@ -112,12 +130,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const handleDeleteFile = async (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     const newStatus = newFiles.length === 0 ? 'pending' : request.status;
-
+    
     const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
       status: newStatus
     });
-
+    
     setRequest(updatedDoc);
     toast.success('הקובץ הוסר');
     onUpdate?.();
@@ -132,7 +150,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
             <p className="text-sm text-muted-foreground mt-1">{request.description}</p>
           )}
         </div>
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${config.bg} ${config.color}`}>
           <StatusIcon className="w-3 h-3" />
           {config.label}
         </span>
@@ -143,7 +161,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
+              <a
+                href={file.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1"
+              >
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
