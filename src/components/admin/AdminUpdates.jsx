@@ -9,26 +9,6 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
-const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
-const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
-
-function parseAdminNotification(update) {
-  const message = String(update?.message || '');
-  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
-  const clientMatch = message.match(CLIENT_REGEX);
-
-  return {
-    id: update.id,
-    eventType: eventTypeMatch?.[1] || 'general',
-    relatedClientEmail: clientMatch?.[1] || null,
-    cleanMessage: message
-      .replace(EVENT_TYPE_REGEX, '')
-      .replace(CLIENT_REGEX, '')
-      .trim(),
-    createdAt: update.created_date || null,
-    source: 'client_update',
-  };
-}
 
 function buildFileUploadNotifications(requests) {
   return (requests || [])
@@ -59,6 +39,19 @@ function buildFileUploadNotifications(requests) {
       };
     })
     .filter(Boolean);
+}
+
+function buildLoginNotificationsFromProfiles(profiles) {
+  return (profiles || [])
+    .filter((profile) => profile?.last_login_at)
+    .map((profile) => ({
+      id: `profile-login-${profile.id}`,
+      eventType: 'login',
+      relatedClientEmail: profile.email,
+      cleanMessage: `${profile.last_login_user_name || profile.last_login_user_email || profile.full_name || profile.email} נכנס/ה למערכת עבור תיק ${profile.full_name || profile.email}`,
+      createdAt: profile.last_login_at,
+      source: 'profile_login',
+    }));
 }
 
 function getNotificationStyles(eventType) {
@@ -105,13 +98,14 @@ export default function AdminUpdates({ selectedClient }) {
       ]);
 
       const profileMap = Object.fromEntries(
-        (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
+        (profiles || []).map((profile) => [
+          String(profile.email || '').toLowerCase(),
+          profile.full_name || profile.email,
+        ]),
       );
 
       const clientFacingUpdates = data.filter((item) => item.client_email !== ADMIN_NOTIFICATIONS_EMAIL);
-      const adminEvents = data
-        .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
-        .map(parseAdminNotification);
+      const adminEvents = buildLoginNotificationsFromProfiles(profiles);
       const fileUploadEvents = buildFileUploadNotifications(fileRequests);
 
       const filteredUpdates = (client === 'all' || !client)
@@ -156,9 +150,14 @@ export default function AdminUpdates({ selectedClient }) {
       load();
     });
 
+    const unsubscribeProfiles = base44.entities.ClientProfile.subscribe(() => {
+      load();
+    });
+
     return () => {
       if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
+      if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };
   }, [client]);
 
@@ -173,6 +172,7 @@ export default function AdminUpdates({ selectedClient }) {
               client_email: u.email,
               message: message.trim()
             });
+
             return base44.functions.invoke('sendUpdateEmail', {
               data: { ...update, app_url: window.location.origin }
             });
@@ -184,15 +184,19 @@ export default function AdminUpdates({ selectedClient }) {
           setSending(false);
           return;
         }
+
         const update = await base44.entities.ClientUpdate.create({
           client_email: client,
           message: message.trim()
         });
+
         await base44.functions.invoke('sendUpdateEmail', {
           data: { ...update, app_url: window.location.origin }
         });
+
         toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
       }
+
       setMessage('');
       load();
     } catch (err) {
@@ -205,7 +209,7 @@ export default function AdminUpdates({ selectedClient }) {
 
   const handleDelete = async (item) => {
     if (item.source !== 'client_update') {
-      toast.error('התראת העלאת מסמך נמחקת מתוך בקשת המסמך עצמה, לא מכאן');
+      toast.error('התראה מחושבת אוטומטית ולא נמחקת מכאן');
       return;
     }
 
@@ -235,7 +239,9 @@ export default function AdminUpdates({ selectedClient }) {
           <SelectContent>
             <SelectItem value="all">📢 כל הלקוחות</SelectItem>
             {users.map((u) => (
-              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
+              <SelectItem key={u.id} value={u.email}>
+                {u.full_name || u.email}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
