@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Calculator, TrendingUp, PiggyBank, Landmark } from 'lucide-react';
+import { ArrowRight, Calculator, ChevronRight, Landmark, PiggyBank, TrendingUp } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -106,6 +107,7 @@ function calculateCompoundInterest({
 }
 
 export default function ToolsPage() {
+  const [activeTool, setActiveTool] = useState(null);
   const [form, setForm] = useState({
     initialAmount: 100000,
     monthlyContribution: 1000,
@@ -158,11 +160,59 @@ export default function ToolsPage() {
     },
   };
 
+  const toolCards = [
+    {
+      id: 'compound-interest',
+      title: 'מחשבון ריבית דריבית',
+      description: 'חישוב צמיחה של סכום התחלתי, הפקדה חודשית וריבית לאורך זמן.',
+      icon: Calculator,
+      tone: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    },
+  ];
+
+  if (!activeTool) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">כלים שימושיים</h1>
+          <p className="text-muted-foreground mt-1">מרכז כלים ומחשבונים שיעזרו לך לקבל החלטות פיננסיות בצורה חכמה יותר</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {toolCards.map(({ id, title, description, icon: Icon, tone }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTool(id)}
+              className={`rounded-2xl border p-6 text-right transition-all hover:shadow-md hover:-translate-y-0.5 ${tone}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/80 flex items-center justify-center shrink-0">
+                  <Icon className="w-6 h-6" />
+                </div>
+                <ChevronRight className="w-5 h-5 opacity-70 shrink-0" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mt-6">{title}</h2>
+              <p className="text-sm text-muted-foreground mt-2 leading-6">{description}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">כלים שימושיים</h1>
-        <p className="text-muted-foreground mt-1">מחשבונים פרקטיים לקבלת החלטות פיננסיות חכמות</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">כלים שימושיים</h1>
+          <p className="text-muted-foreground mt-1">מחשבונים פרקטיים לקבלת החלטות פיננסיות חכמות</p>
+        </div>
+
+        <Button type="button" variant="outline" className="gap-2 shrink-0" onClick={() => setActiveTool(null)}>
+          <ArrowRight className="w-4 h-4" />
+          חזרה לכל הכלים
+        </Button>
       </div>
 
       <Tabs defaultValue="compound-interest" className="w-full">
