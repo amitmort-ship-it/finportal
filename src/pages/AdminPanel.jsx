@@ -67,6 +67,7 @@ export default function AdminPanel() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [users, setUsers] = useState([]);
   const [updatesBadgeCount, setUpdatesBadgeCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('clients');
 
   useEffect(() => {
     const load = async () => {
@@ -97,7 +98,13 @@ export default function AdminPanel() {
             return bDate - aDate;
           });
 
-        setUpdatesBadgeCount(merged.length);
+        const lastSeenAt = Number(localStorage.getItem('admin-updates-last-seen-at') || 0);
+        const unreadCount = merged.filter((item) => {
+          const createdAt = new Date(item.createdAt || 0).getTime();
+          return createdAt > lastSeenAt;
+        }).length;
+
+        setUpdatesBadgeCount(unreadCount);
       } catch (error) {
         console.error('Failed to load admin badge count:', error);
       }
@@ -118,6 +125,14 @@ export default function AdminPanel() {
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
     };
   }, [selectedClient]);
+
+  useEffect(() => {
+    if (activeTab === 'updates') {
+      const now = Date.now();
+      localStorage.setItem('admin-updates-last-seen-at', String(now));
+      setUpdatesBadgeCount(0);
+    }
+  }, [activeTab]);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
@@ -143,7 +158,7 @@ export default function AdminPanel() {
 
       <AdminNotifications selectedClient={selectedClient} />
 
-      <Tabs defaultValue="clients" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9 mb-6 h-auto">
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
           <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
