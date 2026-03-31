@@ -13,11 +13,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function formatCurrency(value) {
   const rounded = Math.round(Number(value || 0));
-  return `${rounded.toLocaleString('he-IL').replace(/,/g, '')} ₪`;
+  return `${rounded.toLocaleString('he-IL')} ₪`;
+}
+
+function formatInputNumber(value) {
+  const numericValue = String(value ?? '').replace(/,/g, '');
+  if (numericValue === '') return '';
+
+  const [integerPart, decimalPart] = numericValue.split('.');
+  const formattedInteger = Number(integerPart || 0).toLocaleString('en-US');
+
+  return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
 }
 
 function sanitizeNumber(value) {
-  const parsed = Number(value);
+  const parsed = Number(String(value ?? '').replace(/,/g, ''));
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
   return parsed;
 }
@@ -103,7 +113,7 @@ export default function ToolsPage() {
   const handleChange = (field) => (event) => {
     setForm((prev) => ({
       ...prev,
-      [field]: event.target.value,
+      [field]: String(event.target.value).replace(/,/g, ''),
     }));
   };
 
@@ -154,9 +164,10 @@ export default function ToolsPage() {
               <div>
                 <Label>סכום התחלתי</Label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   min="0"
-                  value={form.initialAmount}
+                  value={formatInputNumber(form.initialAmount)}
                   onChange={handleChange('initialAmount')}
                   className="mt-1"
                 />
@@ -165,9 +176,10 @@ export default function ToolsPage() {
               <div>
                 <Label>הפקדה חודשית קבועה</Label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   min="0"
-                  value={form.monthlyContribution}
+                  value={formatInputNumber(form.monthlyContribution)}
                   onChange={handleChange('monthlyContribution')}
                   className="mt-1"
                 />
@@ -175,23 +187,28 @@ export default function ToolsPage() {
 
               <div>
                 <Label>ריבית שנתית באחוזים</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={form.annualRate}
-                  onChange={handleChange('annualRate')}
-                  className="mt-1"
-                />
+                <div className="relative mt-1">
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    min="0"
+                    value={formatInputNumber(form.annualRate)}
+                    onChange={handleChange('annualRate')}
+                    className="pl-10"
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                    %
+                  </span>
+                </div>
               </div>
 
               <div>
                 <Label>תקופת השקעה בשנים</Label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   min="0"
-                  step="1"
-                  value={form.years}
+                  value={formatInputNumber(form.years)}
                   onChange={handleChange('years')}
                   className="mt-1"
                 />
@@ -222,7 +239,7 @@ export default function ToolsPage() {
                       <Icon className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-medium opacity-90">{title}</p>
-                    <p className="text-xl md:text-2xl font-bold mt-1 text-foreground leading-tight">{value}</p>
+                    <p className="text-lg md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
                   </div>
                 ))}
               </div>
