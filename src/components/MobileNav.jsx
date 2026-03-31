@@ -55,23 +55,25 @@ export default function MobileNav() {
         </div>
       ) : null}
 
-      <div className="flex justify-around py-1">
-        {items.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs transition-all select-none ${
-                isActive ? 'text-primary font-semibold' : 'text-muted-foreground'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {item.label}
-            </Link>
-          );
-        })}
+      <div className="overflow-x-auto overscroll-x-contain scrollbar-none">
+        <div className="flex min-w-max gap-1 px-2 py-1">
+          {items.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex min-w-[72px] flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-xs transition-all select-none ${
+                  isActive ? 'text-primary font-semibold' : 'text-muted-foreground'
+                }`}
+              >
+                <Icon className="w-5 h-5 shrink-0" />
+                <span className="whitespace-nowrap">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
