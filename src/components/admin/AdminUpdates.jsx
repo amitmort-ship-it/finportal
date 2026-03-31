@@ -18,14 +18,47 @@ function parseAdminNotification(update) {
   const clientMatch = message.match(CLIENT_REGEX);
 
   return {
-    ...update,
+    id: update.id,
     eventType: eventTypeMatch?.[1] || 'general',
     relatedClientEmail: clientMatch?.[1] || null,
     cleanMessage: message
       .replace(EVENT_TYPE_REGEX, '')
       .replace(CLIENT_REGEX, '')
       .trim(),
+    createdAt: update.created_date || null,
+    source: 'client_update',
   };
+}
+
+function buildFileUploadNotifications(requests) {
+  return (requests || [])
+    .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
+    .map((request) => {
+      const nonAdminFiles = request.uploaded_files.filter((file) => (
+        file?.uploaded_by_email !== 'admin' &&
+        file?.uploaded_by_name !== 'הועלה על ידי המשרד'
+      ));
+
+      if (!nonAdminFiles.length) {
+        return null;
+      }
+
+      const latestFile = [...nonAdminFiles].sort((a, b) => {
+        const aDate = new Date(a?.uploaded_at || 0).getTime();
+        const bDate = new Date(b?.uploaded_at || 0).getTime();
+        return bDate - aDate;
+      })[0];
+
+      return {
+        id: `file-request-${request.id}`,
+        eventType: 'file_upload',
+        relatedClientEmail: request.client_email,
+        cleanMessage: `${latestFile?.uploaded_by_name || latestFile?.uploaded_by_email || 'לקוח'} העלה/תה מסמך: ${latestFile?.file_name || request.title}`,
+        createdAt: latestFile?.uploaded_at || request.updated_date || request.created_date || null,
+        source: 'file_request',
+      };
+    })
+    .filter(Boolean);
 }
 
 export default function AdminUpdates({ selectedClient }) {
@@ -39,24 +72,31 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [data, userList] = await Promise.all([
+      const [data, fileRequests, userList] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
+        base44.entities.FileRequest.filter({}, '-created_date'),
         base44.entities.User.filter({}),
       ]);
 
-      const adminEvents = data.filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL);
       const clientFacingUpdates = data.filter((item) => item.client_email !== ADMIN_NOTIFICATIONS_EMAIL);
+      const adminEvents = data
+        .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
+        .map(parseAdminNotification);
+      const fileUploadEvents = buildFileUploadNotifications(fileRequests);
 
-      const filtered = (client === 'all' || !client)
+      const filteredUpdates = (client === 'all' || !client)
         ? clientFacingUpdates
         : clientFacingUpdates.filter((u) => u.client_email === client);
 
-      const parsedAdminEvents = adminEvents.map(parseAdminNotification);
-      const filteredAdminEvents = (client === 'all' || !client)
-        ? parsedAdminEvents
-        : parsedAdminEvents.filter((event) => event.relatedClientEmail === client);
+      const filteredAdminEvents = [...adminEvents, ...fileUploadEvents]
+        .filter((event) => (client === 'all' || !client ? true : event.relatedClientEmail === client))
+        .sort((a, b) => {
+          const aDate = new Date(a.createdAt || 0).getTime();
+          const bDate = new Date(b.createdAt || 0).getTime();
+          return bDate - aDate;
+        });
 
-      setUpdates(filtered);
+      setUpdates(filteredUpdates);
       setAdminNotifications(filteredAdminEvents);
       setUsers(userList.filter((u) => u.role !== 'admin'));
     } catch (err) {
@@ -76,10 +116,24 @@ export default function AdminUpdates({ selectedClient }) {
     load();
   }, [client]);
 
+  useEffect(() => {
+    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
+      load();
+    });
+
+    const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
+      load();
+    });
+
+    return () => {
+      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
+      if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
+    };
+  }, [client]);
+
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
-
     try {
       if (client === 'all') {
         await Promise.all(
@@ -88,7 +142,6 @@ export default function AdminUpdates({ selectedClient }) {
               client_email: u.email,
               message: message.trim()
             });
-
             return base44.functions.invoke('sendUpdateEmail', {
               data: { ...update, app_url: window.location.origin }
             });
@@ -100,19 +153,15 @@ export default function AdminUpdates({ selectedClient }) {
           setSending(false);
           return;
         }
-
         const update = await base44.entities.ClientUpdate.create({
           client_email: client,
           message: message.trim()
         });
-
         await base44.functions.invoke('sendUpdateEmail', {
           data: { ...update, app_url: window.location.origin }
         });
-
         toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
       }
-
       setMessage('');
       load();
     } catch (err) {
@@ -123,9 +172,14 @@ export default function AdminUpdates({ selectedClient }) {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (item) => {
+    if (item.source !== 'client_update') {
+      toast.error('התראת העלאת מסמך נמחקת מתוך בקשת המסמך עצמה, לא מכאן');
+      return;
+    }
+
     try {
-      await base44.entities.ClientUpdate.delete(id);
+      await base44.entities.ClientUpdate.delete(item.id);
       toast.success('העדכון נמחק');
       load();
     } catch (err) {
@@ -150,9 +204,7 @@ export default function AdminUpdates({ selectedClient }) {
           <SelectContent>
             <SelectItem value="all">📢 כל הלקוחות</SelectItem>
             {users.map((u) => (
-              <SelectItem key={u.id} value={u.email}>
-                {u.full_name || u.email}
-              </SelectItem>
+              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -197,14 +249,15 @@ export default function AdminUpdates({ selectedClient }) {
                       <div className="flex-1 min-w-0">
                         <p className="text-foreground break-words">{item.cleanMessage}</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {item.created_date ? format(new Date(item.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                          {item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
                         </p>
                       </div>
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item)}
                         className="text-destructive hover:bg-destructive/10 shrink-0"
+                        disabled={item.source !== 'client_update'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -235,7 +288,7 @@ export default function AdminUpdates({ selectedClient }) {
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => handleDelete(u.id)}
+                        onClick={() => handleDelete({ ...u, source: 'client_update' })}
                         className="text-destructive hover:bg-destructive/10 shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
