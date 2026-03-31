@@ -44,6 +44,13 @@ Deno.serve(async (req) => {
 
     const displayName = currentUser.full_name || currentEmail;
     const caseLabel = caseProfile.full_name || caseProfile.email;
+    const now = new Date().toISOString();
+
+    await base44.asServiceRole.entities.ClientProfile.update(caseProfile.id, {
+      last_login_at: now,
+      last_login_user_email: currentEmail,
+      last_login_user_name: displayName,
+    });
 
     const notification = await base44.asServiceRole.entities.ClientUpdate.create({
       client_email: ADMIN_NOTIFICATIONS_EMAIL,
