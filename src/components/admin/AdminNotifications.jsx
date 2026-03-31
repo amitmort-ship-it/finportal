@@ -20,16 +20,49 @@ function parseNotification(update) {
     .trim();
 
   return {
-    ...update,
-    eventType: eventTypeMatch?.[1] || 'general',
-    relatedClientEmail: clientMatch?.[1] || null,
-    cleanMessage,
+    id: update.id,
+    type: eventTypeMatch?.[1] || 'general',
+    clientEmail: clientMatch?.[1] || null,
+    message: cleanMessage,
+    createdAt: update.created_date || null,
+    source: 'client_update',
   };
 }
 
-function getNotificationIcon(eventType) {
-  if (eventType === 'login') return LogIn;
-  if (eventType === 'file_upload') return FileUp;
+function buildFileUploadNotifications(requests) {
+  return (requests || [])
+    .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
+    .map((request) => {
+      const nonAdminFiles = request.uploaded_files.filter((file) => (
+        file?.uploaded_by_email !== 'admin' &&
+        file?.uploaded_by_name !== 'הועלה על ידי המשרד'
+      ));
+
+      if (!nonAdminFiles.length) {
+        return null;
+      }
+
+      const latestFile = [...nonAdminFiles].sort((a, b) => {
+        const aDate = new Date(a?.uploaded_at || 0).getTime();
+        const bDate = new Date(b?.uploaded_at || 0).getTime();
+        return bDate - aDate;
+      })[0];
+
+      return {
+        id: `file-request-${request.id}`,
+        type: 'file_upload',
+        clientEmail: request.client_email,
+        message: `${latestFile?.uploaded_by_name || latestFile?.uploaded_by_email || 'לקוח'} העלה/תה מסמך: ${latestFile?.file_name || request.title}`,
+        createdAt: latestFile?.uploaded_at || request.updated_date || request.created_date || null,
+        source: 'file_request',
+      };
+    })
+    .filter(Boolean);
+}
+
+function getNotificationIcon(type) {
+  if (type === 'login') return LogIn;
+  if (type === 'file_upload') return FileUp;
   return Bell;
 }
 
@@ -39,17 +72,26 @@ export default function AdminNotifications({ selectedClient }) {
 
   const load = async () => {
     try {
-      const data = await base44.entities.ClientUpdate.filter({}, '-created_date');
+      const [updates, fileRequests] = await Promise.all([
+        base44.entities.ClientUpdate.filter({}, '-created_date'),
+        base44.entities.FileRequest.filter({}, '-created_date'),
+      ]);
 
-      const parsed = (data || [])
+      const loginNotifications = (updates || [])
         .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
         .map(parseNotification);
 
-      const filtered = selectedClient
-        ? parsed.filter((item) => item.relatedClientEmail === selectedClient)
-        : parsed;
+      const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
 
-      setNotifications(filtered);
+      const merged = [...fileUploadNotifications, ...loginNotifications]
+        .filter((item) => !selectedClient || item.clientEmail === selectedClient)
+        .sort((a, b) => {
+          const aDate = new Date(a.createdAt || 0).getTime();
+          const bDate = new Date(b.createdAt || 0).getTime();
+          return bDate - aDate;
+        });
+
+      setNotifications(merged);
     } catch (error) {
       console.error('Failed to load admin notifications:', error);
       toast.error('שגיאה בטעינת ההתראות');
@@ -63,20 +105,29 @@ export default function AdminNotifications({ selectedClient }) {
   }, [selectedClient]);
 
   useEffect(() => {
-    const unsubscribe = base44.entities.ClientUpdate.subscribe((event) => {
-      if (event.type !== 'create' && event.type !== 'delete') return;
+    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
+      load();
+    });
+
+    const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
       load();
     });
 
     return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
+      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
+      if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
     };
   }, [selectedClient]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (notification) => {
+    if (notification.source !== 'client_update') {
+      toast.error('התראת העלאת מסמך נמחקת מתוך בקשת המסמך עצמה, לא מכאן');
+      return;
+    }
+
     try {
-      await base44.entities.ClientUpdate.delete(id);
-      setNotifications((prev) => prev.filter((item) => item.id !== id));
+      await base44.entities.ClientUpdate.delete(notification.id);
+      setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
       toast.success('ההתראה הוסרה');
     } catch (error) {
       console.error(error);
@@ -108,7 +159,7 @@ export default function AdminNotifications({ selectedClient }) {
       ) : (
         <div className="space-y-3">
           {notifications.slice(0, 10).map((notification) => {
-            const Icon = getNotificationIcon(notification.eventType);
+            const Icon = getNotificationIcon(notification.type);
 
             return (
               <div key={notification.id} className="rounded-xl border border-border bg-muted/20 p-4">
@@ -118,10 +169,10 @@ export default function AdminNotifications({ selectedClient }) {
                       <Icon className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm text-foreground break-words">{notification.cleanMessage}</p>
+                      <p className="text-sm text-foreground break-words">{notification.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {notification.created_date
-                          ? format(new Date(notification.created_date), 'dd.MM.yyyy HH:mm', { locale: he })
+                        {notification.createdAt
+                          ? format(new Date(notification.createdAt), 'dd.MM.yyyy HH:mm', { locale: he })
                           : ''}
                       </p>
                     </div>
@@ -131,8 +182,9 @@ export default function AdminNotifications({ selectedClient }) {
                     type="button"
                     size="icon"
                     variant="ghost"
-                    onClick={() => handleDelete(notification.id)}
+                    onClick={() => handleDelete(notification)}
                     className="text-destructive hover:bg-destructive/10 shrink-0"
+                    disabled={notification.source !== 'client_update'}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
