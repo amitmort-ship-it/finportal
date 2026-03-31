@@ -5,6 +5,15 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
 
+function getInvokeError(result) {
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [activeCase, setActiveCase] = useState(null);
@@ -90,11 +99,18 @@ export const AuthProvider = ({ children }) => {
         if (!sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, '1');
           try {
-            await base44.functions.invoke('createAdminNotification', {
+            const notificationRes = await base44.functions.invoke('createAdminNotification', {
               event_type: 'login',
               client_email: resolvedCase.email,
               message: `${resolvedCase.full_name || currentUser.full_name || currentUser.email} נכנס/ה למערכת`,
             });
+
+            const notificationError = getInvokeError(notificationRes);
+            if (notificationError) {
+              throw new Error(notificationError);
+            }
+
+            console.log('createAdminNotification result', notificationRes?.data || notificationRes);
           } catch (notificationError) {
             console.error('Failed to create admin login notification:', notificationError);
           }
