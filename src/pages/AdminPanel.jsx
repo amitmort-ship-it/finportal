@@ -13,7 +13,6 @@ import AdminBankApprovals from '../components/admin/AdminBankApprovals';
 import AdminProcessStage from '../components/admin/AdminProcessStage';
 import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
-import AdminNotifications from '../components/admin/AdminNotifications';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
@@ -154,8 +153,6 @@ export default function AdminPanel() {
           </SelectContent>
         </Select>
       </div>
-
-      <AdminNotifications selectedClient={selectedClient} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
