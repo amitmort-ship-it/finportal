@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Package } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { path: '/package', label: 'תמהיל', icon: Package },
   { path: '/approvals', label: 'בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },
+  { path: '/tools', label: 'כלים', icon: Calculator },
 ];
 
 export default function MobileNav() {
