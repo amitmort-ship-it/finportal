@@ -4,7 +4,6 @@ import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
-const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -91,9 +90,10 @@ export const AuthProvider = ({ children }) => {
         if (!sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, '1');
           try {
-            await base44.entities.ClientUpdate.create({
-              client_email: ADMIN_NOTIFICATIONS_EMAIL,
-              message: `[[admin_event:login]][[client:${resolvedCase.email}]] ${resolvedCase.full_name || currentUser.full_name || currentUser.email} נכנס/ה למערכת`,
+            await base44.functions.invoke('createAdminNotification', {
+              event_type: 'login',
+              client_email: resolvedCase.email,
+              message: `${resolvedCase.full_name || currentUser.full_name || currentUser.email} נכנס/ה למערכת`,
             });
           } catch (notificationError) {
             console.error('Failed to create admin login notification:', notificationError);
