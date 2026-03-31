@@ -39,15 +39,17 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [data, adminEvents, userList] = await Promise.all([
+      const [data, userList] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
-        base44.entities.ClientUpdate.filter({ client_email: ADMIN_NOTIFICATIONS_EMAIL }, '-created_date'),
         base44.entities.User.filter({}),
       ]);
 
+      const adminEvents = data.filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL);
+      const clientFacingUpdates = data.filter((item) => item.client_email !== ADMIN_NOTIFICATIONS_EMAIL);
+
       const filtered = (client === 'all' || !client)
-        ? data.filter((u) => u.client_email !== ADMIN_NOTIFICATIONS_EMAIL)
-        : data.filter((u) => u.client_email === client);
+        ? clientFacingUpdates
+        : clientFacingUpdates.filter((u) => u.client_email === client);
 
       const parsedAdminEvents = adminEvents.map(parseAdminNotification);
       const filteredAdminEvents = (client === 'all' || !client)
@@ -92,7 +94,6 @@ export default function AdminUpdates({ selectedClient }) {
             });
           })
         );
-
         toast.success('עדכון נשלח לכל הלקוחות');
       } else {
         if (!client) {
