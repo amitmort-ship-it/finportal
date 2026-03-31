@@ -9,6 +9,26 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
+const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
+const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
+
+function parseAdminNotification(update) {
+  const message = String(update?.message || '');
+  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
+  const clientMatch = message.match(CLIENT_REGEX);
+
+  return {
+    id: update.id,
+    eventType: eventTypeMatch?.[1] || 'general',
+    relatedClientEmail: clientMatch?.[1] || null,
+    cleanMessage: message
+      .replace(EVENT_TYPE_REGEX, '')
+      .replace(CLIENT_REGEX, '')
+      .trim(),
+    createdAt: update.created_date || null,
+    source: 'client_update',
+  };
+}
 
 function buildFileUploadNotifications(requests) {
   return (requests || [])
@@ -57,16 +77,16 @@ function buildLoginNotificationsFromProfiles(profiles) {
 function getNotificationStyles(eventType) {
   if (eventType === 'login') {
     return {
-      card: 'border-sky-200 bg-sky-50/80',
-      badge: 'bg-sky-100 text-sky-700',
+      card: 'border-sky-200 bg-sky-50/80 dark:border-sky-900/40 dark:bg-sky-950/25',
+      badge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
       label: 'כניסה למערכת',
     };
   }
 
   if (eventType === 'file_upload') {
     return {
-      card: 'border-emerald-200 bg-emerald-50/80',
-      badge: 'bg-emerald-100 text-emerald-700',
+      card: 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/25',
+      badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
       label: 'העלאת מסמך',
     };
   }
@@ -98,10 +118,7 @@ export default function AdminUpdates({ selectedClient }) {
       ]);
 
       const profileMap = Object.fromEntries(
-        (profiles || []).map((profile) => [
-          String(profile.email || '').toLowerCase(),
-          profile.full_name || profile.email,
-        ]),
+        (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
       );
 
       const clientFacingUpdates = data.filter((item) => item.client_email !== ADMIN_NOTIFICATIONS_EMAIL);
@@ -172,7 +189,6 @@ export default function AdminUpdates({ selectedClient }) {
               client_email: u.email,
               message: message.trim()
             });
-
             return base44.functions.invoke('sendUpdateEmail', {
               data: { ...update, app_url: window.location.origin }
             });
@@ -184,19 +200,15 @@ export default function AdminUpdates({ selectedClient }) {
           setSending(false);
           return;
         }
-
         const update = await base44.entities.ClientUpdate.create({
           client_email: client,
           message: message.trim()
         });
-
         await base44.functions.invoke('sendUpdateEmail', {
           data: { ...update, app_url: window.location.origin }
         });
-
         toast.success('עדכון נשלח ללקוח ומייל נשלח בהצלחה');
       }
-
       setMessage('');
       load();
     } catch (err) {
@@ -209,7 +221,7 @@ export default function AdminUpdates({ selectedClient }) {
 
   const handleDelete = async (item) => {
     if (item.source !== 'client_update') {
-      toast.error('התראה מחושבת אוטומטית ולא נמחקת מכאן');
+      toast.error('התראת העלאת מסמך נמחקת מתוך בקשת המסמך עצמה, לא מכאן');
       return;
     }
 
@@ -239,9 +251,7 @@ export default function AdminUpdates({ selectedClient }) {
           <SelectContent>
             <SelectItem value="all">📢 כל הלקוחות</SelectItem>
             {users.map((u) => (
-              <SelectItem key={u.id} value={u.email}>
-                {u.full_name || u.email}
-              </SelectItem>
+              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -290,7 +300,7 @@ export default function AdminUpdates({ selectedClient }) {
                         <div className="text-xs font-medium text-muted-foreground mb-1">
                           תיק לקוח: {clientNames[String(item.relatedClientEmail || '').toLowerCase()] || item.relatedClientEmail || 'לא ידוע'}
                         </div>
-                        <p className="text-foreground break-words">{item.cleanMessage}</p>
+                        <p className="text-foreground dark:text-slate-100 break-words">{item.cleanMessage}</p>
                         <p className="text-xs text-muted-foreground mt-2">
                           {item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
                         </p>
@@ -299,7 +309,7 @@ export default function AdminUpdates({ selectedClient }) {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(item)}
-                        className="text-destructive hover:bg-destructive/10 shrink-0"
+                        className="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 shrink-0"
                         disabled={item.source !== 'client_update'}
                       >
                         <Trash2 className="w-4 h-4" />
