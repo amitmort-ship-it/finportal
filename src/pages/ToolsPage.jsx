@@ -64,7 +64,7 @@ function formatPercent(value, digits = 1) {
 
 function CalculatorDisclaimer({ text }) {
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs md:text-sm text-amber-900 leading-6">
+    <div className="text-xs md:text-sm text-muted-foreground leading-6">
       {text || 'החישובים הינם להערכה בלבד ואינם מהווים התחייבות או ייעוץ מקצועי.'}
     </div>
   );
@@ -267,16 +267,18 @@ function calculatePropertyPurchaseCosts(form) {
   const propertyPrice = sanitizeNumber(form.propertyPrice);
   const taxMode = form.purchaseTaxMode || 'manual';
   const manualPurchaseTax = sanitizeNumber(form.manualPurchaseTax);
+  const hasLawyer = form.hasLawyer === 'yes';
+  const lawyerPercent = sanitizeNumber(form.lawyerPercent);
   const hasBroker = form.hasBroker === 'yes';
+  const brokerPercent = sanitizeNumber(form.brokerPercent);
   const renovationCost = sanitizeNumber(form.renovationCost);
   const appraiserCost = sanitizeNumber(form.appraiserCost);
   const extraCosts = sanitizeNumber(form.extraCosts);
   const showMortgageCosts = form.showMortgageCosts === 'yes';
-  const mortgageAmount = sanitizeNumber(form.mortgageAmount);
   const mortgageRegistryCost = sanitizeNumber(form.mortgageRegistryCost);
 
-  const lawyerCost = propertyPrice * 0.005 * 1.18;
-  const brokerCost = hasBroker ? propertyPrice * 0.015 * 1.18 : 0;
+  const lawyerCost = hasLawyer ? propertyPrice * (lawyerPercent / 100) * 1.18 : 0;
+  const brokerCost = hasBroker ? propertyPrice * (brokerPercent / 100) * 1.18 : 0;
 
   let purchaseTax = 0;
   if (form.purchaseType === 'investment') {
@@ -285,7 +287,7 @@ function calculatePropertyPurchaseCosts(form) {
     purchaseTax = manualPurchaseTax;
   }
 
-  const mortgageOpeningCost = showMortgageCosts ? mortgageAmount * 0.0025 : 0;
+  const mortgageOpeningCost = showMortgageCosts ? 360 : 0;
   const mortgageCostsTotal = showMortgageCosts ? mortgageOpeningCost + mortgageRegistryCost : 0;
 
   const totalAdditionalCosts =
@@ -857,9 +859,7 @@ function LoanComparisonCalculator() {
                     {formatCurrency(loan.metrics.monthlyPayment)}
                   </td>
                   <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalPayments)}</td>
-                  <td className="py-3 px-2 text-foreground">
-                    {formatCurrency(loan.metrics.totalInterest)}
-                  </td>
+                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalInterest)}</td>
                   <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.oneTimeFees)}</td>
                   <td className={`py-3 px-2 ${loan.id === lowestTotalCostId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
                     {formatCurrency(loan.metrics.totalCost)}
@@ -889,10 +889,17 @@ function LoanComparisonCalculator() {
               </div>
 
               <ChartContainer config={monthlyPaymentChartConfig} className="h-[260px] md:h-[320px] w-full">
-                <BarChart data={comparisonChartData} margin={{ top: 24, right: 12, left: 12, bottom: 12 }}>
+                <BarChart data={comparisonChartData} margin={{ top: 24, right: 28, left: 12, bottom: 12 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} width={90} />
+                  <YAxis
+                    orientation="right"
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => formatCurrency(value)}
+                    width={110}
+                    tickMargin={10}
+                  />
                   <ChartTooltip
                     content={(
                       <ChartTooltipContent
@@ -925,10 +932,17 @@ function LoanComparisonCalculator() {
               </div>
 
               <ChartContainer config={totalCostChartConfig} className="h-[260px] md:h-[320px] w-full">
-                <BarChart data={comparisonChartData} margin={{ top: 24, right: 12, left: 12, bottom: 12 }}>
+                <BarChart data={comparisonChartData} margin={{ top: 24, right: 28, left: 12, bottom: 12 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} width={90} />
+                  <YAxis
+                    orientation="right"
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => formatCurrency(value)}
+                    width={110}
+                    tickMargin={10}
+                  />
                   <ChartTooltip
                     content={(
                       <ChartTooltipContent
@@ -962,10 +976,17 @@ function LoanComparisonCalculator() {
             </div>
 
             <ChartContainer config={ratioChartConfig} className="h-[260px] md:h-[320px] w-full">
-              <BarChart data={comparisonChartData} margin={{ top: 24, right: 12, left: 12, bottom: 12 }}>
+              <BarChart data={comparisonChartData} margin={{ top: 24, right: 28, left: 12, bottom: 12 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => Number(value).toFixed(2)} width={70} />
+                <YAxis
+                  orientation="right"
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => Number(value).toFixed(2)}
+                  width={84}
+                  tickMargin={10}
+                />
                 <ChartTooltip
                   content={(
                     <ChartTooltipContent
@@ -1039,11 +1060,13 @@ function PropertyPurchaseCostsCalculator() {
     purchaseType: 'single',
     purchaseTaxMode: 'manual',
     manualPurchaseTax: 0,
+    hasLawyer: 'yes',
+    lawyerPercent: 0.5,
     hasBroker: 'yes',
+    brokerPercent: 1.5,
     renovationCost: 0,
     appraiserCost: 2500,
     extraCosts: 0,
-    mortgageAmount: 1400000,
     showMortgageCosts: 'yes',
     mortgageRegistryCost: 1000,
   });
@@ -1119,17 +1142,64 @@ function PropertyPurchaseCostsCalculator() {
             </div>
           ) : null}
 
-          <div>
-            <Label>האם יש מתווך?</Label>
-            <Select value={form.hasBroker} onValueChange={(value) => setForm((prev) => ({ ...prev, hasBroker: value }))}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">כן</SelectItem>
-                <SelectItem value="no">לא</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label>האם יש עורך דין?</Label>
+              <Select value={form.hasLawyer} onValueChange={(value) => setForm((prev) => ({ ...prev, hasLawyer: value }))}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">כן</SelectItem>
+                  <SelectItem value="no">לא</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>עלות עורך דין (%)</Label>
+              <div className="relative mt-1">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={formatInputNumber(form.lawyerPercent)}
+                  onChange={handleChange('lawyerPercent')}
+                  className="pl-10"
+                  disabled={form.hasLawyer !== 'yes'}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label>האם יש מתווך?</Label>
+              <Select value={form.hasBroker} onValueChange={(value) => setForm((prev) => ({ ...prev, hasBroker: value }))}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">כן</SelectItem>
+                  <SelectItem value="no">לא</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>עלות מתווך (%)</Label>
+              <div className="relative mt-1">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={formatInputNumber(form.brokerPercent)}
+                  onChange={handleChange('brokerPercent')}
+                  className="pl-10"
+                  disabled={form.hasBroker !== 'yes'}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -1179,29 +1249,16 @@ function PropertyPurchaseCostsCalculator() {
           </div>
 
           {form.showMortgageCosts === 'yes' ? (
-            <>
-              <div>
-                <Label>סכום משכנתא</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatInputNumber(form.mortgageAmount)}
-                  onChange={handleChange('mortgageAmount')}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label>רישומים / אגרות</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatInputNumber(form.mortgageRegistryCost)}
-                  onChange={handleChange('mortgageRegistryCost')}
-                  className="mt-1"
-                />
-              </div>
-            </>
+            <div>
+              <Label>רישומים / אגרות</Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={formatInputNumber(form.mortgageRegistryCost)}
+                onChange={handleChange('mortgageRegistryCost')}
+                className="mt-1"
+              />
+            </div>
           ) : null}
         </div>
 
