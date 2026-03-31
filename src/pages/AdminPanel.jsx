@@ -15,23 +15,6 @@ import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 import AdminNotifications from '../components/admin/AdminNotifications';
 
-const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
-const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
-const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
-
-function parseAdminNotification(update) {
-  const message = String(update?.message || '');
-  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
-  const clientMatch = message.match(CLIENT_REGEX);
-
-  return {
-    id: update.id,
-    type: eventTypeMatch?.[1] || 'general',
-    clientEmail: clientMatch?.[1] || null,
-    createdAt: update.created_date || null,
-  };
-}
-
 function buildFileUploadNotifications(requests) {
   return (requests || [])
     .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
@@ -61,6 +44,17 @@ function buildFileUploadNotifications(requests) {
     .filter(Boolean);
 }
 
+function buildLoginNotificationsFromProfiles(profiles) {
+  return (profiles || [])
+    .filter((profile) => profile?.last_login_at)
+    .map((profile) => ({
+      id: `profile-login-${profile.id}`,
+      type: 'login',
+      clientEmail: profile.email,
+      createdAt: profile.last_login_at,
+    }));
+}
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
@@ -79,14 +73,12 @@ export default function AdminPanel() {
   useEffect(() => {
     const loadNotificationCount = async () => {
       try {
-        const [updates, fileRequests] = await Promise.all([
-          base44.entities.ClientUpdate.filter({}, '-created_date'),
+        const [fileRequests, profiles] = await Promise.all([
           base44.entities.FileRequest.filter({}, '-created_date'),
+          base44.entities.ClientProfile.filter({}),
         ]);
 
-        const loginNotifications = (updates || [])
-          .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
-          .map(parseAdminNotification);
+        const loginNotifications = buildLoginNotificationsFromProfiles(profiles);
         const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
 
         const merged = [...loginNotifications, ...fileUploadNotifications]
@@ -111,17 +103,17 @@ export default function AdminPanel() {
 
     loadNotificationCount();
 
-    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
-      loadNotificationCount();
-    });
-
     const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
       loadNotificationCount();
     });
 
+    const unsubscribeProfiles = base44.entities.ClientProfile.subscribe(() => {
+      loadNotificationCount();
+    });
+
     return () => {
-      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
+      if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };
   }, [selectedClient]);
 
