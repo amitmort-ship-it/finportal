@@ -54,7 +54,7 @@ function ValueCell({ value, isBest = false, children }) {
   const content = children !== undefined && children !== null ? children : value;
 
   return (
-    <td className={`border-r border-border/50 p-4 text-center align-top ${isBest ? 'bg-emerald-50/70 font-bold text-emerald-700' : ''}`}>
+    <td className={`border-r border-border/50 p-4 text-center align-top ${isBest ? 'bg-emerald-50/70 font-bold text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300' : ''}`}>
       {content}
     </td>
   );
