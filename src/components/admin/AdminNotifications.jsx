@@ -6,29 +6,6 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { toast } from 'sonner';
 
-const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
-const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
-const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
-
-function parseNotification(update) {
-  const message = String(update?.message || '');
-  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
-  const clientMatch = message.match(CLIENT_REGEX);
-  const cleanMessage = message
-    .replace(EVENT_TYPE_REGEX, '')
-    .replace(CLIENT_REGEX, '')
-    .trim();
-
-  return {
-    id: update.id,
-    type: eventTypeMatch?.[1] || 'general',
-    clientEmail: clientMatch?.[1] || null,
-    message: cleanMessage,
-    createdAt: update.created_date || null,
-    source: 'client_update',
-  };
-}
-
 function buildFileUploadNotifications(requests) {
   return (requests || [])
     .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
@@ -58,6 +35,19 @@ function buildFileUploadNotifications(requests) {
       };
     })
     .filter(Boolean);
+}
+
+function buildLoginNotificationsFromProfiles(profiles) {
+  return (profiles || [])
+    .filter((profile) => profile?.last_login_at)
+    .map((profile) => ({
+      id: `profile-login-${profile.id}`,
+      type: 'login',
+      clientEmail: profile.email,
+      message: `${profile.last_login_user_name || profile.last_login_user_email || profile.full_name || profile.email} נכנס/ה למערכת עבור תיק ${profile.full_name || profile.email}`,
+      createdAt: profile.last_login_at,
+      source: 'profile_login',
+    }));
 }
 
 function getNotificationIcon(type) {
@@ -103,20 +93,19 @@ export default function AdminNotifications({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [updates, fileRequests, profiles] = await Promise.all([
-        base44.entities.ClientUpdate.filter({}, '-created_date'),
+      const [fileRequests, profiles] = await Promise.all([
         base44.entities.FileRequest.filter({}, '-created_date'),
         base44.entities.ClientProfile.filter({}),
       ]);
 
       const profileMap = Object.fromEntries(
-        (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
+        (profiles || []).map((profile) => [
+          String(profile.email || '').toLowerCase(),
+          profile.full_name || profile.email,
+        ]),
       );
 
-      const loginNotifications = (updates || [])
-        .filter((item) => item.client_email === ADMIN_NOTIFICATIONS_EMAIL)
-        .map(parseNotification);
-
+      const loginNotifications = buildLoginNotificationsFromProfiles(profiles);
       const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
 
       const merged = [...fileUploadNotifications, ...loginNotifications]
@@ -142,23 +131,23 @@ export default function AdminNotifications({ selectedClient }) {
   }, [selectedClient]);
 
   useEffect(() => {
-    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
-      load();
-    });
-
     const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
       load();
     });
 
+    const unsubscribeProfiles = base44.entities.ClientProfile.subscribe(() => {
+      load();
+    });
+
     return () => {
-      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
+      if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };
   }, [selectedClient]);
 
   const handleDelete = async (notification) => {
     if (notification.source !== 'client_update') {
-      toast.error('התראת העלאת מסמך נמחקת מתוך בקשת המסמך עצמה, לא מכאן');
+      toast.error('התראה מחושבת אוטומטית ולא נמחקת מכאן');
       return;
     }
 
