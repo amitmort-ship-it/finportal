@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { appParams } from '@/lib/app-params';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,22 +13,9 @@ import {
   Clock,
   Link2,
   MailPlus,
-  Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-function normalizeEmail(value) {
-  return value.trim().toLowerCase();
-}
-
-function buildJoinUrl(token) {
-  const baseUrl =
-    appParams.appBaseUrl ||
-    window.location.origin;
-
-  return `${String(baseUrl).replace(/\/$/, '')}/join-case?token=${token}`;
-}
 
 export default function AdminClients() {
   const [clients, setClients] = useState([]);
@@ -47,7 +33,6 @@ export default function AdminClients() {
   const [memberInviteName, setMemberInviteName] = useState('');
   const [memberInviteEmail, setMemberInviteEmail] = useState('');
   const [sendingMemberInvite, setSendingMemberInvite] = useState(false);
-  const [latestJoinLink, setLatestJoinLink] = useState('');
 
   useEffect(() => {
     loadClients();
@@ -100,7 +85,7 @@ export default function AdminClients() {
   };
 
   const handleCreateProfile = async () => {
-    const email = normalizeEmail(newEmail);
+    const email = newEmail.trim().toLowerCase();
     const fullName = newName.trim();
 
     if (!email || !fullName) {
@@ -128,7 +113,7 @@ export default function AdminClients() {
       setOpen(false);
       await loadClients();
     } catch (error) {
-      toast.error(error?.message || 'שגיאה ביצירת הפרופיל');
+      toast.error(error.message || 'שגיאה ביצירת הפרופיל');
     } finally {
       setCreating(false);
     }
@@ -143,7 +128,7 @@ export default function AdminClients() {
       toast.success(`הזמנה נשלחה ל-${client.email}`);
       await loadClients();
     } catch (error) {
-      toast.error(error?.message || 'שגיאה בשליחת הזמנה');
+      toast.error(error.message || 'שגיאה בשליחת הזמנה');
     } finally {
       setInvitingId(null);
     }
@@ -163,98 +148,50 @@ export default function AdminClients() {
       setEditingId(null);
       await loadClients();
     } catch (error) {
-      toast.error(error?.message || 'שגיאה בעדכון השם');
+      toast.error(error.message || 'שגיאה בעדכון השם');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    try {
-      await base44.entities.ClientProfile.delete(id);
-      toast.success('תיק הלקוח נמחק');
-      await loadClients();
-    } catch (error) {
-      toast.error(error?.message || 'שגיאה במחיקת הלקוח');
-    }
+    await base44.entities.ClientProfile.delete(id);
+    toast.success('תיק הלקוח נמחק');
+    await loadClients();
   };
 
   const openMemberInviteDialog = (client) => {
     setSelectedClient(client);
     setMemberInviteName('');
     setMemberInviteEmail('');
-    setLatestJoinLink('');
     setMemberInviteOpen(true);
   };
 
-  const copyToClipboard = async (value) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast.success('הקישור הועתק');
-    } catch (error) {
-      toast.error('לא הצלחתי להעתיק את הקישור');
-    }
-  };
-
   const handleInviteAdditionalUser = async () => {
-    const email = normalizeEmail(memberInviteEmail);
+    const email = memberInviteEmail.trim().toLowerCase();
     const fullName = memberInviteName.trim();
 
     if (!selectedClient?.id || !email) {
       return;
     }
 
-    if (email === normalizeEmail(selectedClient.email)) {
-      toast.error('לא ניתן להזמין את הלווה הראשי שוב');
-      return;
-    }
-
     setSendingMemberInvite(true);
 
     try {
-      const result = await base44.functions.invoke('inviteCaseUser', {
-        email,
-        full_name: fullName || undefined,
+      await base44.functions.invoke('inviteCaseUser', {
         case_profile_id: selectedClient.id,
+        email,
+        full_name: fullName || null,
       });
 
-      const joinUrl = result?.join_url || buildJoinUrl(result?.invite_id || '');
-      setLatestJoinLink(joinUrl);
-
-      if (result?.warning) {
-        toast.success('הזמנה נוצרה אך המייל לא נשלח. אפשר להעתיק את הקישור ולשלוח ידנית.');
-      } else {
-        toast.success('הזמנה נשלחה בהצלחה למייל. הקישור הועתק ללוח.');
-      }
-
-      await copyToClipboard(joinUrl);
+      toast.success('הזמנה למשתמש נוסף נשלחה בהצלחה');
+      setMemberInviteOpen(false);
+      setSelectedClient(null);
+      setMemberInviteName('');
+      setMemberInviteEmail('');
       await loadClients();
     } catch (error) {
-      const msg = error?.message || 'שגיאה ביצירת ההזמנה';
-
-      // Show friendly messages for known conflict cases
-      if (msg.includes('already owns a different case')) {
-        toast.error('האימייל הזה כבר שייך לתיק אחר');
-      } else if (msg.includes('already has access')) {
-        toast.error('למשתמש הזה כבר יש גישה לתיק');
-      } else if (msg.includes('pending invitation')) {
-        // Fetch existing token to show the link
-        try {
-          const existing = await base44.entities.CaseInvite.filter({
-            case_profile_id: selectedClient.id,
-            email,
-            status: 'pending',
-          });
-          if (existing.length > 0) {
-            const existingLink = buildJoinUrl(existing[0].token);
-            setLatestJoinLink(existingLink);
-            await copyToClipboard(existingLink);
-          }
-        } catch (_) {}
-        toast.error('כבר קיימת הזמנה פתוחה לאימייל הזה. הקישור הועתק.');
-      } else {
-        toast.error(msg);
-      }
+      toast.error(error.message || 'שגיאה בשליחת ההזמנה');
     } finally {
       setSendingMemberInvite(false);
     }
@@ -360,25 +297,8 @@ export default function AdminClients() {
               disabled={sendingMemberInvite || !memberInviteEmail.trim()}
               className="w-full"
             >
-              {sendingMemberInvite ? 'יוצר הזמנה...' : 'צור הזמנה למשתמש נוסף'}
+              {sendingMemberInvite ? 'שולח הזמנה...' : 'שלח הזמנה למשתמש נוסף'}
             </Button>
-
-            {latestJoinLink ? (
-              <div className="rounded-lg border border-border p-3 bg-muted/30">
-                <div className="text-xs text-muted-foreground mb-2">קישור הצטרפות</div>
-                <div className="text-xs break-all" dir="ltr">{latestJoinLink}</div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 gap-2"
-                  onClick={() => copyToClipboard(latestJoinLink)}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  העתק קישור
-                </Button>
-              </div>
-            ) : null}
           </div>
         </DialogContent>
       </Dialog>
@@ -392,7 +312,7 @@ export default function AdminClients() {
           אין לקוחות עדיין
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="max-h-[70vh] overflow-y-auto pr-1 space-y-3">
           {clients.map((client) => (
             <div
               key={client.id}
