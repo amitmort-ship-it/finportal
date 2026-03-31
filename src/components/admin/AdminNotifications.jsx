@@ -6,6 +6,29 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { toast } from 'sonner';
 
+const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
+const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
+const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
+
+function parseNotification(update) {
+  const message = String(update?.message || '');
+  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
+  const clientMatch = message.match(CLIENT_REGEX);
+  const cleanMessage = message
+    .replace(EVENT_TYPE_REGEX, '')
+    .replace(CLIENT_REGEX, '')
+    .trim();
+
+  return {
+    id: update.id,
+    type: eventTypeMatch?.[1] || 'general',
+    clientEmail: clientMatch?.[1] || null,
+    message: cleanMessage,
+    createdAt: update.created_date || null,
+    source: 'client_update',
+  };
+}
+
 function buildFileUploadNotifications(requests) {
   return (requests || [])
     .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
@@ -59,20 +82,20 @@ function getNotificationIcon(type) {
 function getNotificationStyles(type) {
   if (type === 'login') {
     return {
-      card: 'border-sky-200 bg-sky-50/80',
-      iconWrap: 'bg-sky-100',
-      icon: 'text-sky-700',
-      badge: 'bg-sky-100 text-sky-700',
+      card: 'border-sky-200 bg-sky-50/80 dark:border-sky-900/40 dark:bg-sky-950/25',
+      iconWrap: 'bg-sky-100 dark:bg-sky-950/40',
+      icon: 'text-sky-700 dark:text-sky-300',
+      badge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
       label: 'כניסה למערכת',
     };
   }
 
   if (type === 'file_upload') {
     return {
-      card: 'border-emerald-200 bg-emerald-50/80',
-      iconWrap: 'bg-emerald-100',
-      icon: 'text-emerald-700',
-      badge: 'bg-emerald-100 text-emerald-700',
+      card: 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/25',
+      iconWrap: 'bg-emerald-100 dark:bg-emerald-950/40',
+      icon: 'text-emerald-700 dark:text-emerald-300',
+      badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
       label: 'העלאת מסמך',
     };
   }
@@ -93,19 +116,18 @@ export default function AdminNotifications({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [fileRequests, profiles] = await Promise.all([
+      const [updates, fileRequests, profiles] = await Promise.all([
+        base44.entities.ClientUpdate.filter({}, '-created_date'),
         base44.entities.FileRequest.filter({}, '-created_date'),
         base44.entities.ClientProfile.filter({}),
       ]);
 
       const profileMap = Object.fromEntries(
-        (profiles || []).map((profile) => [
-          String(profile.email || '').toLowerCase(),
-          profile.full_name || profile.email,
-        ]),
+        (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
       );
 
       const loginNotifications = buildLoginNotificationsFromProfiles(profiles);
+
       const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
 
       const merged = [...fileUploadNotifications, ...loginNotifications]
@@ -131,6 +153,10 @@ export default function AdminNotifications({ selectedClient }) {
   }, [selectedClient]);
 
   useEffect(() => {
+    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
+      load();
+    });
+
     const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
       load();
     });
@@ -140,6 +166,7 @@ export default function AdminNotifications({ selectedClient }) {
     });
 
     return () => {
+      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
       if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };
@@ -147,7 +174,7 @@ export default function AdminNotifications({ selectedClient }) {
 
   const handleDelete = async (notification) => {
     if (notification.source !== 'client_update') {
-      toast.error('התראה מחושבת אוטומטית ולא נמחקת מכאן');
+      toast.error('התראת העלאת מסמך נמחקת מתוך בקשת המסמך עצמה, לא מכאן');
       return;
     }
 
@@ -204,7 +231,7 @@ export default function AdminNotifications({ selectedClient }) {
                       <div className="text-xs font-medium text-muted-foreground mb-1">
                         תיק לקוח: {clientLabel}
                       </div>
-                      <p className="text-sm text-foreground break-words">{notification.message}</p>
+                      <p className="text-sm text-foreground dark:text-slate-100 break-words">{notification.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {notification.createdAt
                           ? format(new Date(notification.createdAt), 'dd.MM.yyyy HH:mm', { locale: he })
@@ -218,7 +245,7 @@ export default function AdminNotifications({ selectedClient }) {
                     size="icon"
                     variant="ghost"
                     onClick={() => handleDelete(notification)}
-                    className="text-destructive hover:bg-destructive/10 shrink-0"
+                    className="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 shrink-0"
                     disabled={notification.source !== 'client_update'}
                   >
                     <Trash2 className="w-4 h-4" />
