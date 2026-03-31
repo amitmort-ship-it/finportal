@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExternalLink } from 'lucide-react';
 import AdminClients from '../components/admin/AdminClients';
 import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
 import AdminCollaterals from '../components/admin/AdminCollaterals';
@@ -131,9 +133,20 @@ export default function AdminPanel() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
-        <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
+          <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
+        </div>
+
+        <Button
+          type="button"
+          className="gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+          onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
+        >
+          <ExternalLink className="w-4 h-4" />
+          SmartNPV
+        </Button>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-4 mb-6">
