@@ -66,6 +66,7 @@ export default function ResponsiveLayout() {
         <div className="p-4 border-b border-border">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center justify-between gap-3">
+               <div className="flex items-center gap-3 min-w-0">
               <img
                 src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png"
                 alt="לוגו"
