@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 const NOTION_API_BASE = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2022-06-28';
 const DEFAULT_EMAIL_PROPERTY = 'Email';
+const DEFAULT_DATABASE_ID = '304051ce360080539d38c4a852b964cb';
 
 function normalizeEmail(value: unknown) {
   return String(value || '').trim().toLowerCase();
@@ -47,16 +48,15 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get('NOTION_API_KEY');
-    const databaseId = Deno.env.get('NOTION_CLIENTS_DATABASE_ID');
-    const emailPropertyName = Deno.env.get('NOTION_CLIENT_EMAIL_PROPERTY') || DEFAULT_EMAIL_PROPERTY;
+    const databaseId = DEFAULT_DATABASE_ID;
+    const emailPropertyName = DEFAULT_EMAIL_PROPERTY;
 
-    if (!apiKey || !databaseId) {
+    if (!apiKey) {
       return Response.json(
         {
           error: 'Missing Notion configuration',
           missing: {
             NOTION_API_KEY: !apiKey,
-            NOTION_CLIENTS_DATABASE_ID: !databaseId,
           },
         },
         { status: 500 },
