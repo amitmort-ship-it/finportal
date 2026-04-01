@@ -65,8 +65,11 @@ export default function ResponsiveLayout() {
       <aside className="hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-50 shadow-sm h-screen overflow-y-auto">
         <div className="p-4 border-b border-border">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center justify-between gap-3">
-               <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative min-h-[88px]">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2">
+              <ThemeToggleButton />
+            </div>
+            <div className="flex items-center justify-center gap-3 min-w-0 px-14">
               <img
                 src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png"
                 alt="לוגו"
