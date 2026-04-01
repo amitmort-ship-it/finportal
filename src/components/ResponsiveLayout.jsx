@@ -81,7 +81,6 @@ export default function ResponsiveLayout() {
                 <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
               </div>
             </div>
-            <ThemeToggleButton />
           </div>
           <p className="text-xs text-muted-foreground mt-2 truncate">
             {user?.full_name || user?.email}
