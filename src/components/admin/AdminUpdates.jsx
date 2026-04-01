@@ -299,4 +299,94 @@ export default function AdminUpdates({ selectedClient }) {
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="כתוב עד
+            placeholder="כתוב עדכון עבור הלקוח..."
+            className="mb-3 min-h-24"
+          />
+          <Button onClick={handleSend} disabled={!message.trim() || sending} className="gap-2">
+            <Send className="w-4 h-4" />
+            {sending ? 'שולח...' : 'שלח עדכון'}
+          </Button>
+        </div>
+      )}
+
+      {!client ? (
+        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+          בחר לקוח כדי לשלוח עדכונים
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold mb-3">התראות מערכת</h3>
+            {adminNotifications.length === 0 ? (
+              <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                אין התראות מערכת ללקוח זה
+              </div>
+            ) : (
+              <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
+                {adminNotifications.map((item) => (
+                  <div key={item.id} className={`rounded-xl border p-4 ${getNotificationStyles(item.eventType).card}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mb-2 ${getNotificationStyles(item.eventType).badge}`}>
+                          {getNotificationStyles(item.eventType).label}
+                        </span>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">
+                          תיק לקוח: {clientNames[String(item.relatedClientEmail || '').toLowerCase()] || item.relatedClientEmail || 'לא ידוע'}
+                        </div>
+                        <p className="text-foreground dark:text-slate-100 break-words">{item.cleanMessage}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(item)}
+                        className="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 shrink-0"
+                        disabled={item.source !== 'client_update'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3">עדכונים ללקוח</h3>
+            {updates.length === 0 ? (
+              <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                אין עדכונים ללקוח זה
+              </div>
+            ) : (
+              <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
+                {updates.map((u) => (
+                  <div key={u.id} className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-foreground break-words">{u.message}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {u.created_date ? format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete({ ...u, source: 'client_update' })}
+                        className="text-destructive hover:bg-destructive/10 shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
