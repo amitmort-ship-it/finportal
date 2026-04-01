@@ -205,6 +205,7 @@ export default function AdminUpdates({ selectedClient }) {
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
+
     try {
       const userMap = Object.fromEntries(
         users.map((u) => [String(u.email || '').toLowerCase(), u.full_name || u.email]),
@@ -217,7 +218,9 @@ export default function AdminUpdates({ selectedClient }) {
               client_email: u.email,
               message: message.trim(),
             });
+
             await syncUpdateToNotion(update, userMap);
+
             return base44.functions.invoke('sendUpdateEmail', {
               data: { ...update, app_url: window.location.origin },
             });
@@ -253,8 +256,9 @@ export default function AdminUpdates({ selectedClient }) {
       setMessage('');
       load();
     } catch (err) {
+      const errorText = String(err?.message || err || 'שגיאה לא ידועה');
       console.error('Notion sync full error:', err);
-      toast.error(String(err?.message || err || 'שגיאה לא ידועה'));
+      alert(errorText);
     } finally {
       setSending(false);
     }
