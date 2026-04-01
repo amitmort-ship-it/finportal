@@ -172,7 +172,6 @@ export default function AdminUpdates({ selectedClient }) {
       response?.response?.data?.error ||
       response?.data?.message ||
       response?.message ||
-      JSON.stringify(response) ||
       null;
 
     if (notionError) {
@@ -256,9 +255,8 @@ export default function AdminUpdates({ selectedClient }) {
       setMessage('');
       load();
     } catch (err) {
-      const errorText = String(err?.message || err || 'שגיאה לא ידועה');
       console.error('Notion sync full error:', err);
-      alert(errorText);
+      toast.error(String(err?.message || err || 'שגיאה לא ידועה'));
     } finally {
       setSending(false);
     }
