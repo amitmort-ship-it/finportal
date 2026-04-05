@@ -10,12 +10,60 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
+const ADMIN_REVIEW_NOTES_MARKER = '\n\n[[ADMIN_REVIEW_NOTES]]\n';
+
 function getInvokeError(result) {
-  return result?.error || result?.data?.error || result?.response?.data?.error || null;
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
 }
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function splitDescriptionAndReviewNotes(request) {
+  const legacyReviewNotes = String(request?.admin_review_notes || '').trim();
+  const description = String(request?.description || '');
+
+  if (legacyReviewNotes) {
+    return {
+      description: description.trim(),
+      reviewNotes: legacyReviewNotes,
+    };
+  }
+
+  if (!description.includes(ADMIN_REVIEW_NOTES_MARKER)) {
+    return {
+      description: description.trim(),
+      reviewNotes: '',
+    };
+  }
+
+  const [baseDescription, ...reviewParts] = description.split(ADMIN_REVIEW_NOTES_MARKER);
+
+  return {
+    description: baseDescription.trim(),
+    reviewNotes: reviewParts.join(ADMIN_REVIEW_NOTES_MARKER).trim(),
+  };
+}
+
+function mergeDescriptionAndReviewNotes(description, reviewNotes) {
+  const cleanDescription = String(description || '').trim();
+  const cleanReviewNotes = String(reviewNotes || '').trim();
+
+  if (!cleanReviewNotes) {
+    return cleanDescription;
+  }
+
+  if (!cleanDescription) {
+    return `[[ADMIN_REVIEW_NOTES]]\n${cleanReviewNotes}`;
+  }
+
+  return `${cleanDescription}${ADMIN_REVIEW_NOTES_MARKER}${cleanReviewNotes}`;
 }
 
 export default function AdminViewDocuments({ selectedClient }) {
@@ -51,10 +99,16 @@ export default function AdminViewDocuments({ selectedClient }) {
     const driveFolder = Array.isArray(driveFolders) ? driveFolders[0] : null;
 
     setRequests(withFiles);
-    setReviewNotes(Object.fromEntries(withFiles.map((request) => [request.id, request.admin_review_notes || ''])));
+    setReviewNotes(
+      Object.fromEntries(
+        withFiles.map((request) => [request.id, splitDescriptionAndReviewNotes(request).reviewNotes]),
+      ),
+    );
     setUsers(clientRes.data?.profiles || []);
     setDriveFolderUrl(
-      driveFolder?.folder_id ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}` : '',
+      driveFolder?.folder_id
+        ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}`
+        : '',
     );
     setLoading(false);
   };
@@ -163,17 +217,23 @@ export default function AdminViewDocuments({ selectedClient }) {
   };
 
   const handleStatusUpdate = async (id, status) => {
+    const currentRequest = requests.find((request) => request.id === id);
+    const parsedContent = splitDescriptionAndReviewNotes(currentRequest);
+
     await base44.entities.FileRequest.update(id, {
       status,
-      admin_review_notes: reviewNotes[id] || '',
+      description: mergeDescriptionAndReviewNotes(parsedContent.description, reviewNotes[id] || ''),
     });
     toast.success('סטטוס המסמך עודכן');
     await load();
   };
 
   const handleSaveNotes = async (id) => {
+    const currentRequest = requests.find((request) => request.id === id);
+    const parsedContent = splitDescriptionAndReviewNotes(currentRequest);
+
     await base44.entities.FileRequest.update(id, {
-      admin_review_notes: reviewNotes[id] || '',
+      description: mergeDescriptionAndReviewNotes(parsedContent.description, reviewNotes[id] || ''),
     });
     toast.success('ההערה נשמרה');
     await load();
@@ -302,14 +362,7 @@ export default function AdminViewDocuments({ selectedClient }) {
                   disabled={uploading || !form.client_email || !form.files.length}
                   className="w-full gap-2"
                 >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      מעלה...
-                    </>
-                  ) : (
-                    'העלה מסמכים'
-                  )}
+                  {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
                 </Button>
               </div>
             </DialogContent>
@@ -325,92 +378,95 @@ export default function AdminViewDocuments({ selectedClient }) {
         <div className="space-y-4">
           {requests.map((req) => (
             <div key={req.id} className="bg-card rounded-xl border border-border p-4">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div>
-                  <div className="font-semibold">{req.title}</div>
-                  <div className="text-sm text-muted-foreground">{req.client_email}</div>
-                  {req.description ? (
-                    <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{req.description}</div>
-                  ) : null}
-                </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                    req.status === 'uploaded'
-                      ? 'bg-blue-50 text-blue-600'
-                      : req.status === 'approved'
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : req.status === 'rejected'
-                          ? 'bg-red-50 text-red-600'
-                          : 'bg-amber-50 text-amber-600'
-                  }`}
-                >
-                  {req.status === 'pending'
-                    ? 'ממתין'
-                    : req.status === 'uploaded'
-                      ? 'התקבל וממתין לבדיקה'
-                      : req.status === 'approved'
-                        ? 'אושר כתקין'
-                        : 'נדרש תיקון / מסמך חדש'}
-                </span>
-              </div>
+              {(() => {
+                const parsedContent = splitDescriptionAndReviewNotes(req);
 
-              {req.uploaded_files && req.uploaded_files.length > 0 ? (
-                <div className="space-y-2">
-                  {req.uploaded_files.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50">
-                      <Download className="w-4 h-4 text-primary shrink-0" />
-                      <a
-                        href={file.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-primary hover:underline flex-1"
-                      >
-                        {file.file_name}
-                      </a>
+                return (
+                  <>
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <div className="font-semibold">{req.title}</div>
+                        <div className="text-sm text-muted-foreground">{req.client_email}</div>
+                        {parsedContent.description ? (
+                          <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</div>
+                        ) : null}
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                        req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
+                        req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                        req.status === 'rejected' ? 'bg-red-50 text-red-600' :
+                        'bg-amber-50 text-amber-600'
+                      }`}>
+                        {req.status === 'pending'
+                          ? 'ממתין'
+                          : req.status === 'uploaded'
+                            ? 'התקבל וממתין לבדיקה'
+                            : req.status === 'approved'
+                              ? 'אושר כתקין'
+                              : 'נדרש תיקון / מסמך חדש'}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              ) : null}
 
-              <div className="mt-4 space-y-2">
-                <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
-                  הערה פנימית / הערה ללקוח
-                </Label>
-                <Textarea
-                  id={`admin-view-note-${req.id}`}
-                  value={reviewNotes[req.id] || ''}
-                  onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                  placeholder="למשל: חסר ספח, התמונה מטושטשת, נא להעלות מחדש צילום ברור..."
-                  className="min-h-24"
-                />
+                    {req.uploaded_files && req.uploaded_files.length > 0 ? (
+                      <div className="space-y-2">
+                        {req.uploaded_files.map((file, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50">
+                            <Download className="w-4 h-4 text-primary shrink-0" />
+                            <a
+                              href={file.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-primary hover:underline flex-1"
+                            >
+                              {file.file_name}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2">
-                    <Save className="w-4 h-4" />
-                    שמור הערה
-                  </Button>
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
+                        הערה פנימית / הערה ללקוח
+                      </Label>
+                      <Textarea
+                        id={`admin-view-note-${req.id}`}
+                        value={reviewNotes[req.id] || ''}
+                        onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                        placeholder="למשל: חסר ספח, התמונה מטושטשת, נא להעלות מחדש צילום ברור..."
+                        className="min-h-24"
+                      />
 
-                  {req.status === 'uploaded' || req.status === 'rejected' ? (
-                    <Button type="button" size="sm" onClick={() => handleStatusUpdate(req.id, 'approved')} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-                      <CheckCircle2 className="w-4 h-4" />
-                      אשר כתקין
-                    </Button>
-                  ) : null}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2">
+                          <Save className="w-4 h-4" />
+                          שמור הערה
+                        </Button>
 
-                  {req.status === 'uploaded' || req.status === 'approved' ? (
-                    <Button type="button" size="sm" variant="destructive" onClick={() => handleStatusUpdate(req.id, 'rejected')} className="gap-2">
-                      <XCircle className="w-4 h-4" />
-                      סמן כלא תקין
-                    </Button>
-                  ) : null}
-                </div>
+                        {req.status === 'uploaded' || req.status === 'rejected' ? (
+                          <Button type="button" size="sm" onClick={() => handleStatusUpdate(req.id, 'approved')} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                            <CheckCircle2 className="w-4 h-4" />
+                            אשר כתקין
+                          </Button>
+                        ) : null}
 
-                {req.admin_review_notes ? (
-                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
-                    <span className="font-medium text-foreground">הערת בדיקה:</span> {req.admin_review_notes}
-                  </div>
-                ) : null}
-              </div>
+                        {req.status === 'uploaded' || req.status === 'approved' ? (
+                          <Button type="button" size="sm" variant="destructive" onClick={() => handleStatusUpdate(req.id, 'rejected')} className="gap-2">
+                            <XCircle className="w-4 h-4" />
+                            סמן כלא תקין
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      {parsedContent.reviewNotes ? (
+                        <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
+                          <span className="font-medium text-foreground">הערת בדיקה:</span> {parsedContent.reviewNotes}
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>
