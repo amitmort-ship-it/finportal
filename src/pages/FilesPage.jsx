@@ -6,6 +6,8 @@ import FileUploadCard from '../components/FileUploadCard';
 import { FileText, Download, Inbox, User, Briefcase } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+const ADMIN_REVIEW_NOTES_MARKER = '\n\n[[ADMIN_REVIEW_NOTES]]\n';
+
 const CATEGORIES = ['לווה 1', 'לווה 2', 'משותף'];
 const CATEGORY_STYLES = {
   'לווה 1': {
@@ -24,6 +26,32 @@ const CATEGORY_STYLES = {
 
 function getUploadedFiles(request) {
   return Array.isArray(request?.uploaded_files) ? request.uploaded_files : [];
+}
+
+function splitDescriptionAndReviewNotes(request) {
+  const legacyReviewNotes = String(request?.admin_review_notes || '').trim();
+  const description = String(request?.description || '');
+
+  if (legacyReviewNotes) {
+    return {
+      description: description.trim(),
+      reviewNotes: legacyReviewNotes,
+    };
+  }
+
+  if (!description.includes(ADMIN_REVIEW_NOTES_MARKER)) {
+    return {
+      description: description.trim(),
+      reviewNotes: '',
+    };
+  }
+
+  const [baseDescription, ...reviewParts] = description.split(ADMIN_REVIEW_NOTES_MARKER);
+
+  return {
+    description: baseDescription.trim(),
+    reviewNotes: reviewParts.join(ADMIN_REVIEW_NOTES_MARKER).trim(),
+  };
 }
 
 function hasUploadedFiles(request) {
@@ -59,9 +87,34 @@ function getUploaderBadge(request) {
   };
 }
 
+function getRequestStatusBadge(request) {
+  if (request?.status === 'approved') {
+    return {
+      label: 'אושר על ידי המשרד',
+      className: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300',
+    };
+  }
+
+  if (request?.status === 'rejected') {
+    return {
+      label: 'נדרש תיקון או מסמך חדש',
+      className: 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300',
+    };
+  }
+
+  if (request?.status === 'uploaded') {
+    return {
+      label: 'התקבל וממתין לבדיקה',
+      className: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300',
+    };
+  }
+
+  return null;
+}
+
 export default function FilesPage() {
   const { caseEmail } = useAuth();
-  const { data: requests = [], isLoading: loading } = useQuery({
+  const { data: requests = [], isLoading: loading, refetch } = useQuery({
     queryKey: ['file-requests', caseEmail],
     queryFn: async () => {
       if (!caseEmail) return [];
@@ -72,9 +125,11 @@ export default function FilesPage() {
 
   useEffect(() => {
     if (!caseEmail) return;
-    const unsubscribe = base44.entities.FileRequest.subscribe(() => {});
+    const unsubscribe = base44.entities.FileRequest.subscribe(() => {
+      refetch();
+    });
     return unsubscribe;
-  }, [caseEmail]);
+  }, [caseEmail, refetch]);
 
   if (loading) {
     return (
@@ -149,21 +204,42 @@ export default function FilesPage() {
               {uploadedRequests.map((request) => {
                 const badge = getUploaderBadge(request);
                 const BadgeIcon = badge.icon;
+                const statusBadge = getRequestStatusBadge(request);
+                const parsedContent = splitDescriptionAndReviewNotes(request);
 
                 return (
                   <div key={request.id} className="bg-card rounded-xl border border-border p-5">
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div>
                         <h3 className="font-semibold text-foreground">{request.title}</h3>
-                        {request.description ? (
-                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{request.description}</p>
+                        {parsedContent.description ? (
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</p>
                         ) : null}
                       </div>
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${badge.className}`}>
-                        <BadgeIcon className="w-3 h-3" />
-                        {badge.label}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${badge.className}`}>
+                          <BadgeIcon className="w-3 h-3" />
+                          {badge.label}
+                        </span>
+                        {statusBadge ? (
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusBadge.className}`}>
+                            {statusBadge.label}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
+
+                    {parsedContent.reviewNotes ? (
+                      <div
+                        className={`mb-4 rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
+                          request.status === 'rejected'
+                            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300'
+                            : 'bg-muted/50 text-muted-foreground'
+                        }`}
+                      >
+                        <span className="font-medium text-foreground">הערת המשרד:</span> {parsedContent.reviewNotes}
+                      </div>
+                    ) : null}
 
                     <div className="space-y-2">
                       {getUploadedFiles(request).map((file, idx) => (
