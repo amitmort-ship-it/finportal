@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { FileText, Download, Upload, Loader2, Plus, FolderOpen } from 'lucide-react';
+import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,12 +11,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
 function getInvokeError(result) {
-  return (
-    result?.error ||
-    result?.data?.error ||
-    result?.response?.data?.error ||
-    null
-  );
+  return result?.error || result?.data?.error || result?.response?.data?.error || null;
 }
 
 function normalizeEmail(value) {
@@ -31,6 +26,7 @@ export default function AdminViewDocuments({ selectedClient }) {
   const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState({});
   const [form, setForm] = useState({
     client_email: '',
     title: '',
@@ -55,11 +51,10 @@ export default function AdminViewDocuments({ selectedClient }) {
     const driveFolder = Array.isArray(driveFolders) ? driveFolders[0] : null;
 
     setRequests(withFiles);
+    setReviewNotes(Object.fromEntries(withFiles.map((request) => [request.id, request.admin_review_notes || ''])));
     setUsers(clientRes.data?.profiles || []);
     setDriveFolderUrl(
-      driveFolder?.folder_id
-        ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}`
-        : '',
+      driveFolder?.folder_id ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}` : '',
     );
     setLoading(false);
   };
@@ -165,6 +160,23 @@ export default function AdminViewDocuments({ selectedClient }) {
     }
 
     window.open(driveFolderUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleStatusUpdate = async (id, status) => {
+    await base44.entities.FileRequest.update(id, {
+      status,
+      admin_review_notes: reviewNotes[id] || '',
+    });
+    toast.success('סטטוס המסמך עודכן');
+    await load();
+  };
+
+  const handleSaveNotes = async (id) => {
+    await base44.entities.FileRequest.update(id, {
+      admin_review_notes: reviewNotes[id] || '',
+    });
+    toast.success('ההערה נשמרה');
+    await load();
   };
 
   if (loading) {
@@ -290,7 +302,14 @@ export default function AdminViewDocuments({ selectedClient }) {
                   disabled={uploading || !form.client_email || !form.files.length}
                   className="w-full gap-2"
                 >
-                  {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      מעלה...
+                    </>
+                  ) : (
+                    'העלה מסמכים'
+                  )}
                 </Button>
               </div>
             </DialogContent>
@@ -310,14 +329,28 @@ export default function AdminViewDocuments({ selectedClient }) {
                 <div>
                   <div className="font-semibold">{req.title}</div>
                   <div className="text-sm text-muted-foreground">{req.client_email}</div>
+                  {req.description ? (
+                    <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{req.description}</div>
+                  ) : null}
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                  req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
-                  req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                  req.status === 'rejected' ? 'bg-red-50 text-red-600' :
-                  'bg-amber-50 text-amber-600'
-                }`}>
-                  {req.status === 'pending' ? 'ממתין' : req.status === 'uploaded' ? 'הועלה' : req.status === 'approved' ? 'אושר' : 'נדחה'}
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                    req.status === 'uploaded'
+                      ? 'bg-blue-50 text-blue-600'
+                      : req.status === 'approved'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : req.status === 'rejected'
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-amber-50 text-amber-600'
+                  }`}
+                >
+                  {req.status === 'pending'
+                    ? 'ממתין'
+                    : req.status === 'uploaded'
+                      ? 'התקבל וממתין לבדיקה'
+                      : req.status === 'approved'
+                        ? 'אושר כתקין'
+                        : 'נדרש תיקון / מסמך חדש'}
                 </span>
               </div>
 
@@ -338,6 +371,46 @@ export default function AdminViewDocuments({ selectedClient }) {
                   ))}
                 </div>
               ) : null}
+
+              <div className="mt-4 space-y-2">
+                <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
+                  הערה פנימית / הערה ללקוח
+                </Label>
+                <Textarea
+                  id={`admin-view-note-${req.id}`}
+                  value={reviewNotes[req.id] || ''}
+                  onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                  placeholder="למשל: חסר ספח, התמונה מטושטשת, נא להעלות מחדש צילום ברור..."
+                  className="min-h-24"
+                />
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2">
+                    <Save className="w-4 h-4" />
+                    שמור הערה
+                  </Button>
+
+                  {req.status === 'uploaded' || req.status === 'rejected' ? (
+                    <Button type="button" size="sm" onClick={() => handleStatusUpdate(req.id, 'approved')} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      אשר כתקין
+                    </Button>
+                  ) : null}
+
+                  {req.status === 'uploaded' || req.status === 'approved' ? (
+                    <Button type="button" size="sm" variant="destructive" onClick={() => handleStatusUpdate(req.id, 'rejected')} className="gap-2">
+                      <XCircle className="w-4 h-4" />
+                      סמן כלא תקין
+                    </Button>
+                  ) : null}
+                </div>
+
+                {req.admin_review_notes ? (
+                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
+                    <span className="font-medium text-foreground">הערת בדיקה:</span> {req.admin_review_notes}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>
