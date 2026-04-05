@@ -6,12 +6,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
 function getInvokeError(result) {
-  return (
-    result?.error ||
-    result?.data?.error ||
-    result?.response?.data?.error ||
-    null
-  );
+  return result?.error || result?.data?.error || result?.response?.data?.error || null;
 }
 
 const statusConfig = {
@@ -72,14 +67,17 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newFiles = [...uploadedFiles, {
-        file_url,
-        file_name: file.name,
-        uploaded_by_email: user?.email || null,
-        uploaded_by_name: user?.full_name || user?.email || null,
-        uploaded_at: new Date().toISOString(),
-      }];
-      
+      const newFiles = [
+        ...uploadedFiles,
+        {
+          file_url,
+          file_name: file.name,
+          uploaded_by_email: user?.email || null,
+          uploaded_by_name: user?.full_name || user?.email || null,
+          uploaded_at: new Date().toISOString(),
+        },
+      ];
+
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
         status: 'uploaded',
@@ -130,12 +128,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const handleDeleteFile = async (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     const newStatus = newFiles.length === 0 ? 'pending' : request.status;
-    
+
     const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
-      status: newStatus
+      status: newStatus,
     });
-    
+
     setRequest(updatedDoc);
     toast.success('הקובץ הוסר');
     onUpdate?.();
@@ -146,9 +144,18 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="font-semibold text-foreground">{request.title}</h3>
-          {request.description && (
-            <p className="text-sm text-muted-foreground mt-1">{request.description}</p>
-          )}
+          {request.description && <p className="text-sm text-muted-foreground mt-1">{request.description}</p>}
+          {request.admin_review_notes ? (
+            <div
+              className={`mt-2 rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
+                request.status === 'rejected'
+                  ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300'
+                  : 'bg-muted/50 text-muted-foreground'
+              }`}
+            >
+              <span className="font-medium text-foreground">הערת המשרד:</span> {request.admin_review_notes}
+            </div>
+          ) : null}
         </div>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${config.bg} ${config.color}`}>
           <StatusIcon className="w-3 h-3" />
@@ -161,12 +168,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a
-                href={file.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate flex-1"
-              >
+              <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
@@ -187,9 +189,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           ) : (
             <Upload className="w-8 h-8 text-muted-foreground" />
           )}
-          <span className="text-sm text-muted-foreground">
-            {uploading ? 'מעלה...' : 'לחץ להעלאת קובץ'}
-          </span>
+          <span className="text-sm text-muted-foreground">{uploading ? 'מעלה...' : 'לחץ להעלאת קובץ'}</span>
         </label>
       )}
     </div>
