@@ -4,16 +4,18 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import ProcessTracker from '../components/ProcessTracker';
 import ClientUpdates from '../components/ClientUpdates';
-import { Building2, Shield, Package, FileText } from 'lucide-react';
+import { Building2, Shield, Package, FileText, AlertTriangle } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, caseEmail } = useAuth();
   const navigate = useNavigate();
   const [processStage, setProcessStage] = useState(null);
   const [counts, setCounts] = useState({ approvals: 0, files: 0, collaterals: 0, packages: 0 });
+  const [rejectedFilesCount, setRejectedFilesCount] = useState(0);
 
   useEffect(() => {
     if (!caseEmail) return;
+
     const load = async () => {
       const [stages, approvals, fileRequests, collaterals, packages] = await Promise.all([
         base44.entities.ProcessStage.filter({ client_email: caseEmail }),
@@ -22,7 +24,9 @@ export default function Dashboard() {
         base44.entities.Collateral.filter({ client_email: caseEmail }),
         base44.entities.SelectedPackage.filter({ client_email: caseEmail }),
       ]);
+
       if (stages.length > 0) setProcessStage(stages[0]);
+      setRejectedFilesCount(fileRequests.filter((request) => request.status === 'rejected').length);
       setCounts({
         approvals: approvals.length,
         files: fileRequests.length,
@@ -30,6 +34,7 @@ export default function Dashboard() {
         packages: packages.length,
       });
     };
+
     load();
   }, [caseEmail]);
 
@@ -76,6 +81,30 @@ export default function Dashboard() {
         </h1>
         <p className="text-muted-foreground mt-1">ברוך הבא לאיזור האישי שלך</p>
       </div>
+
+      {rejectedFilesCount > 0 ? (
+        <button
+          type="button"
+          onClick={() => navigate('/files?tab=uploaded')}
+          className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 text-right transition-all hover:shadow-md dark:border-red-900/50 dark:bg-red-950/25"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/80 dark:bg-slate-950/70">
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-300" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-semibold text-red-700 dark:text-red-300">
+                יש מסמכים שדורשים תיקון
+              </div>
+              <p className="mt-1 text-sm leading-6 text-red-700/90 dark:text-red-300/90">
+                {rejectedFilesCount === 1
+                  ? 'מסמך אחד סומן כלא תקין. לחץ כדי לעבור למסמכים שהועלו, לראות את ההערה ולהעלות קובץ חדש.'
+                  : `${rejectedFilesCount} מסמכים סומנו כלא תקינים. לחץ כדי לעבור למסמכים שהועלו, לראות את ההערות ולהעלות קבצים חדשים.`}
+              </p>
+            </div>
+          </div>
+        </button>
+      ) : null}
 
       <div className="grid md:grid-cols-2 gap-4">
         <ProcessTracker
