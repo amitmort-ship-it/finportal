@@ -84,33 +84,55 @@ export default function AdminViewDocuments({ selectedClient }) {
   });
 
   const load = async () => {
-    const normalizedSelectedClient = normalizeEmail(selectedClient);
+    setLoading(true);
 
-    const [data, clientRes, driveFolders] = await Promise.all([
-      base44.entities.FileRequest.filter({}, '-created_date'),
-      base44.functions.invoke('getAllClients', {}),
-      normalizedSelectedClient
-        ? base44.entities.DriveFolder.filter({ client_email: normalizedSelectedClient })
-        : Promise.resolve([]),
-    ]);
+    try {
+      const normalizedSelectedClient = normalizeEmail(selectedClient);
 
-    const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
-    const withFiles = filtered.filter((r) => r.uploaded_files && r.uploaded_files.length > 0);
-    const driveFolder = Array.isArray(driveFolders) ? driveFolders[0] : null;
+      const [data, clientRes, driveFolders] = await Promise.all([
+        base44.entities.FileRequest.filter({}, '-created_date'),
+        users.length > 0
+          ? Promise.resolve({ data: { profiles: users } })
+          : base44.functions.invoke('getAllClients', {}),
+        normalizedSelectedClient
+          ? base44.entities.DriveFolder.filter({ client_email: normalizedSelectedClient })
+          : Promise.resolve([]),
+      ]);
 
-    setRequests(withFiles);
-    setReviewNotes(
-      Object.fromEntries(
-        withFiles.map((request) => [request.id, splitDescriptionAndReviewNotes(request).reviewNotes]),
-      ),
-    );
-    setUsers(clientRes.data?.profiles || []);
-    setDriveFolderUrl(
-      driveFolder?.folder_id
-        ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}`
-        : '',
-    );
-    setLoading(false);
+      const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
+      const withFiles = filtered.filter((r) => r.uploaded_files && r.uploaded_files.length > 0);
+      const driveFolder = Array.isArray(driveFolders) ? driveFolders[0] : null;
+
+      setRequests(withFiles);
+      setReviewNotes(
+        Object.fromEntries(
+          withFiles.map((request) => [request.id, splitDescriptionAndReviewNotes(request).reviewNotes]),
+        ),
+      );
+      setUsers(clientRes.data?.profiles || []);
+      setDriveFolderUrl(
+        driveFolder?.folder_id
+          ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}`
+          : '',
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error('שגיאה בטעינת המסמכים');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyRequestUpdateLocally = (updatedRequest) => {
+    setRequests((prev) => prev.map((request) => (
+      request.id === updatedRequest.id ? { ...request, ...updatedRequest } : request
+    )));
+
+    const parsedContent = splitDescriptionAndReviewNotes(updatedRequest);
+    setReviewNotes((prev) => ({
+      ...prev,
+      [updatedRequest.id]: parsedContent.reviewNotes,
+    }));
   };
 
   useEffect(() => {
@@ -220,23 +242,25 @@ export default function AdminViewDocuments({ selectedClient }) {
     const currentRequest = requests.find((request) => request.id === id);
     const parsedContent = splitDescriptionAndReviewNotes(currentRequest);
 
-    await base44.entities.FileRequest.update(id, {
+    const updatedRequest = await base44.entities.FileRequest.update(id, {
       status,
       description: mergeDescriptionAndReviewNotes(parsedContent.description, reviewNotes[id] || ''),
     });
+
+    applyRequestUpdateLocally(updatedRequest);
     toast.success('סטטוס המסמך עודכן');
-    await load();
   };
 
   const handleSaveNotes = async (id) => {
     const currentRequest = requests.find((request) => request.id === id);
     const parsedContent = splitDescriptionAndReviewNotes(currentRequest);
 
-    await base44.entities.FileRequest.update(id, {
+    const updatedRequest = await base44.entities.FileRequest.update(id, {
       description: mergeDescriptionAndReviewNotes(parsedContent.description, reviewNotes[id] || ''),
     });
+
+    applyRequestUpdateLocally(updatedRequest);
     toast.success('ההערה נשמרה');
-    await load();
   };
 
   if (loading) {
@@ -362,7 +386,14 @@ export default function AdminViewDocuments({ selectedClient }) {
                   disabled={uploading || !form.client_email || !form.files.length}
                   className="w-full gap-2"
                 >
-                  {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      מעלה...
+                    </>
+                  ) : (
+                    'העלה מסמכים'
+                  )}
                 </Button>
               </div>
             </DialogContent>
@@ -391,12 +422,17 @@ export default function AdminViewDocuments({ selectedClient }) {
                           <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</div>
                         ) : null}
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                        req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
-                        req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                        req.status === 'rejected' ? 'bg-red-50 text-red-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                          req.status === 'uploaded'
+                            ? 'bg-blue-50 text-blue-600'
+                            : req.status === 'approved'
+                              ? 'bg-emerald-50 text-emerald-600'
+                              : req.status === 'rejected'
+                                ? 'bg-red-50 text-red-600'
+                                : 'bg-amber-50 text-amber-600'
+                        }`}
+                      >
                         {req.status === 'pending'
                           ? 'ממתין'
                           : req.status === 'uploaded'
@@ -444,14 +480,25 @@ export default function AdminViewDocuments({ selectedClient }) {
                         </Button>
 
                         {req.status === 'uploaded' || req.status === 'rejected' ? (
-                          <Button type="button" size="sm" onClick={() => handleStatusUpdate(req.id, 'approved')} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(req.id, 'approved')}
+                            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                          >
                             <CheckCircle2 className="w-4 h-4" />
                             אשר כתקין
                           </Button>
                         ) : null}
 
                         {req.status === 'uploaded' || req.status === 'approved' ? (
-                          <Button type="button" size="sm" variant="destructive" onClick={() => handleStatusUpdate(req.id, 'rejected')} className="gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleStatusUpdate(req.id, 'rejected')}
+                            className="gap-2"
+                          >
                             <XCircle className="w-4 h-4" />
                             סמן כלא תקין
                           </Button>
