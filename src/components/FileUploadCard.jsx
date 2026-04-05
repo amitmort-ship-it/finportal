@@ -5,8 +5,41 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
+const ADMIN_REVIEW_NOTES_MARKER = '\n\n[[ADMIN_REVIEW_NOTES]]\n';
+
 function getInvokeError(result) {
-  return result?.error || result?.data?.error || result?.response?.data?.error || null;
+  return (
+    result?.error ||
+    result?.data?.error ||
+    result?.response?.data?.error ||
+    null
+  );
+}
+
+function splitDescriptionAndReviewNotes(request) {
+  const legacyReviewNotes = String(request?.admin_review_notes || '').trim();
+  const description = String(request?.description || '');
+
+  if (legacyReviewNotes) {
+    return {
+      description: description.trim(),
+      reviewNotes: legacyReviewNotes,
+    };
+  }
+
+  if (!description.includes(ADMIN_REVIEW_NOTES_MARKER)) {
+    return {
+      description: description.trim(),
+      reviewNotes: '',
+    };
+  }
+
+  const [baseDescription, ...reviewParts] = description.split(ADMIN_REVIEW_NOTES_MARKER);
+
+  return {
+    description: baseDescription.trim(),
+    reviewNotes: reviewParts.join(ADMIN_REVIEW_NOTES_MARKER).trim(),
+  };
 }
 
 const statusConfig = {
@@ -59,6 +92,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const config = statusConfig[request.status] || statusConfig.pending;
   const StatusIcon = config.icon;
   const uploadedFiles = request.uploaded_files || [];
+  const parsedContent = splitDescriptionAndReviewNotes(request);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -67,16 +101,13 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newFiles = [
-        ...uploadedFiles,
-        {
-          file_url,
-          file_name: file.name,
-          uploaded_by_email: user?.email || null,
-          uploaded_by_name: user?.full_name || user?.email || null,
-          uploaded_at: new Date().toISOString(),
-        },
-      ];
+      const newFiles = [...uploadedFiles, {
+        file_url,
+        file_name: file.name,
+        uploaded_by_email: user?.email || null,
+        uploaded_by_name: user?.full_name || user?.email || null,
+        uploaded_at: new Date().toISOString(),
+      }];
 
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
@@ -144,8 +175,10 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="font-semibold text-foreground">{request.title}</h3>
-          {request.description && <p className="text-sm text-muted-foreground mt-1">{request.description}</p>}
-          {request.admin_review_notes ? (
+          {parsedContent.description && (
+            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</p>
+          )}
+          {parsedContent.reviewNotes ? (
             <div
               className={`mt-2 rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
                 request.status === 'rejected'
@@ -153,7 +186,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
                   : 'bg-muted/50 text-muted-foreground'
               }`}
             >
-              <span className="font-medium text-foreground">הערת המשרד:</span> {request.admin_review_notes}
+              <span className="font-medium text-foreground">הערת המשרד:</span> {parsedContent.reviewNotes}
             </div>
           ) : null}
         </div>
@@ -168,7 +201,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
+              <a
+                href={file.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1"
+              >
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
@@ -189,7 +227,9 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           ) : (
             <Upload className="w-8 h-8 text-muted-foreground" />
           )}
-          <span className="text-sm text-muted-foreground">{uploading ? 'מעלה...' : 'לחץ להעלאת קובץ'}</span>
+          <span className="text-sm text-muted-foreground">
+            {uploading ? 'מעלה...' : 'לחץ להעלאת קובץ'}
+          </span>
         </label>
       )}
     </div>
