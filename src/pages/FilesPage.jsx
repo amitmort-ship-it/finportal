@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import FileUploadCard from '../components/FileUploadCard';
 import { FileText, Download, Inbox, User, Briefcase } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSearchParams } from 'react-router-dom';
 
 const ADMIN_REVIEW_NOTES_MARKER = '\n\n[[ADMIN_REVIEW_NOTES]]\n';
 
@@ -114,6 +115,9 @@ function getRequestStatusBadge(request) {
 
 export default function FilesPage() {
   const { caseEmail } = useAuth();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'uploaded' ? 'uploaded' : 'required');
+
   const { data: requests = [], isLoading: loading, refetch } = useQuery({
     queryKey: ['file-requests', caseEmail],
     queryFn: async () => {
@@ -130,6 +134,10 @@ export default function FilesPage() {
     });
     return unsubscribe;
   }, [caseEmail, refetch]);
+
+  useEffect(() => {
+    setActiveTab(searchParams.get('tab') === 'uploaded' ? 'uploaded' : 'required');
+  }, [searchParams]);
 
   if (loading) {
     return (
@@ -153,7 +161,7 @@ export default function FilesPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">מסמכים</h1>
       </div>
 
-      <Tabs defaultValue="required" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-xl grid-cols-2 mb-6">
           <TabsTrigger value="required" className="gap-2">
             <Inbox className="w-4 h-4" />
