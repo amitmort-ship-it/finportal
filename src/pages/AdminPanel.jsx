@@ -17,6 +17,23 @@ import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 import AdminNotifications from '../components/admin/AdminNotifications';
 
+const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
+const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
+const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
+
+function parseAdminNotification(update) {
+  const message = String(update?.message || '');
+  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
+  const clientMatch = message.match(CLIENT_REGEX);
+
+  return {
+    id: update.id,
+    type: eventTypeMatch?.[1] || 'general',
+    clientEmail: clientMatch?.[1] || null,
+    createdAt: update.created_date || null,
+  };
+}
+
 function buildFileUploadNotifications(requests) {
   return (requests || [])
     .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
@@ -75,7 +92,8 @@ export default function AdminPanel() {
   useEffect(() => {
     const loadNotificationCount = async () => {
       try {
-        const [fileRequests, profiles] = await Promise.all([
+        const [updates, fileRequests, profiles] = await Promise.all([
+          base44.entities.ClientUpdate.filter({}, '-created_date'),
           base44.entities.FileRequest.filter({}, '-created_date'),
           base44.entities.ClientProfile.filter({}),
         ]);
@@ -105,6 +123,10 @@ export default function AdminPanel() {
 
     loadNotificationCount();
 
+    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
+      loadNotificationCount();
+    });
+
     const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
       loadNotificationCount();
     });
@@ -114,6 +136,7 @@ export default function AdminPanel() {
     });
 
     return () => {
+      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
       if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };
@@ -139,14 +162,26 @@ export default function AdminPanel() {
           <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
         </div>
 
-        <Button
-          type="button"
-          className="gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-          onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
-        >
-          <ExternalLink className="w-4 h-4" />
-          SmartNPV
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            type="button"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => window.open('https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            Paperless
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            SmartNPV
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-4 mb-6">
@@ -189,13 +224,34 @@ export default function AdminPanel() {
           <AdminNotifications selectedClient={selectedClient} />
           <AdminClients />
         </TabsContent>
-        <TabsContent value="document-request"><AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} /></TabsContent>
-        <TabsContent value="documents"><AdminViewDocuments selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="collaterals"><AdminCollaterals selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="packages"><AdminPackages selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="approvals"><AdminBankApprovals selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="process"><AdminProcessStage selectedClient={selectedClient} /></TabsContent>
-        <TabsContent value="updates"><AdminUpdates selectedClient={selectedClient} /></TabsContent>
+
+        <TabsContent value="document-request">
+          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <AdminViewDocuments selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="collaterals">
+          <AdminCollaterals selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="packages">
+          <AdminPackages selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="approvals">
+          <AdminBankApprovals selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="process">
+          <AdminProcessStage selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="updates">
+          <AdminUpdates selectedClient={selectedClient} />
+        </TabsContent>
       </Tabs>
     </div>
   );
