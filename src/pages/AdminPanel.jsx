@@ -174,8 +174,7 @@ export default function AdminPanel() {
 
           <Button
             type="button"
-            variant="outline"
-            className="gap-2"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
             onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
