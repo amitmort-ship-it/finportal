@@ -174,6 +174,15 @@ export default function AdminPanel() {
 
           <Button
             type="button"
+            className="gap-2 bg-black hover:bg-neutral-800 text-white"
+            onClick={() => window.open('https://zero-budget-copy-9e612e99.base44.app/dashboard', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            ZeroBalance
+          </Button>
+
+          <Button
+            type="button"
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => window.open('https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', '_blank', 'noopener,noreferrer')}
           >
@@ -183,8 +192,7 @@ export default function AdminPanel() {
 
           <Button
             type="button"
-            variant="outline"
-            className="gap-2"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
             onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
