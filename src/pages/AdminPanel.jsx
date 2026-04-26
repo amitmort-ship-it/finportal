@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import AdminClients from '../components/admin/AdminClients';
@@ -72,6 +73,94 @@ function buildLoginNotificationsFromProfiles(profiles) {
       clientEmail: profile.email,
       createdAt: profile.last_login_at,
     }));
+}
+
+function ClientSearchSelector({ users, selectedClient, onSelect }) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selectedUser = users.find(u => u.email === selectedClient);
+  const displayValue = selectedUser ? (selectedUser.full_name || selectedUser.email) : '';
+
+  const filtered = users.filter(u => {
+    const q = search.toLowerCase();
+    return (u.full_name || '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const handleSelect = (email) => {
+    onSelect(email === '_all' ? null : email);
+    setSearch('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-4 mb-6" ref={ref}>
+      <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
+      <div className="relative w-full md:w-80">
+        <div
+          className="flex items-center border border-input rounded-md bg-background px-3 h-9 cursor-pointer"
+          onClick={() => setOpen(o => !o)}
+        >
+          {open ? (
+            <Input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onClick={e => e.stopPropagation()}
+              placeholder="חפש לקוח..."
+              className="border-0 shadow-none h-7 p-0 focus-visible:ring-0 bg-transparent flex-1"
+              dir="rtl"
+            />
+          ) : (
+            <span className={`flex-1 text-sm ${selectedClient ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {selectedClient ? displayValue : 'כל הלקוחות'}
+            </span>
+          )}
+          <div className="flex items-center gap-1 mr-1">
+            {selectedClient && !open && (
+              <X
+                className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                onClick={e => { e.stopPropagation(); onSelect(null); }}
+              />
+            )}
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          </div>
+        </div>
+
+        {open && (
+          <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-md max-h-60 overflow-y-auto">
+            <div
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded-sm"
+              onClick={() => handleSelect('_all')}
+            >
+              כל הלקוחות
+            </div>
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">לא נמצאו לקוחות</div>
+            ) : filtered.map(u => (
+              <div
+                key={u.id}
+                className={`px-3 py-2 text-sm cursor-pointer hover:bg-accent rounded-sm ${selectedClient === u.email ? 'bg-accent font-medium' : ''}`}
+                onClick={() => handleSelect(u.email)}
+              >
+                <div>{u.full_name || u.email}</div>
+                {u.full_name && <div className="text-xs text-muted-foreground">{u.email}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminPanel() {
@@ -201,22 +290,11 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-4 mb-6">
-        <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
-        <Select value={selectedClient || '_all'} onValueChange={(v) => setSelectedClient(v === '_all' ? null : v)}>
-          <SelectTrigger className="w-full md:w-80">
-            <SelectValue placeholder="כל הלקוחות" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">כל הלקוחות</SelectItem>
-            {users.map((u) => (
-              <SelectItem key={u.id} value={u.email}>
-                {u.full_name || u.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <ClientSearchSelector
+        users={users}
+        selectedClient={selectedClient}
+        onSelect={setSelectedClient}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
