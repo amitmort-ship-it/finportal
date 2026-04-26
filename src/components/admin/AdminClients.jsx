@@ -13,6 +13,8 @@ import {
   Clock,
   Link2,
   MailPlus,
+  FlagOff,
+  Timer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -158,6 +160,24 @@ export default function AdminClients() {
     await base44.entities.ClientProfile.delete(id);
     toast.success('תיק הלקוח נמחק');
     await loadClients();
+  };
+
+  const handleEndTreatment = async (client) => {
+    if (client.treatment_ended_at) {
+      // undo
+      await base44.entities.ClientProfile.update(client.id, { treatment_ended_at: null });
+      toast.success('הטיפול חודש');
+    } else {
+      await base44.entities.ClientProfile.update(client.id, { treatment_ended_at: new Date().toISOString() });
+      toast.success('הטיפול סומן כמסויים');
+    }
+    await loadClients();
+  };
+
+  const daysSince = (dateStr) => {
+    if (!dateStr) return null;
+    const diff = Date.now() - new Date(dateStr).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
   };
 
   const openMemberInviteDialog = (client) => {
@@ -418,6 +438,26 @@ export default function AdminClients() {
                   >
                     <MailPlus className="w-3.5 h-3.5" />
                     הזמן משתמש נוסף
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={client.treatment_ended_at ? 'secondary' : 'outline'}
+                    className={`gap-1.5 ${client.treatment_ended_at ? 'text-muted-foreground' : 'text-orange-600 border-orange-300 hover:bg-orange-50'}`}
+                    onClick={() => handleEndTreatment(client)}
+                    title={client.treatment_ended_at ? `סיום טיפול לפני ${daysSince(client.treatment_ended_at)} ימים - לחץ לביטול` : 'סמן סיום טיפול'}
+                  >
+                    {client.treatment_ended_at ? (
+                      <>
+                        <Timer className="w-3.5 h-3.5" />
+                        {daysSince(client.treatment_ended_at)} ימים מסיום
+                      </>
+                    ) : (
+                      <>
+                        <FlagOff className="w-3.5 h-3.5" />
+                        סיום טיפול
+                      </>
+                    )}
                   </Button>
 
                   <Button
