@@ -1,0 +1,102 @@
+{
+  "name": "Collateral",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "title": {
+      "type": "string",
+      "description": "Document name/description"
+    },
+    "description": {
+      "type": "string",
+      "description": "Explanation about the document"
+    },
+    "handler": {
+      "type": "string",
+      "description": "Who handles this document"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "\u05d7\u05ea\u05d9\u05de\u05d5\u05ea \u05dc\u05d5\u05d5\u05d9\u05dd",
+        "\u05d7\u05ea\u05d9\u05de\u05d5\u05ea \u05de\u05d5\u05dc \u05e2\u05d5\u05e8\u05da \u05d3\u05d9\u05df",
+        "\u05d7\u05ea\u05d9\u05de\u05d5\u05ea \u05de\u05d5\u05db\u05e8\u05d9\u05dd/\u05e7\u05d1\u05dc\u05df",
+        "\u05e0\u05d5\u05e1\u05e4\u05d9\u05dd"
+      ],
+      "default": "\u05e0\u05d5\u05e1\u05e4\u05d9\u05dd",
+      "description": "Category of the collateral document"
+    },
+    "admin_file_url": {
+      "type": "string",
+      "description": "Document uploaded by admin for client to sign"
+    },
+    "admin_file_name": {
+      "type": "string",
+      "description": "Admin file name"
+    },
+    "client_file_url": {
+      "type": "string",
+      "description": "Signed document uploaded back by client"
+    },
+    "client_file_name": {
+      "type": "string",
+      "description": "Client file name"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "signed",
+        "completed"
+      ],
+      "default": "pending"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "client_email",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

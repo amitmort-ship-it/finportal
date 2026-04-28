@@ -9,7 +9,9 @@ import { Plus, Shield, Trash2, Upload, Loader2, Download, FileText } from 'lucid
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-const emptyForm = { client_email: '', title: '', description: '', handler: '', notes: '', admin_file_url: '', admin_file_name: '' };
+const COLLATERAL_CATEGORIES = ['חתימות לווים', 'חתימות מול עורך דין', 'חתימות מוכרים/קבלן', 'נוספים'];
+
+const emptyForm = { client_email: '', title: '', description: '', handler: '', notes: '', admin_file_url: '', admin_file_name: '', category: 'נוספים' };
 
 const statusConfig = {
   pending: { label: 'לא בוצע', color: 'bg-amber-50 text-amber-600' },
@@ -95,6 +97,15 @@ export default function AdminCollaterals({ selectedClient }) {
                   <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
                   <SelectContent>
                     {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>קטגוריה</Label>
+                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר קטגוריה" /></SelectTrigger>
+                  <SelectContent>
+                    {COLLATERAL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
