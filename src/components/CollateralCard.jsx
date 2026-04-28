@@ -64,7 +64,7 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
   };
 
   return (
-    <div className={`bg-white rounded-lg border-2 ${sc.border} p-4 space-y-3 shadow-sm`}>
+    <div className={`bg-white rounded-lg border-2 ${sc.border} p-4 space-y-3 shadow-sm`} dir="rtl">
       {/* Title & status */}
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-sm text-foreground leading-snug">{collateral.title}</h3>

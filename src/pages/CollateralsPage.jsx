@@ -95,7 +95,7 @@ export default function CollateralsPage() {
             const Icon = cat.icon;
             return (
               <div key={cat.key} className={`rounded-xl border ${cat.color} flex flex-col`}>
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-t-xl ${cat.headerColor}`}>
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-t-xl ${cat.headerColor}`} dir="rtl">
                   <Icon className={`w-4 h-4 ${cat.iconColor}`} />
                   <span className="font-semibold text-sm">{cat.label}</span>
                   <span className="mr-auto text-xs font-bold opacity-70">{items.length}</span>

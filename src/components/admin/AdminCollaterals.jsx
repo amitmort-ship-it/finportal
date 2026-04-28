@@ -184,7 +184,7 @@ export default function AdminCollaterals({ selectedClient }) {
             const items = collaterals.filter(c => (c.category || 'נוספים') === cat.key);
             return (
               <div key={cat.key} className={`rounded-xl border ${cat.color} flex flex-col`}>
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-t-xl ${cat.headerColor}`}>
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-t-xl ${cat.headerColor}`} dir="rtl">
                   <Icon className={`w-4 h-4 ${cat.iconColor}`} />
                   <span className="font-semibold text-sm">{cat.label}</span>
                   <span className="mr-auto text-xs font-bold opacity-70">{items.length}</span>
@@ -195,7 +195,7 @@ export default function AdminCollaterals({ selectedClient }) {
                   ) : items.map(c => {
                     const sc = statusConfig[c.status] || statusConfig.pending;
                     return (
-                      <div key={c.id} className="bg-white rounded-lg border border-border p-3 space-y-2 shadow-sm">
+                      <div key={c.id} className="bg-white rounded-lg border border-border p-3 space-y-2 shadow-sm" dir="rtl">
                         <div className="flex items-start justify-between gap-1">
                           <span className="font-semibold text-sm leading-snug">{c.title}</span>
                           <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${sc.color}`}>{sc.label}</span>
