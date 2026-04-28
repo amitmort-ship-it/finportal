@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, CheckCircle2, Clock, FileText, Loader2, Trash2, Download } from 'lucide-react';
+import { Upload, FileText, Loader2, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -27,15 +27,26 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
 
   const sc = statusConfig[collateral.status] || statusConfig.pending;
 
+  // Merge legacy single file + new multi-files array
+  const clientFiles = (() => {
+    const files = Array.isArray(collateral.client_files) ? [...collateral.client_files] : [];
+    // include legacy single file if not already in the array
+    if (collateral.client_file_url && !files.find(f => f.file_url === collateral.client_file_url)) {
+      files.unshift({ file_url: collateral.client_file_url, file_name: collateral.client_file_name || 'מסמך חתום' });
+    }
+    return files;
+  })();
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const newFiles = [...clientFiles, { file_url, file_name: file.name }];
       await base44.entities.Collateral.update(collateral.id, {
-        client_file_url: file_url,
-        client_file_name: file.name,
+        client_files: newFiles,
         status: 'signed',
       });
       toast.success('המסמך הועלה בהצלחה');
@@ -48,12 +59,14 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
     }
   };
 
-  const handleRemove = async () => {
+  const handleRemove = async (fileUrl) => {
     try {
+      const newFiles = clientFiles.filter(f => f.file_url !== fileUrl);
       await base44.entities.Collateral.update(collateral.id, {
-        client_file_url: null,
-        client_file_name: null,
-        status: 'pending',
+        client_files: newFiles,
+        client_file_url: newFiles.length === 0 ? null : collateral.client_file_url,
+        client_file_name: newFiles.length === 0 ? null : collateral.client_file_name,
+        status: newFiles.length === 0 ? 'pending' : 'signed',
       });
       toast.success('הקובץ הוסר');
       onUpdate?.();
@@ -94,20 +107,27 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
         </a>
       )}
 
-      {/* Client signed doc */}
-      {collateral.client_file_url ? (
-        <div className="flex items-center gap-2 bg-emerald-50 rounded-lg p-2">
-          <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <a href={collateral.client_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-700 hover:underline truncate flex-1">
-            {collateral.client_file_name || 'מסמך חתום'}
-          </a>
-          {collateral.status !== 'completed' && (
-            <Button size="icon" variant="ghost" onClick={handleRemove} className="text-destructive h-5 w-5">
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          )}
+      {/* Client signed docs list */}
+      {clientFiles.length > 0 && (
+        <div className="space-y-1">
+          {clientFiles.map((f, idx) => (
+            <div key={idx} className="flex items-center gap-2 bg-emerald-50 rounded-lg px-2 py-1.5">
+              <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <a href={f.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-700 hover:underline truncate flex-1">
+                {f.file_name || `מסמך ${idx + 1}`}
+              </a>
+              {collateral.status !== 'completed' && (
+                <Button size="icon" variant="ghost" onClick={() => handleRemove(f.file_url)} className="text-destructive h-5 w-5 shrink-0">
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
-      ) : (
+      )}
+
+      {/* Upload button — always visible unless completed */}
+      {collateral.status !== 'completed' && (
         <label className="flex items-center gap-2 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
           <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
           {uploading ? (
@@ -115,7 +135,7 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
           ) : (
             <Upload className="w-4 h-4 text-muted-foreground" />
           )}
-          <span className="text-xs text-muted-foreground">{uploading ? 'מעלה...' : 'העלה מסמך חתום'}</span>
+          <span className="text-xs text-muted-foreground">{uploading ? 'מעלה...' : clientFiles.length > 0 ? 'הוסף מסמך נוסף' : 'העלה מסמך חתום'}</span>
         </label>
       )}
     </div>

@@ -39,11 +39,27 @@
     },
     "client_file_url": {
       "type": "string",
-      "description": "Signed document uploaded back by client"
+      "description": "Signed document uploaded back by client (legacy single file)"
     },
     "client_file_name": {
       "type": "string",
-      "description": "Client file name"
+      "description": "Client file name (legacy single file)"
+    },
+    "client_files": {
+      "type": "array",
+      "description": "Multiple signed documents uploaded by client",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_url": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
     },
     "status": {
       "type": "string",
