@@ -5,9 +5,9 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 const statusConfig = {
-  pending: { label: 'ממתין לחתימה', color: 'text-amber-600', bg: 'bg-amber-50' },
-  signed: { label: 'הוחזר חתום', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  completed: { label: 'הושלם', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  pending: { label: 'חסר', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', dot: 'bg-red-500' },
+  signed: { label: 'בטיפול', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-400' },
+  completed: { label: 'הושלם', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
 };
 
 export default function CollateralCard({ collateral: initial, onUpdate }) {
@@ -64,11 +64,12 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-border p-4 space-y-3 shadow-sm">
+    <div className={`bg-white rounded-lg border-2 ${sc.border} p-4 space-y-3 shadow-sm`}>
       {/* Title & status */}
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-sm text-foreground leading-snug">{collateral.title}</h3>
-        <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${sc.bg} ${sc.color}`}>
+        <span className={`shrink-0 inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${sc.bg} ${sc.color}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
           {sc.label}
         </span>
       </div>
