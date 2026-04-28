@@ -113,14 +113,14 @@ export default function AdminCollaterals({ selectedClient }) {
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="w-4 h-4" />מסמך חדש</Button>
           </DialogTrigger>
-          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
+          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
             <DialogHeader><DialogTitle>הוספת מסמך בטחון</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-4">
               <div>
                 <Label>לקוח</Label>
                 <Select value={form.client_email} onValueChange={v => setForm({ ...form, client_email: v })}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper">
                     {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -129,7 +129,7 @@ export default function AdminCollaterals({ selectedClient }) {
                 <Label>קטגוריה</Label>
                 <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="בחר קטגוריה" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper">
                     {COLLATERAL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
