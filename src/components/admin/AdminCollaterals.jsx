@@ -28,10 +28,16 @@ export default function AdminCollaterals({ selectedClient }) {
   const [form, setForm] = useState({ ...emptyForm });
 
   const load = async () => {
-    const data = await base44.entities.Collateral.filter({}, '-created_date');
-    const filtered = selectedClient ? data.filter(c => c.client_email === selectedClient) : data;
-    setCollaterals(filtered);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const data = await base44.entities.Collateral.filter({}, '-created_date');
+      const filtered = selectedClient ? data.filter(c => c.client_email === selectedClient) : data;
+      setCollaterals(filtered);
+    } catch (err) {
+      toast.error('שגיאה בטעינת בטחונות');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, [selectedClient]);
@@ -39,8 +45,10 @@ export default function AdminCollaterals({ selectedClient }) {
 
   useEffect(() => {
     const loadUsers = async () => {
-      const res = await base44.functions.invoke('getAllClients', {});
-      setUsers((res.data?.profiles || []).filter(p => p.email));
+      try {
+        const res = await base44.functions.invoke('getAllClients', {});
+        setUsers((res.data?.profiles || []).filter(p => p.email));
+      } catch {}
     };
     loadUsers();
   }, []);
@@ -49,30 +57,47 @@ export default function AdminCollaterals({ selectedClient }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, admin_file_url: file_url, admin_file_name: file.name }));
-    setUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, admin_file_url: file_url, admin_file_name: file.name }));
+    } catch (err) {
+      toast.error('שגיאה בהעלאת הקובץ');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleCreate = async () => {
     if (!form.client_email || !form.title) return;
-    await base44.entities.Collateral.create(form);
-    toast.success('מסמך בטחון נוסף');
-    setForm({ ...emptyForm, client_email: selectedClient || '' });
-    setOpen(false);
-    load();
+    try {
+      await base44.entities.Collateral.create(form);
+      toast.success('מסמך בטחון נוסף');
+      setForm({ ...emptyForm, client_email: selectedClient || '' });
+      setOpen(false);
+      load();
+    } catch (err) {
+      toast.error('שגיאה ביצירת המסמך');
+    }
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.Collateral.delete(id);
-    toast.success('המסמך נמחק');
-    load();
+    try {
+      await base44.entities.Collateral.delete(id);
+      toast.success('המסמך נמחק');
+      load();
+    } catch (err) {
+      toast.error('שגיאה במחיקה');
+    }
   };
 
   const handleStatusChange = async (id, status) => {
-    await base44.entities.Collateral.update(id, { status });
-    toast.success('הסטטוס עודכן');
-    load();
+    try {
+      await base44.entities.Collateral.update(id, { status });
+      toast.success('הסטטוס עודכן');
+      load();
+    } catch (err) {
+      toast.error('שגיאה בעדכון הסטטוס');
+    }
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
