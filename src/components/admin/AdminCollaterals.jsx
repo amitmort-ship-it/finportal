@@ -4,11 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Shield, Trash2, Upload, Loader2, Download } from 'lucide-react';
+import { Plus, Shield, Trash2, Upload, Loader2, Download, Users, Scale, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-const COLLATERAL_CATEGORIES = ['חתימות לווים', 'חתימות מול עורך דין', 'חתימות מוכרים/קבלן', 'נוספים'];
+const COLLATERAL_CATEGORIES = [
+  { key: 'חתימות לווים', label: 'חתימות לווים בלבד', icon: Users, color: 'border-blue-200 bg-blue-50/50', headerColor: 'text-blue-700 bg-blue-100/80', iconColor: 'text-blue-500' },
+  { key: 'חתימות מול עורך דין', label: 'חתימות מול עורך דין', icon: Scale, color: 'border-purple-200 bg-purple-50/50', headerColor: 'text-purple-700 bg-purple-100/80', iconColor: 'text-purple-500' },
+  { key: 'חתימות מוכרים/קבלן', label: 'חתימות מוכרים / קבלן', icon: Building2, color: 'border-orange-200 bg-orange-50/50', headerColor: 'text-orange-700 bg-orange-100/80', iconColor: 'text-orange-500' },
+  { key: 'נוספים', label: 'נוספים', icon: Plus, color: 'border-slate-200 bg-slate-50/50', headerColor: 'text-slate-700 bg-slate-100/80', iconColor: 'text-slate-500' },
+];
+const CATEGORY_KEYS = COLLATERAL_CATEGORIES.map(c => c.key);
 
 const emptyForm = { client_email: '', title: '', description: '', handler: '', notes: '', admin_file_url: '', admin_file_name: '', category: 'נוספים' };
 
@@ -136,7 +142,7 @@ export default function AdminCollaterals({ selectedClient }) {
                   onChange={e => setForm({ ...form, category: e.target.value })}
                   className={nativeSelectClass}
                 >
-                  {COLLATERAL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {COLLATERAL_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                 </select>
               </div>
               <div>
@@ -172,60 +178,58 @@ export default function AdminCollaterals({ selectedClient }) {
       {collaterals.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">אין מסמכי בטחון</div>
       ) : (
-        <div className="space-y-4">
-          {collaterals.map(c => {
-            const sc = statusConfig[c.status] || statusConfig.pending;
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+          {COLLATERAL_CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const items = collaterals.filter(c => (c.category || 'נוספים') === cat.key);
             return (
-              <div key={c.id} className="bg-card rounded-xl border border-border overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold">{c.title}</span>
-                    <span className="text-xs text-muted-foreground">{c.client_email}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sc.color}`}>{sc.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={c.status}
-                      onChange={e => handleStatusChange(c.id, e.target.value)}
-                      className={nativeSelectSmClass}
-                    >
-                      <option value="pending">ממתין לחתימה</option>
-                      <option value="signed">הוחזר חתום</option>
-                      <option value="completed">הושלם</option>
-                    </select>
-                    <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)} className="text-destructive hover:bg-destructive/10 h-7 w-7">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+              <div key={cat.key} className={`rounded-xl border ${cat.color} flex flex-col`}>
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-t-xl ${cat.headerColor}`}>
+                  <Icon className={`w-4 h-4 ${cat.iconColor}`} />
+                  <span className="font-semibold text-sm">{cat.label}</span>
+                  <span className="mr-auto text-xs font-bold opacity-70">{items.length}</span>
                 </div>
-
-                <div className="grid grid-cols-2 divide-x divide-x-reverse divide-border">
-                  <div className="p-4">
-                    <div className="text-xs font-semibold text-primary mb-2">מסמך לחתימה (מהמשרד)</div>
-                    {c.description && <p className="text-sm text-muted-foreground mb-2">{c.description}</p>}
-                    {c.handler && <p className="text-xs text-muted-foreground mb-2">מטפל: <span className="font-medium text-foreground">{c.handler}</span></p>}
-                    {c.notes && <p className="text-xs text-muted-foreground mb-2">{c.notes}</p>}
-                    {c.admin_file_url ? (
-                      <a href={c.admin_file_url} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1">
-                        <Download className="w-3.5 h-3.5" />{c.admin_file_name || 'הורד מסמך'}
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">לא הועלה מסמך</span>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <div className="text-xs font-semibold text-emerald-600 mb-2">מסמך חתום (מהלקוח)</div>
-                    {c.client_file_url ? (
-                      <a href={c.client_file_url} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
-                        <Download className="w-3.5 h-3.5" />{c.client_file_name || 'הורד מסמך חתום'}
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">הלקוח טרם העלה מסמך</span>
-                    )}
-                  </div>
+                <div className="flex-1 p-3 space-y-3">
+                  {items.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-muted-foreground">אין מסמכים בקטגוריה זו</div>
+                  ) : items.map(c => {
+                    const sc = statusConfig[c.status] || statusConfig.pending;
+                    return (
+                      <div key={c.id} className="bg-white rounded-lg border border-border p-3 space-y-2 shadow-sm">
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="font-semibold text-sm leading-snug">{c.title}</span>
+                          <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${sc.color}`}>{sc.label}</span>
+                        </div>
+                        {!selectedClient && <span className="text-xs text-muted-foreground block">{c.client_email}</span>}
+                        {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                        {c.handler && <p className="text-xs text-muted-foreground">מטפל: <span className="font-medium text-foreground">{c.handler}</span></p>}
+                        {c.admin_file_url ? (
+                          <a href={c.admin_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                            <Download className="w-3 h-3" />{c.admin_file_name || 'מסמך לחתימה'}
+                          </a>
+                        ) : <span className="text-xs text-muted-foreground">לא הועלה מסמך</span>}
+                        {c.client_file_url ? (
+                          <a href={c.client_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                            <Download className="w-3 h-3" />{c.client_file_name || 'מסמך חתום'}
+                          </a>
+                        ) : <span className="text-xs text-muted-foreground block">הלקוח טרם העלה</span>}
+                        <div className="flex items-center gap-2 pt-1">
+                          <select
+                            value={c.status}
+                            onChange={e => handleStatusChange(c.id, e.target.value)}
+                            className={nativeSelectSmClass}
+                          >
+                            <option value="pending">ממתין לחתימה</option>
+                            <option value="signed">הוחזר חתום</option>
+                            <option value="completed">הושלם</option>
+                          </select>
+                          <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)} className="text-destructive hover:bg-destructive/10 h-7 w-7 mr-auto">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
