@@ -33,30 +33,34 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const updated = await base44.entities.Collateral.update(collateral.id, {
+      await base44.entities.Collateral.update(collateral.id, {
         client_file_url: file_url,
         client_file_name: file.name,
         status: 'signed',
       });
-      setCollateral(updated);
       toast.success('המסמך הועלה בהצלחה');
       onUpdate?.();
-    } catch {
-      toast.error('שגיאה בהעלאה');
+    } catch (err) {
+      console.error('CollateralCard upload error:', err);
+      toast.error('שגיאה בהעלאה: ' + (err?.message || err));
     } finally {
       setUploading(false);
     }
   };
 
   const handleRemove = async () => {
-    const updated = await base44.entities.Collateral.update(collateral.id, {
-      client_file_url: null,
-      client_file_name: null,
-      status: 'pending',
-    });
-    setCollateral(updated);
-    toast.success('הקובץ הוסר');
-    onUpdate?.();
+    try {
+      await base44.entities.Collateral.update(collateral.id, {
+        client_file_url: null,
+        client_file_name: null,
+        status: 'pending',
+      });
+      toast.success('הקובץ הוסר');
+      onUpdate?.();
+    } catch (err) {
+      console.error('CollateralCard remove error:', err);
+      toast.error('שגיאה בהסרה: ' + (err?.message || err));
+    }
   };
 
   return (
