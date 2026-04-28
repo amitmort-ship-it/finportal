@@ -18,7 +18,7 @@ export default function CollateralCard({ collateral: initial, onUpdate }) {
 
   useEffect(() => {
     const unsub = base44.entities.Collateral.subscribe((event) => {
-      if (event.type === 'update' && event.data?.id === collateral.id) {
+      if (event.type === 'update' && (event.id === collateral.id || event.data?.id === collateral.id) && event.data) {
         setCollateral(event.data);
       }
     });

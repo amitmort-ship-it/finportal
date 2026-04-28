@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import CollateralCard from '../components/CollateralCard';
@@ -44,17 +44,22 @@ export default function CollateralsPage() {
   const [collaterals, setCollaterals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!caseEmail) {
       setCollaterals([]);
       setLoading(false);
       return;
     }
 
-    const data = await base44.entities.Collateral.filter({ client_email: caseEmail }, '-created_date');
-    setCollaterals(data);
-    setLoading(false);
-  };
+    try {
+      const data = await base44.entities.Collateral.filter({ client_email: caseEmail }, '-created_date');
+      setCollaterals(data);
+    } catch (err) {
+      console.error('load collaterals error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [caseEmail]);
 
   useEffect(() => {
     load();
