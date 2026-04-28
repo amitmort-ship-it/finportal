@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Shield, Trash2, Upload, Loader2, Download, FileText } from 'lucide-react';
+import { Plus, Shield, Trash2, Upload, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -18,6 +17,9 @@ const statusConfig = {
   signed: { label: 'בוצע', color: 'bg-emerald-50 text-emerald-600' },
   completed: { label: 'בוצע', color: 'bg-emerald-50 text-emerald-600' },
 };
+
+const nativeSelectClass = "w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring mt-1";
+const nativeSelectSmClass = "h-7 text-xs rounded-md border border-input bg-transparent px-2 py-0.5 w-36 focus:outline-none focus:ring-1 focus:ring-ring";
 
 export default function AdminCollaterals({ selectedClient }) {
   const [collaterals, setCollaterals] = useState([]);
@@ -113,26 +115,29 @@ export default function AdminCollaterals({ selectedClient }) {
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="w-4 h-4" />מסמך חדש</Button>
           </DialogTrigger>
-          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>הוספת מסמך בטחון</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-4">
               <div>
                 <Label>לקוח</Label>
-                <Select value={form.client_email} onValueChange={v => setForm({ ...form, client_email: v })}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-                  <SelectContent position="popper">
-                    {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={form.client_email}
+                  onChange={e => setForm({ ...form, client_email: e.target.value })}
+                  className={nativeSelectClass}
+                >
+                  <option value="">בחר לקוח</option>
+                  {users.map(u => <option key={u.id} value={u.email}>{u.full_name || u.email}</option>)}
+                </select>
               </div>
               <div>
                 <Label>קטגוריה</Label>
-                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="בחר קטגוריה" /></SelectTrigger>
-                  <SelectContent position="popper">
-                    {COLLATERAL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={form.category}
+                  onChange={e => setForm({ ...form, category: e.target.value })}
+                  className={nativeSelectClass}
+                >
+                  {COLLATERAL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
               <div>
                 <Label>שם המסמך</Label>
@@ -172,7 +177,6 @@ export default function AdminCollaterals({ selectedClient }) {
             const sc = statusConfig[c.status] || statusConfig.pending;
             return (
               <div key={c.id} className="bg-card rounded-xl border border-border overflow-hidden">
-                {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
                   <div className="flex items-center gap-3">
                     <span className="font-semibold">{c.title}</span>
@@ -180,23 +184,22 @@ export default function AdminCollaterals({ selectedClient }) {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sc.color}`}>{sc.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Select value={c.status} onValueChange={v => handleStatusChange(c.id, v)}>
-                      <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">ממתין לחתימה</SelectItem>
-                        <SelectItem value="signed">הוחזר חתום</SelectItem>
-                        <SelectItem value="completed">הושלם</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <select
+                      value={c.status}
+                      onChange={e => handleStatusChange(c.id, e.target.value)}
+                      className={nativeSelectSmClass}
+                    >
+                      <option value="pending">ממתין לחתימה</option>
+                      <option value="signed">הוחזר חתום</option>
+                      <option value="completed">הושלם</option>
+                    </select>
                     <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)} className="text-destructive hover:bg-destructive/10 h-7 w-7">
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Split body */}
                 <div className="grid grid-cols-2 divide-x divide-x-reverse divide-border">
-                  {/* Right: admin doc */}
                   <div className="p-4">
                     <div className="text-xs font-semibold text-primary mb-2">מסמך לחתימה (מהמשרד)</div>
                     {c.description && <p className="text-sm text-muted-foreground mb-2">{c.description}</p>}
@@ -212,7 +215,6 @@ export default function AdminCollaterals({ selectedClient }) {
                     )}
                   </div>
 
-                  {/* Left: client signed doc */}
                   <div className="p-4">
                     <div className="text-xs font-semibold text-emerald-600 mb-2">מסמך חתום (מהלקוח)</div>
                     {c.client_file_url ? (
