@@ -23,22 +23,8 @@ import ClientsByStageTable from '../components/admin/ClientsByStageTable';
 import AdminMarketRates from '../components/admin/AdminMarketRates';
 import RefinanceMonitor from '../components/admin/RefinanceMonitor';
 
-const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
 const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
-
-function parseAdminNotification(update) {
-  const message = String(update?.message || '');
-  const eventTypeMatch = message.match(EVENT_TYPE_REGEX);
-  const clientMatch = message.match(CLIENT_REGEX);
-
-  return {
-    id: update.id,
-    type: eventTypeMatch?.[1] || 'general',
-    clientEmail: clientMatch?.[1] || null,
-    createdAt: update.created_date || null,
-  };
-}
 
 function buildFileUploadNotifications(requests) {
   return (requests || [])
@@ -49,9 +35,7 @@ function buildFileUploadNotifications(requests) {
         file?.uploaded_by_name !== 'הועלה על ידי המשרד'
       ));
 
-      if (!nonAdminFiles.length) {
-        return null;
-      }
+      if (!nonAdminFiles.length) return null;
 
       const latestFile = [...nonAdminFiles].sort((a, b) => {
         const aDate = new Date(a?.uploaded_at || 0).getTime();
@@ -187,8 +171,7 @@ export default function AdminPanel() {
   useEffect(() => {
     const loadNotificationCount = async () => {
       try {
-        const [updates, fileRequests, profiles] = await Promise.all([
-          base44.entities.ClientUpdate.filter({}, '-created_date'),
+        const [fileRequests, profiles] = await Promise.all([
           base44.entities.FileRequest.filter({}, '-created_date'),
           base44.entities.ClientProfile.filter({}),
         ]);
@@ -218,10 +201,6 @@ export default function AdminPanel() {
 
     loadNotificationCount();
 
-    const unsubscribeUpdates = base44.entities.ClientUpdate.subscribe(() => {
-      loadNotificationCount();
-    });
-
     const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
       loadNotificationCount();
     });
@@ -231,7 +210,6 @@ export default function AdminPanel() {
     });
 
     return () => {
-      if (typeof unsubscribeUpdates === 'function') unsubscribeUpdates();
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
       if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };

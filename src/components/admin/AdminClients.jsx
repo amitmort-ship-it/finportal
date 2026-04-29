@@ -50,14 +50,18 @@ export default function AdminClients() {
       let invites = [];
 
       try {
-        memberships = await base44.entities.CaseUser.filter({}, '-created_date');
-      } catch (error) {
+        if (base44.entities.CaseUser) {
+          memberships = await base44.entities.CaseUser.filter({}, '-created_date');
+        }
+      } catch {
         memberships = [];
       }
 
       try {
-        invites = await base44.entities.CaseInvite.filter({}, '-created_date');
-      } catch (error) {
+        if (base44.entities.CaseInvite) {
+          invites = await base44.entities.CaseInvite.filter({}, '-created_date');
+        }
+      } catch {
         invites = [];
       }
 
