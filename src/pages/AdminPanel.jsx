@@ -12,6 +12,8 @@ import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
+import AdminBusiness from '@/components/admin/AdminBusiness';
+import Dashboard from '@/pages/Dashboard';
 import {
   Users,
   Bell,
@@ -20,6 +22,8 @@ import {
   Package,
   Lock,
   ListChecks,
+  LayoutDashboard,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function AdminPanel() {
@@ -34,6 +38,8 @@ export default function AdminPanel() {
   }
 
   const tabs = [
+    { id: 'dashboard', label: 'דף ראשי', icon: LayoutDashboard },
+    { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
     { id: 'clients', label: 'לקוחות', icon: Users },
     { id: 'notifications', label: 'הודעות', icon: Bell },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
@@ -56,7 +62,7 @@ export default function AdminPanel() {
       <RefinanceMonitor />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -67,6 +73,14 @@ export default function AdminPanel() {
             );
           })}
         </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          <Dashboard />
+        </TabsContent>
+
+        <TabsContent value="business" className="space-y-6">
+          <AdminBusiness />
+        </TabsContent>
 
         <TabsContent value="clients" className="space-y-6">
           <AdminClients />
