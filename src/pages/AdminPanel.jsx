@@ -8,8 +8,11 @@ import { Label } from '@/components/ui/label';
 import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
-import { Suspense } from 'react';
-import AdminClients from '../components/admin/AdminClients';
+import { Suspense, lazy } from 'react';
+
+const AdminClients = lazy(() => import('../components/admin/AdminClients').catch(() => {
+  return { default: () => <div className="text-red-500 p-4">שגיאה בטעינת מנהל הלקוחות</div> };
+}));
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminPackages from '../components/admin/AdminPackages';
 import AdminBankApprovals from '../components/admin/AdminBankApprovals';
