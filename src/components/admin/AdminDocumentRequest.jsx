@@ -4,31 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { FileText, Plus, Send, ExternalLink } from 'lucide-react';
+import { FileText, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CATEGORIES = {
   'לווה 1': [
     'ת״ז - צילום של הצד הקדמי, האחורי וספח',
-    'תלוש שכר 1',
-    'תלוש שכר 2',
-    'תלוש שכר 3',
-    'עו"ש 3 חודשים אחרונים',
-    'אישור ניהול חשבון בנק',
-    'דוח יתרות בחשבון',
-    'דוח הלוואות (אם יש)',
-    'טופס 106 (אם מקבל בונוסים)',
+    'תלוש שכר 1', 'תלוש שכר 2', 'תלוש שכר 3',
+    'עו"ש 3 חודשים אחרונים', 'אישור ניהול חשבון בנק',
+    'דוח יתרות בחשבון', 'דוח הלוואות (אם יש)', 'טופס 106 (אם מקבל בונוסים)',
   ],
   'לווה 2': [
     'ת״ז - צילום של הצד הקדמי, האחורי וספח',
-    'תלוש שכר 1',
-    'תלוש שכר 2',
-    'תלוש שכר 3',
-    'עו"ש 3 חודשים אחרונים',
-    'אישור ניהול חשבון בנק',
-    'דוח יתרות בחשבון',
-    'דוח הלוואות (אם יש)',
-    'טופס 106 (אם מקבל בונוסים)',
+    'תלוש שכר 1', 'תלוש שכר 2', 'תלוש שכר 3',
+    'עו"ש 3 חודשים אחרונים', 'אישור ניהול חשבון בנק',
+    'דוח יתרות בחשבון', 'דוח הלוואות (אם יש)', 'טופס 106 (אם מקבל בונוסים)',
   ],
   'משותף': ['חוזה רכישה', 'נסח טאבו'],
 };
@@ -48,15 +38,15 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
 
   const toggleDoc = (category, doc) => {
     const key = `${category}::${doc}`;
-    setSelectedDocs((prev) => ({ ...prev, [key]: !prev[key] }));
+    setSelectedDocs(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const addCustomDoc = (category) => {
     const title = customDocs[category].trim();
     if (!title) return;
     const key = `${category}::${title}`;
-    setSelectedDocs((prev) => ({ ...prev, [key]: true }));
-    setCustomDocs((prev) => ({ ...prev, [category]: '' }));
+    setSelectedDocs(prev => ({ ...prev, [key]: true }));
+    setCustomDocs(prev => ({ ...prev, [category]: '' }));
   };
 
   const totalSelected = Object.values(selectedDocs).filter(Boolean).length;
@@ -73,7 +63,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
         const [category, title] = key.split('::');
         return { client_email: selectedUser, title, category };
       });
-    await Promise.all(toCreate.map((doc) => base44.entities.FileRequest.create(doc)));
+    await Promise.all(toCreate.map(doc => base44.entities.FileRequest.create(doc)));
     toast.success(`נשלחו ${toCreate.length} בקשות מסמכים`);
     setSelectedDocs({});
     setLoading(false);
@@ -81,20 +71,9 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
 
   return (
     <div className="bg-card rounded-xl border border-border p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">בקשת מסמכים</h2>
-        </div>
-        <a
-          href="https://media.base44.com/files/public/69c2ce93ab0a8ed34c65a4a8/641a7c040_.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium transition-colors"
-        >
-          <ExternalLink className="w-4 h-4" />
-          דף מאסטר
-        </a>
+      <div className="flex items-center gap-2 mb-6">
+        <FileText className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-bold">בקשת מסמכים</h2>
       </div>
 
       {!selectedUser ? (
@@ -107,14 +86,12 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
             <div key={category} className={`rounded-xl border p-4 ${CATEGORY_COLORS[category]}`}>
               <h3 className="font-bold text-sm mb-3">{category}</h3>
               <div className="space-y-2">
-                {docs.map((doc) => {
+                {docs.map(doc => {
                   const key = `${category}::${doc}`;
                   return (
                     <div key={doc} className="flex items-center gap-2">
                       <Checkbox id={key} checked={!!selectedDocs[key]} onCheckedChange={() => toggleDoc(category, doc)} />
-                      <Label htmlFor={key} className="cursor-pointer font-normal text-sm">
-                        {doc}
-                      </Label>
+                      <Label htmlFor={key} className="cursor-pointer font-normal text-sm">{doc}</Label>
                     </div>
                   );
                 })}
@@ -125,9 +102,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
                     return (
                       <div key={key} className="flex items-center gap-2">
                         <Checkbox id={key} checked={true} onCheckedChange={() => toggleDoc(category, title)} />
-                        <Label htmlFor={key} className="cursor-pointer font-normal text-sm">
-                          {title}
-                        </Label>
+                        <Label htmlFor={key} className="cursor-pointer font-normal text-sm">{title}</Label>
                       </div>
                     );
                   })}
@@ -135,8 +110,8 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
               <div className="flex gap-2 mt-3">
                 <Input
                   value={customDocs[category]}
-                  onChange={(e) => setCustomDocs((prev) => ({ ...prev, [category]: e.target.value }))}
-                  onKeyDown={(e) => e.key === 'Enter' && addCustomDoc(category)}
+                  onChange={e => setCustomDocs(prev => ({ ...prev, [category]: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && addCustomDoc(category)}
                   placeholder="הוסף מסמך נוסף..."
                   className="text-sm h-8 bg-white/70"
                 />
