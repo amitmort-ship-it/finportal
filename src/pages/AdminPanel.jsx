@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import ClientSearchFilter from '@/components/ClientSearchFilter';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminUpdates from '@/components/admin/AdminUpdates';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
@@ -91,12 +92,9 @@ export default function AdminPanel() {
         <TabsContent value="updates" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
             <label className="text-sm font-medium">חיפוש לקוח</label>
-            <Input
-              placeholder="הקלד שם או אימייל..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              className="mt-2"
-            />
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
           </div>
           <AdminUpdates selectedClientFilter={clientSearch} />
         </TabsContent>
@@ -104,12 +102,9 @@ export default function AdminPanel() {
         <TabsContent value="approvals" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
             <label className="text-sm font-medium">חיפוש לקוח</label>
-            <Input
-              placeholder="הקלד שם או אימייל..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              className="mt-2"
-            />
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
           </div>
           <AdminBankApprovals selectedClient={clientSearch || null} />
         </TabsContent>
@@ -117,12 +112,9 @@ export default function AdminPanel() {
         <TabsContent value="documents" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
             <label className="text-sm font-medium">חיפוש לקוח</label>
-            <Input
-              placeholder="הקלד שם או אימייל..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              className="mt-2"
-            />
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
           </div>
           <AdminViewDocuments selectedClient={clientSearch || null} />
         </TabsContent>
@@ -130,12 +122,9 @@ export default function AdminPanel() {
         <TabsContent value="packages" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
             <label className="text-sm font-medium">חיפוש לקוח</label>
-            <Input
-              placeholder="הקלד שם או אימייל..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              className="mt-2"
-            />
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
           </div>
           <AdminPackages selectedClient={clientSearch || null} />
         </TabsContent>
@@ -143,12 +132,9 @@ export default function AdminPanel() {
         <TabsContent value="collaterals" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
             <label className="text-sm font-medium">חיפוש לקוח</label>
-            <Input
-              placeholder="הקלד שם או אימייל..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              className="mt-2"
-            />
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
           </div>
           <AdminCollaterals selectedClient={clientSearch || null} />
         </TabsContent>
@@ -156,12 +142,9 @@ export default function AdminPanel() {
         <TabsContent value="process" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
             <label className="text-sm font-medium">חיפוש לקוח</label>
-            <Input
-              placeholder="הקלד שם או אימייל..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              className="mt-2"
-            />
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
           </div>
           <AdminProcessStage selectedClient={clientSearch || null} />
         </TabsContent>
