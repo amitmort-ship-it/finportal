@@ -16,6 +16,7 @@ import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColor
 import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
+import Dashboard from '@/pages/Dashboard';
 import {
   Users,
   Bell,
