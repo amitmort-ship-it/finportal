@@ -5,9 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChevronDown, X } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExternalLink } from 'lucide-react';
+import { ChevronDown, X, ExternalLink } from 'lucide-react';
 
 
 function ClientSearchSelector({ users, selectedClient, onSelect }) {
