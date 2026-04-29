@@ -162,8 +162,6 @@ export default function AdminPanel() {
             </Button>
           </div>
         </div>
-
-
       </div>
 
       <ClientSearchSelector
