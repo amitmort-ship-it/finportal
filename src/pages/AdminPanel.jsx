@@ -11,6 +11,7 @@ import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
 import AdminPackages from '@/components/admin/AdminPackages';
 import AdminCollaterals from '@/components/admin/AdminCollaterals';
 import AdminProcessStage from '@/components/admin/AdminProcessStage';
+import AdminBusiness from '@/components/admin/AdminBusiness';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
@@ -24,6 +25,7 @@ import {
   ListChecks,
   Search,
   ExternalLink,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function AdminPanel() {
@@ -60,6 +62,7 @@ export default function AdminPanel() {
 
   const tabs = [
     { id: 'clients', label: 'לקוחות', icon: Users },
+    { id: 'business', label: 'עסק', icon: TrendingUp },
     { id: 'notifications', label: 'הודעות', icon: Bell },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
     { id: 'documents', label: 'מסמכים', icon: FileText },
@@ -187,6 +190,12 @@ export default function AdminPanel() {
         <TabsContent value="clients" className="space-y-6">
           <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
             <AdminClients />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="business" className="space-y-6">
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminBusiness />
           </Suspense>
         </TabsContent>
 
