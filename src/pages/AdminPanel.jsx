@@ -10,15 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import { Suspense, lazy } from 'react';
 
-const AdminClients = lazy(() => import('../components/admin/AdminClients').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminPackages = lazy(() => import('../components/admin/AdminPackages').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications').catch(() => ({ default: () => <div>Error loading</div> })));
-const AdminBusiness = lazy(() => import('../components/admin/AdminBusiness').catch(() => ({ default: () => <div>Error loading</div> })));
+const ErrorComponent = () => <div>Error loading component</div>;
+
+const AdminClients = lazy(() => import('../components/admin/AdminClients').catch(() => ({ default: ErrorComponent })));
+const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals').catch(() => ({ default: ErrorComponent })));
+const AdminPackages = lazy(() => import('../components/admin/AdminPackages').catch(() => ({ default: ErrorComponent })));
+const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals').catch(() => ({ default: ErrorComponent })));
+const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage').catch(() => ({ default: ErrorComponent })));
+const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates').catch(() => ({ default: ErrorComponent })));
+const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments').catch(() => ({ default: ErrorComponent })));
+const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications').catch(() => ({ default: ErrorComponent })));
+const AdminBusiness = lazy(() => import('../components/admin/AdminBusiness').catch(() => ({ default: ErrorComponent })));
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 import DailyQuote from '../components/admin/DailyQuote';
 import ClientsByStageTable from '../components/admin/ClientsByStageTable';
