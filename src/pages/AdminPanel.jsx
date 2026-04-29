@@ -20,6 +20,7 @@ import AdminNotifications from '../components/admin/AdminNotifications';
 import AdminBusiness from '../components/admin/AdminBusiness';
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 import DailyQuote from '../components/admin/DailyQuote';
+import ClientsByStageTable from '../components/admin/ClientsByStageTable';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
@@ -301,6 +302,8 @@ export default function AdminPanel() {
           <DailyQuote />
         </div>
       </div>
+
+      <ClientsByStageTable onSelectClient={setSelectedClient} />
 
       <ClientSearchSelector
         users={users}
