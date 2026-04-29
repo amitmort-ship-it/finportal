@@ -9,7 +9,6 @@ import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import AdminClients from '../components/admin/AdminClients';
-import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminPackages from '../components/admin/AdminPackages';
 import AdminBankApprovals from '../components/admin/AdminBankApprovals';
@@ -175,7 +174,7 @@ export default function AdminPanel() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [users, setUsers] = useState([]);
   const [updatesBadgeCount, setUpdatesBadgeCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('clients');
+  const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
     const load = async () => {
@@ -312,10 +311,10 @@ export default function AdminPanel() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-9 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
+          <TabsTrigger value="home" className="text-xs md:text-sm">ראשי</TabsTrigger>
           <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
-          <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
           <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
           <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
@@ -331,15 +330,15 @@ export default function AdminPanel() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="clients">
+        <TabsContent value="home">
           <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
           <AdminNotifications selectedClient={selectedClient} />
           <AdminClients />
         </TabsContent>
 
-        <TabsContent value="document-request">
-          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
+        <TabsContent value="clients">
+          <AdminClients />
         </TabsContent>
 
         <TabsContent value="documents">

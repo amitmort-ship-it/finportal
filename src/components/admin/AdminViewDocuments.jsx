@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save } from 'lucide-react';
+import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save, Send } from 'lucide-react';
+import AdminDocumentRequest from './AdminDocumentRequest';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,6 +74,7 @@ export default function AdminViewDocuments({ selectedClient }) {
   const [users, setUsers] = useState([]);
   const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [open, setOpen] = useState(false);
+  const [requestDocsOpen, setRequestDocsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [reviewNotes, setReviewNotes] = useState({});
   const [form, setForm] = useState({
@@ -290,6 +292,21 @@ export default function AdminViewDocuments({ selectedClient }) {
             <FolderOpen className="w-4 h-4" />
             פתח תיקיית דרייב
           </Button>
+
+          <Dialog open={requestDocsOpen} onOpenChange={setRequestDocsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Send className="w-4 h-4" />
+                בקש מסמכים
+              </Button>
+            </DialogTrigger>
+            <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>בקשת מסמכים</DialogTitle>
+              </DialogHeader>
+              <AdminDocumentRequest selectedClient={selectedClient} onClientChange={() => {}} />
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
