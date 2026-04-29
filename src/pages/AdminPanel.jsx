@@ -1,20 +1,7 @@
-import { useState } from 'react';
+import { Component, Suspense, lazy, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ClientSearchFilter from '@/components/ClientSearchFilter';
-import AdminBusiness from '@/components/admin/AdminBusiness';
-import AdminClients from '@/components/admin/AdminClients';
-import AdminUpdates from '@/components/admin/AdminUpdates';
-import AdminNotifications from '@/components/admin/AdminNotifications';
-import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
-import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
-import AdminPackages from '@/components/admin/AdminPackages';
-import AdminCollaterals from '@/components/admin/AdminCollaterals';
-import AdminProcessStage from '@/components/admin/AdminProcessStage';
-import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
-import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
-import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import {
   Users,
   Bell,
@@ -25,15 +12,100 @@ import {
   ListChecks,
   LayoutDashboard,
   TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
+
+const ClientSearchFilter = lazy(() => import('@/components/ClientSearchFilter'));
+const AdminBusiness = lazy(() => import('@/components/admin/AdminBusiness'));
+const AdminClients = lazy(() => import('@/components/admin/AdminClients'));
+const AdminUpdates = lazy(() => import('@/components/admin/AdminUpdates'));
+const AdminNotifications = lazy(() => import('@/components/admin/AdminNotifications'));
+const AdminBankApprovals = lazy(() => import('@/components/admin/AdminBankApprovals'));
+const AdminViewDocuments = lazy(() => import('@/components/admin/AdminViewDocuments'));
+const AdminPackages = lazy(() => import('@/components/admin/AdminPackages'));
+const AdminCollaterals = lazy(() => import('@/components/admin/AdminCollaterals'));
+const AdminProcessStage = lazy(() => import('@/components/admin/AdminProcessStage'));
+const AdminColorPicker = lazy(() => import('@/components/admin/AdminColorPicker'));
+const ClientsByStageTable = lazy(() => import('@/components/admin/ClientsByStageTable'));
+const RefinanceMonitor = lazy(() => import('@/components/admin/RefinanceMonitor'));
+const UseAdminPaletteBridge = lazy(() =>
+  import('@/components/admin/AdminColorPicker').then((module) => ({
+    default: function AdminPaletteBridge() {
+      module.useAdminPalette();
+      return null;
+    },
+  })),
+);
+
+class SectionErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error(`Admin section failed: ${this.props.sectionName}`, error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-semibold">החלק הזה לא נטען כרגע</div>
+              <p className="mt-1 text-red-700/90">
+                יש תקלה נקודתית באזור "{this.props.sectionName}". שאר מסך האדמין ממשיך לעבוד.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function SectionLoader() {
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+      טוען...
+    </div>
+  );
+}
+
+function LazySection({ sectionName, children }) {
+  return (
+    <SectionErrorBoundary sectionName={sectionName}>
+      <Suspense fallback={<SectionLoader />}>{children}</Suspense>
+    </SectionErrorBoundary>
+  );
+}
+
+function ClientSearchBox({ onSelect }) {
+  return (
+    <div className="bg-card rounded-xl border border-border p-5">
+      <label className="text-sm font-medium">חיפוש לקוח</label>
+      <div className="mt-2">
+        <LazySection sectionName="חיפוש לקוח">
+          <ClientSearchFilter onSelect={onSelect} />
+        </LazySection>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSearch, setClientSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('clients');
-
-  useAdminPalette();
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
@@ -53,15 +125,23 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <LazySection sectionName="ערכת צבעים">
+        <UseAdminPaletteBridge />
+      </LazySection>
+
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">לוח הניהול</h1>
           <p className="text-muted-foreground mt-1">ניהול לקוחות ומעקב תהליכים</p>
         </div>
-        <AdminColorPicker />
+        <LazySection sectionName="בורר צבעים">
+          <AdminColorPicker />
+        </LazySection>
       </div>
 
-      <RefinanceMonitor />
+      <LazySection sectionName="מעקב מחזור">
+        <RefinanceMonitor />
+      </LazySection>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
@@ -77,76 +157,66 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <AdminNotifications selectedClient={selectedClient} />
-          <ClientsByStageTable onSelectClient={setSelectedClient} />
+          <LazySection sectionName="התראות">
+            <AdminNotifications selectedClient={selectedClient} />
+          </LazySection>
+          <LazySection sectionName="לקוחות לפי שלב">
+            <ClientsByStageTable onSelectClient={setSelectedClient} />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="business" className="space-y-6">
-          <AdminBusiness />
+          <LazySection sectionName="ניהול עסק">
+            <AdminBusiness />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="clients" className="space-y-6">
-          <AdminClients />
+          <LazySection sectionName="לקוחות">
+            <AdminClients />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="updates" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">חיפוש לקוח</label>
-            <div className="mt-2">
-              <ClientSearchFilter onSelect={setClientSearch} />
-            </div>
-          </div>
-          <AdminUpdates />
+          <ClientSearchBox onSelect={setClientSearch} />
+          <LazySection sectionName="עדכונים">
+            <AdminUpdates selectedClient={clientSearch || null} />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">חיפוש לקוח</label>
-            <div className="mt-2">
-              <ClientSearchFilter onSelect={setClientSearch} />
-            </div>
-          </div>
-          <AdminBankApprovals selectedClient={clientSearch || null} />
+          <ClientSearchBox onSelect={setClientSearch} />
+          <LazySection sectionName="אישורים">
+            <AdminBankApprovals selectedClient={clientSearch || null} />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">חיפוש לקוח</label>
-            <div className="mt-2">
-              <ClientSearchFilter onSelect={setClientSearch} />
-            </div>
-          </div>
-          <AdminViewDocuments selectedClient={clientSearch || null} />
+          <ClientSearchBox onSelect={setClientSearch} />
+          <LazySection sectionName="מסמכים">
+            <AdminViewDocuments selectedClient={clientSearch || null} />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="packages" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">חיפוש לקוח</label>
-            <div className="mt-2">
-              <ClientSearchFilter onSelect={setClientSearch} />
-            </div>
-          </div>
-          <AdminPackages selectedClient={clientSearch || null} />
+          <ClientSearchBox onSelect={setClientSearch} />
+          <LazySection sectionName="תמהיל">
+            <AdminPackages selectedClient={clientSearch || null} />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="collaterals" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">חיפוש לקוח</label>
-            <div className="mt-2">
-              <ClientSearchFilter onSelect={setClientSearch} />
-            </div>
-          </div>
-          <AdminCollaterals selectedClient={clientSearch || null} />
+          <ClientSearchBox onSelect={setClientSearch} />
+          <LazySection sectionName="בטחונות">
+            <AdminCollaterals selectedClient={clientSearch || null} />
+          </LazySection>
         </TabsContent>
 
         <TabsContent value="process" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">חיפוש לקוח</label>
-            <div className="mt-2">
-              <ClientSearchFilter onSelect={setClientSearch} />
-            </div>
-          </div>
-          <AdminProcessStage selectedClient={clientSearch || null} />
+          <ClientSearchBox onSelect={setClientSearch} />
+          <LazySection sectionName="שלבים">
+            <AdminProcessStage selectedClient={clientSearch || null} />
+          </LazySection>
         </TabsContent>
       </Tabs>
     </div>
