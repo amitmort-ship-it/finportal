@@ -100,17 +100,19 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
-          {tabs.map(tab => {
-            const Icon = tab.icon;
-            return (
-              <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm">
-                <Icon className="w-4 h-4 lg:mr-2" />
-                <span className="hidden lg:inline">{tab.label}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex w-max gap-0">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm whitespace-nowrap">
+                  <Icon className="w-4 h-4 lg:mr-2" />
+                  <span className="hidden lg:inline">{tab.label}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
 
         <TabsContent value="main" className="space-y-6">
           <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
