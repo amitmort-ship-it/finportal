@@ -26,29 +26,29 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+const TAB_CONFIG = [
+  { id: 'dashboard', label: 'דף ראשי', icon: LayoutDashboard },
+  { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
+  { id: 'clients', label: 'לקוחות', icon: Users },
+  { id: 'updates', label: 'עדכונים', icon: Bell },
+  { id: 'approvals', label: 'אישורים', icon: Building2 },
+  { id: 'documents', label: 'מסמכים', icon: FileText },
+  { id: 'packages', label: 'תמהיל', icon: Package },
+  { id: 'collaterals', label: 'בטחונות', icon: Lock },
+  { id: 'process', label: 'שלבים', icon: ListChecks },
+];
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSearch, setClientSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('business');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useAdminPalette();
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
-
-  const tabs = [
-    { id: 'dashboard', label: 'דף ראשי', icon: LayoutDashboard },
-    { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
-    { id: 'clients', label: 'לקוחות', icon: Users },
-    { id: 'updates', label: 'עדכונים', icon: Bell },
-    { id: 'approvals', label: 'אישורים', icon: Building2 },
-    { id: 'documents', label: 'מסמכים', icon: FileText },
-    { id: 'packages', label: 'תמהיל', icon: Package },
-    { id: 'collaterals', label: 'בטחונות', icon: Lock },
-    { id: 'process', label: 'שלבים', icon: ListChecks },
-  ];
 
   return (
     <div className="space-y-6">
@@ -64,7 +64,7 @@ export default function AdminPanel() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
-          {tabs.map(tab => {
+          {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             return (
               <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm">
