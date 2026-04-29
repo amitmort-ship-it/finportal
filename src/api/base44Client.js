@@ -5,3 +5,4 @@ export const base44 = createClient({
   headers: {
     "api_key": "7d3cf2b00047437aaabdb152f00c7023"
   }
+});
