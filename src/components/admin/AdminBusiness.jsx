@@ -17,6 +17,7 @@ import {
   Trash2,
   Repeat,
   CreditCard,
+  Power,
 } from 'lucide-react';
 import {
   BarChart,
@@ -156,10 +157,18 @@ export default function AdminBusiness() {
   };
 
   // Fixed expenses handlers
+  const handleToggleFixed = (id) => {
+    const next = fixedExpenses.map((e) =>
+      e.id === id ? { ...e, enabled: e.enabled === false ? true : false } : e
+    );
+    setFixedExpenses(next);
+    persist({ fixedExpenses: next });
+  };
+
   const handleAddFixed = () => {
     const amount = Number(String(newFixedAmount).replace(/,/g, ''));
     if (!newFixedName.trim() || !amount) return;
-    const next = [...fixedExpenses, { id: Date.now(), name: newFixedName.trim(), amount }];
+    const next = [...fixedExpenses, { id: Date.now(), name: newFixedName.trim(), amount, enabled: true }];
     setFixedExpenses(next);
     persist({ fixedExpenses: next });
     setNewFixedName('');
@@ -211,7 +220,7 @@ export default function AdminBusiness() {
   const totalNet = useMemo(() => incomeLog.reduce((s, e) => s + e.net, 0), [incomeLog]);
   const totalTax = useMemo(() => incomeLog.reduce((s, e) => s + e.tax, 0), [incomeLog]);
 
-  const monthlyFixedTotal = useMemo(() => fixedExpenses.reduce((s, e) => s + e.amount, 0), [fixedExpenses]);
+  const monthlyFixedTotal = useMemo(() => fixedExpenses.filter((e) => e.enabled !== false).reduce((s, e) => s + e.amount, 0), [fixedExpenses]);
   const activeVariableMonthly = useMemo(() =>
     variableExpenses
       .filter((e) => e.paidInstallments < e.installments)
@@ -561,17 +570,27 @@ export default function AdminBusiness() {
             {fixedExpenses.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות קבועות</p>
             )}
-            {fixedExpenses.map((e) => (
-              <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                <span className="font-medium text-foreground">{e.name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-600 font-semibold">{fmt(e.amount)}</span>
-                  <button onClick={() => handleRemoveFixed(e.id)} className="text-destructive hover:text-destructive/70">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+            {fixedExpenses.map((e) => {
+              const active = e.enabled !== false;
+              return (
+                <div key={e.id} className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm transition-opacity ${active ? 'border-border' : 'border-border opacity-50'}`}>
+                  <span className={`font-medium ${active ? 'text-foreground' : 'text-muted-foreground line-through'}`}>{e.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-semibold ${active ? 'text-red-600' : 'text-muted-foreground'}`}>{fmt(e.amount)}</span>
+                    <button
+                      onClick={() => handleToggleFixed(e.id)}
+                      title={active ? 'כבה הוצאה החודש' : 'הדלק הוצאה'}
+                      className={`transition-colors ${active ? 'text-emerald-600 hover:text-emerald-800' : 'text-muted-foreground hover:text-emerald-600'}`}
+                    >
+                      <Power className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleRemoveFixed(e.id)} className="text-destructive hover:text-destructive/70">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {fixedExpenses.length > 0 && (
             <div className="pt-1 border-t border-border text-sm font-semibold flex justify-between">
