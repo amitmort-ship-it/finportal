@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Zap, TrendingDown } from 'lucide-react';
+import { Activity, TrendingDown } from 'lucide-react';
 
 const THRESHOLD = 0.5;
 const COOLOFF_MONTHS = 12;
@@ -63,6 +63,7 @@ export default function MortgagePulse({ clientEmail }) {
   if (status === null || status === 'none') return null;
 
   return (
+    <>
     <div className="rounded-2xl border-2 p-6 mb-6" dir="rtl"
       style={status === 'opportunity'
         ? { borderColor: 'rgb(191 219 254)', backgroundColor: 'rgb(239 246 255)' }
@@ -73,7 +74,7 @@ export default function MortgagePulse({ clientEmail }) {
         {status === 'opportunity' ? (
           <TrendingDown className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
         ) : (
-          <Zap className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <Activity className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
         )}
         <div>
           {status === 'opportunity' ? (
@@ -93,5 +94,37 @@ export default function MortgagePulse({ clientEmail }) {
         </div>
       </div>
     </div>
+
+    {mortgage && (
+      <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 mt-4" dir="rtl">
+        <h3 className="font-bold text-orange-800 text-sm mb-4">המשכנתא המנוטרת</h3>
+        <div className="space-y-2 mb-4 text-sm">
+          <div className="flex justify-between"><span className="text-orange-700">בנק:</span><span className="font-medium text-orange-900">{mortgage.bank_name || '-'}</span></div>
+          <div className="flex justify-between"><span className="text-orange-700">תאריך ביצוע:</span><span className="font-medium text-orange-900">{new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</span></div>
+          <div className="flex justify-between"><span className="text-orange-700">סכום כללי:</span><span className="font-medium text-orange-900">₪{(mortgage.tracks || []).reduce((sum, t) => sum + (t.principal || 0), 0).toLocaleString()}</span></div>
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-orange-200">
+              <th className="text-right py-2 px-2 text-orange-700 font-medium">סוג מסלול</th>
+              <th className="text-right py-2 px-2 text-orange-700 font-medium">סכום</th>
+              <th className="text-right py-2 px-2 text-orange-700 font-medium">ריבית</th>
+              <th className="text-right py-2 px-2 text-orange-700 font-medium">שנים</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(mortgage.tracks || []).map((track, i) => (
+              <tr key={i} className="border-b border-orange-100 last:border-b-0">
+                <td className="text-right py-2 px-2 text-orange-900">{track.track_type}</td>
+                <td className="text-right py-2 px-2 text-orange-900">₪{(track.principal || 0).toLocaleString()}</td>
+                <td className="text-right py-2 px-2 text-orange-900">{track.interest_rate}%</td>
+                <td className="text-right py-2 px-2 text-orange-900">{track.years}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+    </>
   );
 }
