@@ -320,10 +320,12 @@ export default function DailyQuote() {
   const quote = getDailyQuote();
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-6 flex flex-col justify-center space-y-3">
-      <div className="text-indigo-400 text-3xl leading-none">"</div>
-      <p className="text-foreground font-medium text-base leading-relaxed">{quote.text}</p>
-      <p className="text-sm text-indigo-500 font-semibold">— {quote.author}</p>
+    <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border border-indigo-100 rounded-xl px-8 py-5 flex items-center gap-6">
+      <div className="text-indigo-300 text-6xl leading-none font-serif shrink-0">"</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-foreground font-medium text-lg leading-relaxed">{quote.text}</p>
+        <p className="text-sm text-indigo-500 font-semibold mt-2">— {quote.author}</p>
+      </div>
     </div>
   );
 }
