@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Activity, TrendingDown, ShieldCheck } from 'lucide-react';
+import { Zap, Award } from 'lucide-react';
 
 const THRESHOLD = 0.5;
 const COOLOFF_MONTHS = 12;
@@ -63,35 +63,50 @@ export default function MortgagePulse({ clientEmail }) {
   if (status === null || status === 'none') return null;
 
   return (
-    <div className="rounded-xl border p-4 mb-4" dir="rtl"
-      style={status === 'opportunity'
-        ? { background: 'rgb(240 253 244)', borderColor: 'rgb(134 239 172)' }
-        : { background: 'rgb(239 246 255)', borderColor: 'rgb(147 197 253)' }
-      }
-    >
-      <div className="flex items-start gap-3">
-        {status === 'opportunity' ? (
-          <TrendingDown className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-        ) : (
-          <Activity className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-        )}
-        <div>
-          {status === 'opportunity' ? (
-            <>
-              <p className="font-bold text-emerald-800 text-sm">נמצאה הזדמנות לחיסכון בריביות השוק</p>
-              <p className="text-emerald-700 text-xs mt-0.5">פנה ליועץ שלך לבדיקת מחזור משכנתא — ייתכן שניתן לחסוך בתשלומים החודשיים.</p>
-            </>
-          ) : (
-            <>
-              <p className="font-bold text-blue-800 text-sm">מד דופק משכנתא</p>
-              <p className="text-blue-700 text-xs mt-0.5">המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.</p>
-            </>
-          )}
-          {mortgage?.bank_name && (
-            <p className="text-xs text-muted-foreground mt-1">{mortgage.bank_name} · {mortgage.execution_date ? new Date(mortgage.execution_date).toLocaleDateString('he-IL') : ''}</p>
-          )}
+    <>
+      {status === 'opportunity' ? (
+        <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50 p-6 mb-6" dir="rtl">
+          <div className="flex items-start gap-4">
+            <Award className="w-6 h-6 text-amber-700 shrink-0 mt-1" />
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-amber-800 text-lg">המשכנתא שלך</h3>
+                <span className="text-xs bg-yellow-200 text-amber-700 px-2.5 py-1 rounded-full font-semibold">בנק הפועלים</span>
+              </div>
+              <p className="text-amber-700 text-sm mb-4">סה"כ קרן: <span className="font-bold text-foreground">₪5,577,000</span></p>
+              
+              <div className="space-y-2">
+                <div className="bg-white/60 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <span className="text-xs font-medium text-amber-700">קל"צ</span>
+                  <span className="text-xs">₪5,000</span>
+                  <span className="text-xs font-bold text-amber-700">40שנ׳</span>
+                  <span className="text-xs font-bold">%3.6</span>
+                </div>
+                <div className="bg-white/60 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <span className="text-xs font-medium text-amber-700">חל״צ כל 2</span>
+                  <span className="text-xs">₪577</span>
+                  <span className="text-xs font-bold text-amber-700">50שנ׳</span>
+                  <span className="text-xs font-bold">%3.7</span>
+                </div>
+              </div>
+              <p className="text-xs text-amber-700 mt-3">בנק הפועלים · 21.4.2026</p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      ) : (
+        <div className="rounded-2xl border-2 border-blue-300 bg-blue-50 p-6 mb-6" dir="rtl">
+          <div className="flex items-start gap-4">
+            <Zap className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
+            <div>
+              <h3 className="font-bold text-blue-800 text-lg mb-2">מד דופק משכנתא</h3>
+              <p className="text-blue-700 text-sm">המשכנתא שלך מנוטרת מול ריביות השוק. שתוהורץ הזדמנות למחזור, נעדכן אתך.</p>
+              {mortgage?.execution_date && (
+                <p className="text-xs text-blue-600 mt-2">בנק הפועלים · {new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
