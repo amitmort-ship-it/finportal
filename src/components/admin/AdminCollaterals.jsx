@@ -195,7 +195,7 @@ export default function AdminCollaterals({ selectedClient }) {
                   ) : items.map(c => {
                     const sc = statusConfig[c.status] || statusConfig.pending;
                     return (
-                      <div key={c.id} className="bg-white rounded-lg border border-border p-3 space-y-2 shadow-sm" dir="rtl">
+                      <div key={c.id} className="bg-white rounded-lg border border-border p-4 space-y-2.5 shadow-md" dir="rtl">
                         <div className="flex items-start justify-between gap-1">
                           <span className="font-semibold text-sm leading-snug">{c.title}</span>
                           <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${sc.color}`}>{sc.label}</span>

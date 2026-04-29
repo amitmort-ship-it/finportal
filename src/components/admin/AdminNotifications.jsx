@@ -218,21 +218,21 @@ export default function AdminNotifications({ selectedClient }) {
             const clientLabel = clientNames[clientKey] || notification.clientEmail || 'לא ידוע';
 
             return (
-              <div key={notification.id} className={`rounded-xl border p-4 ${styles.card}`}>
+              <div key={notification.id} className={`rounded-xl border shadow-sm p-5 ${styles.card}`} dir="rtl">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className={`rounded-full p-2 shrink-0 ${styles.iconWrap}`}>
+                    <div className={`rounded-full p-2.5 shrink-0 ${styles.iconWrap}`}>
                       <Icon className={`w-4 h-4 ${styles.icon}`} />
                     </div>
-                    <div className="min-w-0">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium mb-2 ${styles.badge}`}>
-                        {styles.label}
-                      </span>
-                      <div className="text-xs font-medium text-muted-foreground mb-1">
-                        תיק לקוח: {clientLabel}
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${styles.badge}`}>
+                          {styles.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">תיק: <span className="font-medium text-foreground">{clientLabel}</span></span>
                       </div>
-                      <p className="text-sm text-foreground dark:text-slate-100 break-words">{notification.message}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-sm text-foreground dark:text-slate-100 break-words leading-relaxed">{notification.message}</p>
+                      <p className="text-xs text-muted-foreground">
                         {notification.createdAt
                           ? format(new Date(notification.createdAt), 'dd.MM.yyyy HH:mm', { locale: he })
                           : ''}

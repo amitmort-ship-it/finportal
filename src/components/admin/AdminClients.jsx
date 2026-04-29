@@ -336,7 +336,7 @@ export default function AdminClients() {
           {clients.map((client) => (
             <div
               key={client.id}
-              className="bg-card rounded-xl border border-border p-4 flex items-center justify-between gap-4"
+              className="bg-card rounded-xl border border-border shadow-sm p-5 flex items-center justify-between gap-4"
             >
               <div className="flex-1 min-w-0">
                 {editingId === client.id ? (

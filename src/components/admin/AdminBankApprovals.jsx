@@ -486,7 +486,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       ) : (
         <div className="space-y-3">
           {approvals.map(a => (
-            <div key={a.id} className="bg-card rounded-xl border border-border p-4">
+            <div key={a.id} className="bg-card rounded-xl border border-border shadow-sm p-5">
               {editingId === a.id ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
