@@ -22,10 +22,10 @@ export default function JoinCasePage() {
         await base44.functions.invoke('acceptCaseInvite', { token });
         await refreshCaseAccess();
         setStatus('success');
-        toast.success('You have joined the shared mortgage case');
+        toast.success('הצטרפת בהצלחה לתיק המשכנתא המשותף');
       } catch (error) {
         setStatus('error');
-        toast.error(error.message || 'Failed to join the case');
+        toast.error(error.message || 'לא הצלחנו לצרף אותך לתיק');
       }
     };
 
@@ -33,41 +33,30 @@ export default function JoinCasePage() {
   }, [token, user?.email]);
 
   if (!token) {
-    return <div className="text-center py-12 text-muted-foreground">Missing invite token.</div>;
+    return <div className="text-center py-12 text-muted-foreground">קישור ההזמנה אינו תקין או שחסר בו מזהה הזמנה.</div>;
   }
 
   if (!user?.email) {
     return (
-      <div className="max-w-md mx-auto py-16 text-center space-y-4">
-        <h1 className="text-2xl font-bold text-foreground">Join Shared Case</h1>
-        <p className="text-muted-foreground">
-          Log in or sign up with the invited email address to join the mortgage case.
-        </p>
-        <Button onClick={navigateToLogin}>Continue to login</Button>
+      <div dir="rtl" className="max-w-md mx-auto py-16 text-center space-y-4">
+        <h1 className="text-2xl font-bold text-foreground">הצטרפות לתיק משותף</h1>
+        <p className="text-muted-foreground">יש להתחבר או להירשם עם כתובת המייל שאליה נשלחה ההזמנה כדי להצטרף לתיק.</p>
+        <Button onClick={navigateToLogin}>מעבר להתחברות</Button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto py-16 text-center space-y-4">
-      <h1 className="text-2xl font-bold text-foreground">Join Shared Case</h1>
-
-      {status === 'loading' ? (
-        <p className="text-muted-foreground">Connecting you to the shared mortgage case...</p>
-      ) : null}
-
+    <div dir="rtl" className="max-w-md mx-auto py-16 text-center space-y-4">
+      <h1 className="text-2xl font-bold text-foreground">הצטרפות לתיק משותף</h1>
+      {status === 'loading' ? <p className="text-muted-foreground">מחברים אותך עכשיו לתיק המשכנתא המשותף...</p> : null}
       {status === 'success' ? (
         <>
-          <p className="text-muted-foreground">Your access was added successfully.</p>
-          <Button asChild>
-            <Link to="/">Go to dashboard</Link>
-          </Button>
+          <p className="text-muted-foreground">הגישה נוספה בהצלחה.</p>
+          <Button asChild><Link to="/">מעבר למסך הראשי</Link></Button>
         </>
       ) : null}
-
-      {status === 'error' ? (
-        <p className="text-destructive">We could not verify this invite for your account.</p>
-      ) : null}
+      {status === 'error' ? <p className="text-destructive">לא הצלחנו לאמת את ההזמנה עבור החשבון הזה.</p> : null}
     </div>
   );
 }
