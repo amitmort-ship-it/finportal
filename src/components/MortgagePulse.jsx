@@ -64,35 +64,23 @@ export default function MortgagePulse({ clientEmail }) {
 
   return (
     <>
-    <div className="rounded-2xl border-2 p-6 mb-6" dir="rtl"
-      style={status === 'opportunity'
-        ? { borderColor: 'rgb(191 219 254)', backgroundColor: 'rgb(239 246 255)' }
-        : { borderColor: 'rgb(191 219 254)', backgroundColor: 'rgb(239 246 255)' }
-      }
-    >
-      <div className="flex items-start gap-3">
-        {status === 'opportunity' ? (
-          <TrendingDown className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-        ) : (
-          <Activity className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-        )}
-        <div>
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 mb-6" dir="rtl">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
           {status === 'opportunity' ? (
-            <>
-              <p className="font-bold text-blue-800 text-sm">נמצאה הזדמנות למחזור משכנתא</p>
-              <p className="text-blue-700 text-xs mt-0.5">המשכנתא שלך משתוררת מול ריביות השוק. פנה ליועץ לבדיקת חיסכון בתשלומים חודשיים.</p>
-            </>
+            <p className="text-sm text-blue-800">המשכנתא שלך משתוררת מול ריביות השוק. שנערך בשיטוציה הדומה להחזור. למידע נוסף התקשר.</p>
           ) : (
-            <>
-              <p className="font-bold text-blue-800 text-sm">מד דופק משכנתא</p>
-              <p className="text-blue-700 text-xs mt-0.5">המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.</p>
-            </>
-          )}
-          {mortgage?.execution_date && (
-            <p className="text-xs text-muted-foreground mt-1">{mortgage.bank_name || ''} · {new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</p>
+            <p className="text-sm text-blue-800">המשכנתא שלך משתוררת מול ריביות השוק. שנערך בשיטוציה הדומה להחזור. למידע נוסף התקשר.</p>
           )}
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="font-bold text-blue-700 text-sm">מד דופק משכנתא</span>
+          <Activity className="w-5 h-5 text-blue-600" />
+        </div>
       </div>
+      {mortgage?.execution_date && (
+        <p className="text-xs text-blue-600 mt-2 text-right">בנק הפועלים · {new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</p>
+      )}
     </div>
 
     {mortgage && (
