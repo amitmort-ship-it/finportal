@@ -17,7 +17,7 @@ function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
 }
 
-export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal }) {
+export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, variableExpenses, activeVariableMonthly }) {
   const [open, setOpen] = useState(true);
   const [catInputs, setCatInputs] = useState(
     Object.fromEntries(INCOME_CATEGORIES.map((c) => [c, '']))
@@ -30,7 +30,8 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal }) {
 
   const tax   = totalGross * TAX_BUFFER_RATE;
   const net   = totalGross - tax;
-  const afterExpenses = net - monthlyFixedTotal;
+  const totalExpenses = monthlyFixedTotal + (activeVariableMonthly || 0);
+  const afterExpenses = net - totalExpenses;
   const isPositive = afterExpenses >= 0;
 
   return (
@@ -43,7 +44,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal }) {
         <div className="flex items-center gap-2">
           <Calculator className="w-4 h-4 text-primary" />
           <h3 className="font-bold text-foreground">סימולציית חודש</h3>
-          <span className="text-xs text-muted-foreground">כמה ישאר לי אחרי מיסים והוצאות קבועות?</span>
+          <span className="text-xs text-muted-foreground">כמה ישאר לי אחרי מיסים, הוצאות קבועות ומשתנות?</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -89,24 +90,40 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal }) {
                   <p className="font-bold text-lg text-blue-600">{fmt(net)}</p>
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">אחרי הוצאות קבועות ({fmt(monthlyFixedTotal)})</p>
+                  <p className="text-xs text-muted-foreground">אחרי הוצאות ({fmt(totalExpenses)})</p>
                   <p className={`font-bold text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
                     {isPositive ? '' : '-'}{fmt(Math.abs(afterExpenses))}
                   </p>
                 </div>
               </div>
 
-              {/* Fixed expenses breakdown */}
-              {fixedExpenses.length > 0 && (
-                <div className="pt-3 border-t border-border">
-                  <p className="text-xs text-muted-foreground mb-2">הוצאות קבועות שנלקחות בחשבון:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {fixedExpenses.map((e) => (
-                      <span key={e.id} className="text-xs bg-red-50 border border-red-200 text-red-700 px-2 py-0.5 rounded-full">
-                        {e.name}: {fmt(e.amount)}
-                      </span>
-                    ))}
-                  </div>
+              {/* Expenses breakdown */}
+              {(fixedExpenses?.length > 0 || variableExpenses?.some(e => e.paidInstallments < e.installments)) && (
+                <div className="pt-3 border-t border-border space-y-2">
+                  {fixedExpenses?.filter(e => e.enabled !== false).length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1.5">הוצאות קבועות פעילות:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {fixedExpenses.filter(e => e.enabled !== false).map((e) => (
+                          <span key={e.id} className="text-xs bg-red-50 border border-red-200 text-red-700 px-2 py-0.5 rounded-full">
+                            {e.name}: {fmt(e.amount)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {variableExpenses?.filter(e => e.paidInstallments < e.installments).length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1.5">הוצאות משתנות פעילות:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {variableExpenses.filter(e => e.paidInstallments < e.installments).map((e) => (
+                          <span key={e.id} className="text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded-full">
+                            {e.name}: {fmt(e.installmentAmount)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

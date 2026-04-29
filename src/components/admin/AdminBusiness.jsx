@@ -691,7 +691,7 @@ export default function AdminBusiness() {
       </div>
 
       {/* === SIMULATION === */}
-      <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} />
+      <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} />
 
       {/* === INCOME LOG === */}
       {incomeLog.length > 0 && (
