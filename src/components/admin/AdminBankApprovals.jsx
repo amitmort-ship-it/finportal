@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Building2, Trash2, Upload, Loader2, Edit2, Check, X, Download, Trophy } from 'lucide-react';
+import { Plus, Building2, Trash2, Upload, Loader2, Edit2, Check, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import AdminFinalMortgage from './AdminFinalMortgage';
 import ApprovalsComparisonTable from '@/components/ApprovalsComparisonTable';
 import {
   attachApprovalMetadataToNotes,
@@ -85,7 +84,6 @@ export default function AdminBankApprovals({ selectedClient }) {
     publish_to_client: false,
   });
   const [savingInsights, setSavingInsights] = useState(false);
-  const [showFinalMortgage, setShowFinalMortgage] = useState(false);
 
   const load = async () => {
     const [data, clientRes] = await Promise.all([
@@ -483,35 +481,12 @@ export default function AdminBankApprovals({ selectedClient }) {
         </div>
       )}
 
-      <div className="my-6">
-        <button
-          type="button"
-          onClick={() => setShowFinalMortgage(v => !v)}
-          className="w-full flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/60 hover:bg-amber-50 px-5 py-4 transition-all"
-          dir="rtl"
-        >
-          <div className="flex items-center gap-3">
-            <Trophy className="w-5 h-5 text-amber-600" />
-            <div className="text-right">
-              <div className="font-semibold text-amber-800">משכנתא בוצעה — הצעה זוכה</div>
-              <div className="text-xs text-amber-600 mt-0.5">לחץ להזנת פרטי ההצעה שנבחרה</div>
-            </div>
-          </div>
-          <span className="text-amber-500 text-lg">{showFinalMortgage ? '▲' : '▼'}</span>
-        </button>
-        {showFinalMortgage && (
-          <div className="mt-4 border border-amber-200 rounded-xl p-4 bg-amber-50/30">
-            <AdminFinalMortgage selectedClient={selectedClient} />
-          </div>
-        )}
-      </div>
-
       {approvals.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">אין אישורי בנקים</div>
       ) : (
         <div className="space-y-3">
           {approvals.map(a => (
-            <div key={a.id} className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <div key={a.id} className="bg-card rounded-xl border border-border p-4">
               {editingId === a.id ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
