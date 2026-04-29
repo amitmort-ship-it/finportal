@@ -80,11 +80,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Mortgage Forecast Alert */}
+      {/* Mortgage Pulse Alert */}
       <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900/50">
         <CardContent className="pt-6">
           <p className="text-sm text-blue-900 dark:text-blue-200">
-            <span className="font-semibold">מדווח משכנתא:</span> המשכנתא שלך תוקצתה בבנק הנבחר. כל המסמכים דרושים וההזמנות על הדרך למחזור שוטף להשוואה.
+            <span className="font-semibold">מד דופק משכנתא:</span> המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.
           </p>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
         </CardContent>
