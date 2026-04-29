@@ -12,25 +12,15 @@ import { Suspense, lazy } from 'react';
 
 const ErrorFallback = ({ message }) => <div className="text-red-500 p-4">{message}</div>;
 
-const createLazyComponent = (path, errorMessage) =>
-  lazy(() =>
-    import(path)
-      .then(module => ({ default: module.default }))
-      .catch(err => {
-        console.error(`Failed to load ${path}:`, err);
-        return { default: () => <ErrorFallback message={errorMessage} /> };
-      })
-  );
-
-const AdminClients = createLazyComponent('../components/admin/AdminClients', 'שגיאה בטעינת מנהל הלקוחות');
-const AdminCollaterals = createLazyComponent('../components/admin/AdminCollaterals', 'שגיאה בטעינת בטחונות');
-const AdminPackages = createLazyComponent('../components/admin/AdminPackages', 'שגיאה בטעינת תמהיל');
-const AdminBankApprovals = createLazyComponent('../components/admin/AdminBankApprovals', 'שגיאה בטעינת אישורים');
-const AdminProcessStage = createLazyComponent('../components/admin/AdminProcessStage', 'שגיאה בטעינת שלב');
-const AdminUpdates = createLazyComponent('../components/admin/AdminUpdates', 'שגיאה בטעינת עדכונים');
-const AdminViewDocuments = createLazyComponent('../components/admin/AdminViewDocuments', 'שגיאה בטעינת מסמכים');
-const AdminNotifications = createLazyComponent('../components/admin/AdminNotifications', 'שגיאה בטעינת התראות');
-const AdminBusiness = createLazyComponent('../components/admin/AdminBusiness', 'שגיאה בטעינת ניהול עסק');
+const AdminClients = lazy(() => import('../components/admin/AdminClients'));
+const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals'));
+const AdminPackages = lazy(() => import('../components/admin/AdminPackages'));
+const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals'));
+const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage'));
+const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates'));
+const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments'));
+const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications'));
+const AdminBusiness = lazy(() => import('../components/admin/AdminBusiness'));
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 import DailyQuote from '../components/admin/DailyQuote';
 import ClientsByStageTable from '../components/admin/ClientsByStageTable';
