@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import ProcessTracker from '../components/ProcessTracker';
 import ClientUpdates from '../components/ClientUpdates';
 import MortgagePulse from '../components/MortgagePulse';
+import FinalMortgageDetails from '../components/FinalMortgageDetails';
 import { Building2, Shield, Package, FileText, AlertTriangle } from 'lucide-react';
 
 export default function Dashboard() {
@@ -108,6 +109,7 @@ export default function Dashboard() {
       ) : null}
 
       <MortgagePulse clientEmail={caseEmail} />
+      <FinalMortgageDetails clientEmail={caseEmail} />
 
       <div className="grid md:grid-cols-2 gap-4">
         <ProcessTracker
