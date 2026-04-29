@@ -64,7 +64,6 @@ export default function AdminPanel() {
   const tabs = [
     { id: 'main', label: 'ראשי', icon: Home },
     { id: 'clients', label: 'לקוחות', icon: Users },
-    { id: 'notifications', label: 'הודעות', icon: Bell },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
     { id: 'documents', label: 'מסמכים', icon: FileText },
     { id: 'packages', label: 'תמהיל', icon: Package },
@@ -134,12 +133,7 @@ export default function AdminPanel() {
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminNotifications selectedClient={selectedClient} />
-            <ClientsByStageTable onSelectClient={setSelectedClient} />
-          </Suspense>
-        </TabsContent>
+
 
         <TabsContent value="approvals" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
