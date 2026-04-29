@@ -1,17 +1,18 @@
-import { useState, Suspense } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AdminClients from '@/components/admin/AdminClients';
-import AdminNotifications from '@/components/admin/AdminNotifications';
-import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
-import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
-import AdminPackages from '@/components/admin/AdminPackages';
-import AdminCollaterals from '@/components/admin/AdminCollaterals';
-import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
-import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
-import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
+
+const AdminClients = lazy(() => import('@/components/admin/AdminClients'));
+const AdminNotifications = lazy(() => import('@/components/admin/AdminNotifications'));
+const AdminBankApprovals = lazy(() => import('@/components/admin/AdminBankApprovals'));
+const AdminViewDocuments = lazy(() => import('@/components/admin/AdminViewDocuments'));
+const AdminPackages = lazy(() => import('@/components/admin/AdminPackages'));
+const AdminCollaterals = lazy(() => import('@/components/admin/AdminCollaterals'));
+const AdminProcessStage = lazy(() => import('@/components/admin/AdminProcessStage'));
+const ClientsByStageTable = lazy(() => import('@/components/admin/ClientsByStageTable'));
+const RefinanceMonitor = lazy(() => import('@/components/admin/RefinanceMonitor'));
 import {
   Users,
   Bell,
