@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save, Send } from 'lucide-react';
-import AdminDocumentRequest from './AdminDocumentRequest';
+import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,7 +73,6 @@ export default function AdminViewDocuments({ selectedClient }) {
   const [users, setUsers] = useState([]);
   const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [open, setOpen] = useState(false);
-  const [requestDocsOpen, setRequestDocsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [reviewNotes, setReviewNotes] = useState({});
   const [form, setForm] = useState({
@@ -93,9 +91,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       const [data, clientRes, driveFolders] = await Promise.all([
         base44.entities.FileRequest.filter({}, '-created_date'),
-        users.length > 0
-          ? Promise.resolve({ data: { profiles: users } })
-          : base44.functions.invoke('getAllClients', {}),
+        users.length > 0 ? Promise.resolve({ data: { profiles: users } }) : base44.functions.invoke('getAllClients', {}),
         normalizedSelectedClient
           ? base44.entities.DriveFolder.filter({ client_email: normalizedSelectedClient })
           : Promise.resolve([]),
@@ -184,6 +180,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
           const drivePayload = driveRes?.data || driveRes;
           driveResults.push(drivePayload);
+          console.log('uploadToDrive result', drivePayload);
 
           return {
             file_url,
@@ -204,6 +201,8 @@ export default function AdminViewDocuments({ selectedClient }) {
         status: 'uploaded',
         uploaded_files: uploadedFiles,
       });
+
+      console.log('uploadToDrive summary', driveResults);
 
       const firstDriveResult = driveResults[0];
       if (firstDriveResult?.folder_url) {
@@ -245,7 +244,6 @@ export default function AdminViewDocuments({ selectedClient }) {
       status,
       description: mergeDescriptionAndReviewNotes(parsedContent.description, reviewNotes[id] || ''),
     });
-
     applyRequestUpdateLocally(updatedRequest);
     toast.success('סטטוס המסמך עודכן');
   };
@@ -257,7 +255,6 @@ export default function AdminViewDocuments({ selectedClient }) {
     const updatedRequest = await base44.entities.FileRequest.update(id, {
       description: mergeDescriptionAndReviewNotes(parsedContent.description, reviewNotes[id] || ''),
     });
-
     applyRequestUpdateLocally(updatedRequest);
     toast.success('ההערה נשמרה');
   };
@@ -289,21 +286,6 @@ export default function AdminViewDocuments({ selectedClient }) {
             <FolderOpen className="w-4 h-4" />
             פתח תיקיית דרייב
           </Button>
-
-          <Dialog open={requestDocsOpen} onOpenChange={setRequestDocsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Send className="w-4 h-4" />
-                בקש מסמכים
-              </Button>
-            </DialogTrigger>
-            <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>בקשת מסמכים</DialogTitle>
-              </DialogHeader>
-              <AdminDocumentRequest selectedClient={selectedClient} onClientChange={() => {}} />
-            </DialogContent>
-          </Dialog>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -400,14 +382,7 @@ export default function AdminViewDocuments({ selectedClient }) {
                   disabled={uploading || !form.client_email || !form.files.length}
                   className="w-full gap-2"
                 >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      מעלה...
-                    </>
-                  ) : (
-                    'העלה מסמכים'
-                  )}
+                  {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />מעלה...</> : 'העלה מסמכים'}
                 </Button>
               </div>
             </DialogContent>
@@ -421,110 +396,99 @@ export default function AdminViewDocuments({ selectedClient }) {
         </div>
       ) : (
         <div className="space-y-4">
-          {requests.map((req) => {
-            const parsedContent = splitDescriptionAndReviewNotes(req);
-            return (
-              <div key={req.id} className="bg-card rounded-xl border border-border p-4">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div>
-                    <div className="font-semibold">{req.title}</div>
-                    <div className="text-sm text-muted-foreground">{req.client_email}</div>
-                    {parsedContent.description ? (
-                      <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</div>
-                    ) : null}
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                      req.status === 'uploaded'
-                        ? 'bg-blue-50 text-blue-600'
-                        : req.status === 'approved'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : req.status === 'rejected'
-                            ? 'bg-red-50 text-red-600'
-                            : 'bg-amber-50 text-amber-600'
-                    }`}
-                  >
-                    {req.status === 'pending'
-                      ? 'ממתין'
-                      : req.status === 'uploaded'
-                        ? 'התקבל וממתין לבדיקה'
-                        : req.status === 'approved'
-                          ? 'אושר כתקין'
-                          : 'נדרש תיקון / מסמך חדש'}
-                  </span>
-                </div>
+          {requests.map((req) => (
+            <div key={req.id} className="bg-card rounded-xl border border-border p-4">
+              {(() => {
+                const parsedContent = splitDescriptionAndReviewNotes(req);
 
-                {req.uploaded_files && req.uploaded_files.length > 0 ? (
-                  <div className="space-y-2">
-                    {req.uploaded_files.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50">
-                        <Download className="w-4 h-4 text-primary shrink-0" />
-                        <a
-                          href={file.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-primary hover:underline flex-1"
-                        >
-                          {file.file_name}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="mt-4 space-y-2">
-                  <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
-                    הערה פנימית / הערה ללקוח
-                  </Label>
-                  <Textarea
-                    id={`admin-view-note-${req.id}`}
-                    value={reviewNotes[req.id] || ''}
-                    onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                    placeholder="למשל: חסר ספח, התמונה מטושטשת, נא להעלות מחדש צילום ברור..."
-                    className="min-h-24"
-                  />
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2">
-                      <Save className="w-4 h-4" />
-                      שמור הערה
-                    </Button>
-
-                    {req.status === 'uploaded' || req.status === 'rejected' ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => handleStatusUpdate(req.id, 'approved')}
-                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        אשר כתקין
-                      </Button>
-                    ) : null}
-
-                    {req.status === 'uploaded' || req.status === 'approved' ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleStatusUpdate(req.id, 'rejected')}
-                        className="gap-2"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        סמן כלא תקין
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  {parsedContent.reviewNotes ? (
-                    <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
-                      <span className="font-medium text-foreground">הערת בדיקה:</span> {parsedContent.reviewNotes}
-                    </div>
+                return (
+                  <>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <div className="font-semibold">{req.title}</div>
+                  <div className="text-sm text-muted-foreground">{req.client_email}</div>
+                  {parsedContent.description ? (
+                    <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</div>
                   ) : null}
                 </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                  req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
+                  req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                  req.status === 'rejected' ? 'bg-red-50 text-red-600' :
+                  'bg-amber-50 text-amber-600'
+                }`}>
+                  {req.status === 'pending'
+                    ? 'ממתין'
+                    : req.status === 'uploaded'
+                      ? 'התקבל וממתין לבדיקה'
+                      : req.status === 'approved'
+                        ? 'אושר כתקין'
+                        : 'נדרש תיקון / מסמך חדש'}
+                </span>
               </div>
-            );
-          })}
+
+              {req.uploaded_files && req.uploaded_files.length > 0 ? (
+                <div className="space-y-2">
+                  {req.uploaded_files.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50">
+                      <Download className="w-4 h-4 text-primary shrink-0" />
+                      <a
+                        href={file.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-primary hover:underline flex-1"
+                      >
+                        {file.file_name}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mt-4 space-y-2">
+                <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
+                  הערה פנימית / הערה ללקוח
+                </Label>
+                <Textarea
+                  id={`admin-view-note-${req.id}`}
+                  value={reviewNotes[req.id] || ''}
+                  onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                  placeholder="למשל: חסר ספח, התמונה מטושטשת, נא להעלות מחדש צילום ברור..."
+                  className="min-h-24"
+                />
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2">
+                    <Save className="w-4 h-4" />
+                    שמור הערה
+                  </Button>
+
+                  {req.status === 'uploaded' || req.status === 'rejected' ? (
+                    <Button type="button" size="sm" onClick={() => handleStatusUpdate(req.id, 'approved')} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      אשר כתקין
+                    </Button>
+                  ) : null}
+
+                  {req.status === 'uploaded' || req.status === 'approved' ? (
+                    <Button type="button" size="sm" variant="destructive" onClick={() => handleStatusUpdate(req.id, 'rejected')} className="gap-2">
+                      <XCircle className="w-4 h-4" />
+                      סמן כלא תקין
+                    </Button>
+                  ) : null}
+                </div>
+
+                {parsedContent.reviewNotes ? (
+                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
+                    <span className="font-medium text-foreground">הערת בדיקה:</span> {parsedContent.reviewNotes}
+                  </div>
+                ) : null}
+              </div>
+                  </>
+                );
+              })()}
+            </div>
+          ))}
         </div>
       )}
     </div>
