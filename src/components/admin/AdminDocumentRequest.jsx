@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { FileText, Plus, Send } from 'lucide-react';
+import { FileText, Plus, Send, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CATEGORIES = {
@@ -81,9 +81,20 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
 
   return (
     <div className="bg-card rounded-xl border border-border p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <FileText className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-bold">בקשת מסמכים</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-bold">בקשת מסמכים</h2>
+        </div>
+        <a
+          href="https://media.base44.com/files/public/69c2ce93ab0a8ed34c65a4a8/641a7c040_.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium transition-colors"
+        >
+          <ExternalLink className="w-4 h-4" />
+          דף מאסטר
+        </a>
       </div>
 
       {!selectedUser ? (
