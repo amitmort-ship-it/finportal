@@ -99,15 +99,15 @@ export default function MortgagePulse({ clientEmail }) {
       <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 mt-4" dir="rtl">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <div className="text-xs text-yellow-600 mb-1">{new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</div>
-            <div className="font-bold text-right text-yellow-800">המשכנתא שלך</div>
+            <div className="text-xs text-yellow-600 mb-2">{new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</div>
+            <div className="inline-block bg-yellow-200 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded">{mortgage.bank_name || 'בנק'}</div>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-2 mb-1">
-              <Award className="w-4 h-4 text-yellow-600" />
-              <div className="inline-block bg-yellow-200 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded">{mortgage.bank_name || 'בנק'}</div>
+              <span className="font-bold text-xl text-yellow-800">המשכנתא שלך</span>
+              <Award className="w-5 h-5 text-yellow-600" />
             </div>
-            <div className="text-xs text-yellow-700">סה"כ קרן: ₪{(mortgage.tracks || []).reduce((sum, t) => sum + (t.principal || 0), 0).toLocaleString()}</div>
+            <div className="text-sm text-yellow-700 font-semibold">סה"כ קרן: ₪{(mortgage.tracks || []).reduce((sum, t) => sum + (t.principal || 0), 0).toLocaleString()}</div>
           </div>
         </div>
         <div className="space-y-2">
