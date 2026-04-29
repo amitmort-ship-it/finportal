@@ -19,6 +19,7 @@ import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 import AdminNotifications from '../components/admin/AdminNotifications';
 import AdminBusiness from '../components/admin/AdminBusiness';
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
+import DailyQuote from '../components/admin/DailyQuote';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
@@ -252,8 +253,9 @@ export default function AdminPanel() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
           <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
-          <div className="mt-3">
+          <div className="mt-3 space-y-3">
             <AdminColorPicker />
+            <DailyQuote />
           </div>
         </div>
 

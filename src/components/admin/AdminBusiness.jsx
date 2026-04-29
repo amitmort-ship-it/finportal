@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import SimulationPanel from './SimulationPanel';
-import DailyQuote from './DailyQuote';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -376,8 +375,7 @@ export default function AdminBusiness() {
         />
       </div>
 
-      {/* === DAILY QUOTE === */}
-      <DailyQuote />
+
 
       {/* === INPUT ROW === */}
       <div className="grid md:grid-cols-3 gap-4">
