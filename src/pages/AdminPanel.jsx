@@ -20,7 +20,6 @@ import {
   Package,
   Lock,
   ListChecks,
-  TrendingDown,
 } from 'lucide-react';
 
 export default function AdminPanel() {
@@ -75,7 +74,7 @@ export default function AdminPanel() {
 
         <TabsContent value="notifications" className="space-y-6">
           <AdminNotifications selectedClient={selectedClient} />
-          <ClientsByStageTable onSelectClient={setSelectedClient} />
+          <ClientsByStageTable />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
