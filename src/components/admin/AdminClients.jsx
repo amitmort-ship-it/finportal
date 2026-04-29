@@ -49,38 +49,13 @@ export default function AdminClients() {
       let memberships = [];
       let invites = [];
 
-      try {
-        if (base44.entities.CaseUser) {
-          memberships = await base44.entities.CaseUser.filter({}, '-created_date');
-        }
-      } catch {
-        memberships = [];
-      }
-
-      try {
-        if (base44.entities.CaseInvite) {
-          invites = await base44.entities.CaseInvite.filter({}, '-created_date');
-        }
-      } catch {
-        invites = [];
-      }
-
-      const clientsWithMeta = profiles.map((profile) => {
-        const activeMembers = memberships.filter(
-          (item) => item.case_profile_id === profile.id && item.status === 'active',
-        );
-        const pendingInvites = invites.filter(
-          (item) => item.case_profile_id === profile.id && item.status === 'pending',
-        );
-
-        return {
-          ...profile,
-          members: activeMembers,
-          pending_invites: pendingInvites,
-          member_count: 1 + activeMembers.length,
-          pending_invite_count: pendingInvites.length,
-        };
-      });
+      const clientsWithMeta = profiles.map((profile) => ({
+        ...profile,
+        members: [],
+        pending_invites: [],
+        member_count: 1,
+        pending_invite_count: 0,
+      }));
 
       setClients(clientsWithMeta);
     } catch (error) {
