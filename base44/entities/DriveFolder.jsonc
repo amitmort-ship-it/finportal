@@ -1,0 +1,49 @@
+{
+  "name": "DriveFolder",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string"
+    },
+    "folder_id": {
+      "type": "string",
+      "description": "Google Drive main folder ID for this client"
+    },
+    "folder_name": {
+      "type": "string"
+    },
+    "category_folders": {
+      "type": "object",
+      "description": "Map of category name to Drive folder ID",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "client_email",
+    "folder_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

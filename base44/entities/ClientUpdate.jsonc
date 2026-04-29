@@ -1,0 +1,47 @@
+{
+  "name": "ClientUpdate",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "message": {
+      "type": "string",
+      "description": "Update message"
+    }
+  },
+  "required": [
+    "client_email",
+    "message"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -49,34 +49,13 @@ export default function AdminClients() {
       let memberships = [];
       let invites = [];
 
-      try {
-        memberships = await base44.entities.CaseUser.filter({}, '-created_date');
-      } catch (error) {
-        memberships = [];
-      }
-
-      try {
-        invites = await base44.entities.CaseInvite.filter({}, '-created_date');
-      } catch (error) {
-        invites = [];
-      }
-
-      const clientsWithMeta = profiles.map((profile) => {
-        const activeMembers = memberships.filter(
-          (item) => item.case_profile_id === profile.id && item.status === 'active',
-        );
-        const pendingInvites = invites.filter(
-          (item) => item.case_profile_id === profile.id && item.status === 'pending',
-        );
-
-        return {
-          ...profile,
-          members: activeMembers,
-          pending_invites: pendingInvites,
-          member_count: 1 + activeMembers.length,
-          pending_invite_count: pendingInvites.length,
-        };
-      });
+      const clientsWithMeta = profiles.map((profile) => ({
+        ...profile,
+        members: [],
+        pending_invites: [],
+        member_count: 1,
+        pending_invite_count: 0,
+      }));
 
       setClients(clientsWithMeta);
     } catch (error) {
@@ -198,11 +177,8 @@ export default function AdminClients() {
     setSendingMemberInvite(true);
 
     try {
-      await base44.functions.invoke('inviteCaseUser', {
-        case_profile_id: selectedClient.id,
-        email,
-        full_name: fullName || null,
-      });
+      // Invite user first
+      await base44.users.inviteUser(email, 'user');
 
       toast.success('הזמנה למשתמש נוסף נשלחה בהצלחה');
       setMemberInviteOpen(false);

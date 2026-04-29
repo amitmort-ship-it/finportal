@@ -1,0 +1,84 @@
+{
+  "name": "BankApproval",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "bank_name": {
+      "type": "string",
+      "description": "Name of the bank"
+    },
+    "approval_title": {
+      "type": "string",
+      "description": "Title/description of the approval"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the approval document"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Approved amount"
+    },
+    "monthly_payment": {
+      "type": "number",
+      "description": "Monthly payment amount"
+    },
+    "mortgage_years": {
+      "type": "number",
+      "description": "Number of mortgage years"
+    },
+    "offer_expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when the offer expires"
+    },
+    "ai_data": {
+      "type": "object",
+      "description": "AI analysis data and structured info"
+    }
+  },
+  "required": [
+    "client_email",
+    "bank_name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
