@@ -72,14 +72,18 @@ const statusConfig = {
 export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+  // ניהול ה-request ב-State פנימי כדי לאפשר עדכון חי
   const [request, setRequest] = useState(initialRequest);
 
+  // סנכרון אם ה-Props משתנים
   useEffect(() => {
     setRequest(initialRequest);
   }, [initialRequest]);
 
+  // האזנה לשינויים במסד הנתונים בזמן אמת (Realtime)
   useEffect(() => {
     const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
+      // אם בוצע עדכון לרשומה הספציפית הזו
       if (event.type === 'update' && event.data.id === request.id) {
         setRequest(event.data);
       }
@@ -100,6 +104,7 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
 
     setUploading(true);
     try {
+      // 1. העלאת הקובץ הפיזי
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const newFiles = [...uploadedFiles, {
         file_url,
@@ -108,14 +113,17 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
         uploaded_by_name: user?.full_name || user?.email || null,
         uploaded_at: new Date().toISOString(),
       }];
-
+      
+      // 2. עדכון הרשומה ב-Database (ה-Subscription למעלה יתפוס את זה ויעדכן את ה-UI)
       const updatedDoc = await base44.entities.FileRequest.update(request.id, {
         uploaded_files: newFiles,
         status: 'uploaded',
       });
 
+      // עדכון מקומי מהיר לגיבוי
       setRequest(updatedDoc);
 
+      // 3. העלאה ל-Drive עם שגיאה גלויה אם משהו נכשל
       const driveRes = await base44.functions.invoke('uploadToDrive', {
         file_url,
         file_name: file.name,
@@ -159,12 +167,12 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
   const handleDeleteFile = async (index) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     const newStatus = newFiles.length === 0 ? 'pending' : request.status;
-
+    
     const updatedDoc = await base44.entities.FileRequest.update(request.id, {
       uploaded_files: newFiles,
-      status: newStatus,
+      status: newStatus
     });
-
+    
     setRequest(updatedDoc);
     toast.success('הקובץ הוסר');
     onUpdate?.();
@@ -179,13 +187,11 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
             <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</p>
           )}
           {parsedContent.reviewNotes ? (
-            <div
-              className={`mt-2 rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
-                request.status === 'rejected'
-                  ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300'
-                  : 'bg-muted/50 text-muted-foreground'
-              }`}
-            >
+            <div className={`mt-2 rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
+              request.status === 'rejected'
+                ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300'
+                : 'bg-muted/50 text-muted-foreground'
+            }`}>
               <span className="font-medium text-foreground">הערת המשרד:</span> {parsedContent.reviewNotes}
             </div>
           ) : null}
@@ -201,12 +207,8 @@ export default function FileUploadCard({ request: initialRequest, onUpdate }) {
           {uploadedFiles.map((file, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <a
-                href={file.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate flex-1"
-              >
+              <a href={file.file_url} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate flex-1">
                 {file.file_name}
               </a>
               {(request.status === 'pending' || request.status === 'rejected' || request.status === 'uploaded') && (
