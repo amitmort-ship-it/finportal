@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import ClientSearchFilter from '@/components/ClientSearchFilter';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminUpdates from '@/components/admin/AdminUpdates';
+import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
 import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
 import AdminPackages from '@/components/admin/AdminPackages';
 import AdminCollaterals from '@/components/admin/AdminCollaterals';
 import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
-import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
 import Dashboard from '@/pages/Dashboard';
@@ -96,7 +96,7 @@ export default function AdminPanel() {
               <ClientSearchFilter onSelect={setClientSearch} />
             </div>
           </div>
-          <AdminUpdates selectedClientFilter={clientSearch} />
+          <AdminUpdates selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
