@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label';
 import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
-import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
-import DailyQuote from '../components/admin/DailyQuote';
+
 
 function ClientSearchSelector({ users, selectedClient, onSelect }) {
   const [search, setSearch] = useState('');
@@ -100,7 +99,6 @@ function ClientSearchSelector({ users, selectedClient, onSelect }) {
 }
 
 export default function AdminPanel() {
-  useAdminPalette();
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [users, setUsers] = useState([]);
@@ -165,11 +163,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <AdminColorPicker />
-          <div className="h-4 w-px bg-border shrink-0" />
-          <DailyQuote />
-        </div>
+
       </div>
 
       <ClientSearchSelector
