@@ -10,15 +10,15 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ResponsiveLayout from './components/ResponsiveLayout';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const FilesPage = lazy(() => import('./pages/FilesPage'));
+const FilesPage = lazy(() => import('./pages/FilesPage.jsx'));
 const PackagePage = lazy(() => import('./pages/PackagePage'));
 const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage'));
 const CollateralsPage = lazy(() => import('./pages/CollateralsPage'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const ClientFiles = lazy(() => import('./pages/ClientFiles'));
+const ClientFiles = lazy(() => import('./pages/ClientFiles.jsx'));
 const JoinCasePage = lazy(() => import('./pages/JoinCasePage'));
-const ToolsPage = lazy(() => import('./pages/ToolsPage'));
+const ToolsPage = lazy(() => import('./pages/ToolsPage.jsx'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">
