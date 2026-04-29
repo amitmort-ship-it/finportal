@@ -313,13 +313,12 @@ export default function AdminPanel() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="flex w-full overflow-x-auto mb-6 h-auto justify-start">
           <TabsTrigger value="home" className="text-xs md:text-sm">ראשי</TabsTrigger>
-          <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
+          <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
-          <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
           <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
           <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
-          <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
+          <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
           <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
             <span>עדכונים</span>
             {updatesBadgeCount > 0 ? (
@@ -328,6 +327,7 @@ export default function AdminPanel() {
               </span>
             ) : null}
           </TabsTrigger>
+          <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
         </TabsList>
 
         <TabsContent value="home">
