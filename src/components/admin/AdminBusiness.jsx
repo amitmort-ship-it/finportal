@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import SimulationPanel from './SimulationPanel';
+import DailyQuote from './DailyQuote';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -372,7 +373,7 @@ export default function AdminBusiness() {
       </div>
 
       {/* === INPUT ROW === */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-4 gap-4">
         {/* Add Income */}
         <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
@@ -449,6 +450,8 @@ export default function AdminBusiness() {
             />
           </div>
         </div>
+
+        <DailyQuote />
 
         {/* What to do now */}
         <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
