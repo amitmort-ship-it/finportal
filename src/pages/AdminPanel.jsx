@@ -311,7 +311,7 @@ export default function AdminPanel() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
+        <TabsList className="flex w-full overflow-x-auto mb-6 h-auto justify-start">
           <TabsTrigger value="home" className="text-xs md:text-sm">ראשי</TabsTrigger>
           <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
