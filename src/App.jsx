@@ -20,10 +20,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const ClientFiles = lazy(() => import('./pages/ClientFiles.jsx'));
 const JoinCasePage = lazy(() => import('./pages/JoinCasePage.jsx'));
 const ToolsPage = lazy(() => import('./pages/ToolsPage.jsx'));
-const MarketingHome = lazy(() => import('./pages/MarketingHome.jsx'));
-const MortgageFunnelPage = lazy(() => import('./pages/MortgageFunnelPage.jsx'));
-const BrandAssetsAdmin = lazy(() => import('./pages/BrandAssetsAdmin.jsx'));
-
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-background">
     <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" />
@@ -64,9 +60,6 @@ function AuthenticatedApp() {
           <Route path="/join-case" element={<JoinCasePage />} />
         </Route>
 
-        <Route path="/marketing" element={<MarketingHome />} />
-        <Route path="/funnel" element={<MortgageFunnelPage />} />
-        <Route path="/brand-assets-admin" element={<BrandAssetsAdmin />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>
