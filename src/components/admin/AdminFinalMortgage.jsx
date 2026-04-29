@@ -167,7 +167,7 @@ export default function AdminFinalMortgage({ selectedClient }) {
                           <span className="font-medium">{t.track_type}</span>
                           <span className="text-muted-foreground">₪{(t.principal || 0).toLocaleString('he-IL')}</span>
                           <span className="text-blue-600">{t.interest_rate}%</span>
-                          <span className="text-muted-foreground" dir="ltr">{t.years} שנ'</span>
+                          <span className="text-muted-foreground">שנ' {t.years}</span>
                         </div>
                       ))}
                     </div>
