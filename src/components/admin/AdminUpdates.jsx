@@ -149,7 +149,7 @@ export default function AdminUpdates({ selectedClient }) {
   };
 
   useEffect(() => {
-    const val = selectedClient && selectedClient !== '_all' ? selectedClient : 'all';
+    const val = selectedClient ? selectedClient : 'all';
     setClient(val);
   }, [selectedClient]);
 
