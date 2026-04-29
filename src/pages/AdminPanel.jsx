@@ -22,7 +22,6 @@ import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColo
 import DailyQuote from '../components/admin/DailyQuote';
 import ClientsByStageTable from '../components/admin/ClientsByStageTable';
 import AdminMarketRates from '../components/admin/AdminMarketRates';
-import AdminFinalMortgage from '../components/admin/AdminFinalMortgage';
 import RefinanceMonitor from '../components/admin/RefinanceMonitor';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
@@ -313,7 +312,7 @@ export default function AdminPanel() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-10 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-9 mb-6 h-auto">
           <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
           <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
@@ -322,7 +321,6 @@ export default function AdminPanel() {
           <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
           <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
           <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
-          <TabsTrigger value="mortgage" className="text-xs md:text-sm">משכנתא בוצעה</TabsTrigger>
           <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
             <span>עדכונים</span>
             {updatesBadgeCount > 0 ? (
@@ -362,10 +360,6 @@ export default function AdminPanel() {
 
         <TabsContent value="process">
           <AdminProcessStage selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="mortgage">
-          <AdminFinalMortgage selectedClient={selectedClient} />
         </TabsContent>
 
         <TabsContent value="business">
