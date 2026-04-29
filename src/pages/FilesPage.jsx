@@ -157,12 +157,12 @@ export default function FilesPage() {
                 </div>
               </div>
 
-              {request.description && (
+              {request.admin_notes && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 p-3">
                   <p className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
-                    הערה:
+                    הערה מהמשרד:
                   </p>
-                  <p className="text-sm text-amber-800 dark:text-amber-300">{request.description}</p>
+                  <p className="text-sm text-amber-800 dark:text-amber-300">{request.admin_notes}</p>
                 </div>
               )}
 
