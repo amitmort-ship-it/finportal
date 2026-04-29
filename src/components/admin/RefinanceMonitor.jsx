@@ -142,7 +142,7 @@ export default function RefinanceMonitor() {
       {/* לקוחות ארעיים ללא הזדמנות */}
       {tempNoOpportunity.length > 0 && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-          <p className="text-xs font-semibold text-slate-500 mb-2">לקוחות בדיקה — אין הזדמנות למחזור כרגע</p>
+          <p className="text-xs font-semibold text-slate-500 mb-2">לקוחות ארעיים — אין הזדמנות כרגע</p>
           <div className="space-y-2">
             {tempNoOpportunity.map(c => (
               <div key={c.id} className="bg-white rounded-lg border border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
@@ -151,8 +151,8 @@ export default function RefinanceMonitor() {
                   {c.clientPhone && <span className="text-xs text-muted-foreground mr-2"><Phone className="w-3 h-3 inline ml-0.5" />{c.clientPhone}</span>}
                   <span className="text-xs text-muted-foreground mr-2">{c.client_email}</span>
                   {c.months < COOLOFF_MONTHS
-                    ? <span className="text-xs text-blue-500">· צריך להמתין {COOLOFF_MONTHS - c.months} חודשים עוד לפני ניסיון מחזור חוזר</span>
-                    : <span className="text-xs text-slate-400">· הריביות שלהם בקנה אחד עם השוק</span>
+                    ? <span className="text-xs text-blue-500">· עוד {COOLOFF_MONTHS - c.months} חודשים לתקופת הצינון</span>
+                    : <span className="text-xs text-slate-400">· ריביות תואמות שוק</span>
                   }
                 </div>
                 <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeTemp(c.id)}>
@@ -169,8 +169,8 @@ export default function RefinanceMonitor() {
         <div className="bg-card rounded-xl border border-border p-5 flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
           <div>
-            <p className="font-semibold text-sm">אין הזדמנויות למחזור כרגע</p>
-            <p className="text-xs text-muted-foreground">כל הלקוחות עם ריביות טובות או בתקופת המתנה</p>
+            <p className="font-semibold text-sm">אין לקוחות הממתינים למחזור</p>
+            <p className="text-xs text-muted-foreground">כל התיקים המתועדים עומדים בריביות השוק</p>
           </div>
         </div>
       ) : (
@@ -178,9 +178,9 @@ export default function RefinanceMonitor() {
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="w-5 h-5 text-amber-600" />
             <h3 className="font-bold text-amber-800">
-              לקוחות שיכולים לחסוך בריביות ({allCandidates.length + tempWithOpportunity.length})
+              לקוחות עם הזדמנות למחזור ({allCandidates.length + tempWithOpportunity.length})
             </h3>
-            <span className="text-xs text-amber-600 mr-1">— הריביות שלהם גבוהות מריביות השוק בלפחות {THRESHOLD}%</span>
+            <span className="text-xs text-amber-600 mr-1">— ריבית שוק נמוכה מריבית קיימת ב-{THRESHOLD}% ומעלה</span>
           </div>
           <div className="space-y-2">
             {[...allCandidates, ...tempWithOpportunity].map(c => (

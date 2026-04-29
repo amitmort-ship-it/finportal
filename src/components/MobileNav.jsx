@@ -3,28 +3,28 @@ import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calcul
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
-  { path: '/portal', label: 'ראשי', icon: LayoutDashboard },
-  { path: '/portal/files', label: 'מסמכים', icon: FileText },
-  { path: '/portal/package', label: 'תמהיל', icon: Package },
-  { path: '/portal/approvals', label: 'בנקים', icon: Building2 },
-  { path: '/portal/collaterals', label: 'בטחונות', icon: Shield },
-  { path: '/portal/tools', label: 'כלים', icon: Calculator },
+  { path: '/', label: 'ראשי', icon: LayoutDashboard },
+  { path: '/files', label: 'מסמכים', icon: FileText },
+  { path: '/package', label: 'תמהיל', icon: Package },
+  { path: '/approvals', label: 'בנקים', icon: Building2 },
+  { path: '/collaterals', label: 'בטחונות', icon: Shield },
+  { path: '/tools', label: 'כלים', icon: Calculator },
 ];
 
 const toolShortcuts = [
-  { path: '/portal/tools', label: 'כל הכלים' },
-  { path: '/portal/tools?tool=compound-interest', label: 'ריבית דריבית' },
-  { path: '/portal/tools?tool=loan-comparison', label: 'כדאיות הלוואה' },
-  { path: '/portal/tools?tool=property-purchase-costs', label: 'עלויות דירה' },
+  { path: '/tools', label: 'כל הכלים' },
+  { path: '/tools?tool=compound-interest', label: 'ריבית דריבית' },
+  { path: '/tools?tool=loan-comparison', label: 'כדאיות הלוואה' },
+  { path: '/tools?tool=property-purchase-costs', label: 'עלויות דירה' },
 ];
 
 export default function MobileNav() {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isToolsArea = location.pathname === '/portal/tools';
+  const isToolsArea = location.pathname === '/tools';
 
-  const items = isAdmin ? [...navItems, { path: '/portal/admin', label: 'ניהול', icon: Settings }] : navItems;
+  const items = isAdmin ? [...navItems, { path: '/admin', label: 'ניהול', icon: Settings }] : navItems;
 
   return (
     <div

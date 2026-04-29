@@ -3,15 +3,19 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 async function createDriveFolder(name, parentId, authHeader) {
   const body = { name, mimeType: 'application/vnd.google-apps.folder' };
   if (parentId) body.parents = [parentId];
+
   const res = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: { ...authHeader, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+
   const data = await res.json();
+
   if (!res.ok || !data?.id) {
     throw new Error(data?.error?.message || 'Failed to create Drive folder');
   }
+
   return data.id;
 }
 
@@ -32,6 +36,7 @@ async function ensureDrivePermission(fileId, emailAddress, authHeader) {
     `https://www.googleapis.com/drive/v3/files/${fileId}/permissions?fields=permissions(id,emailAddress,role)`,
     { headers: authHeader },
   );
+
   const permissionsData = await permissionsRes.json();
 
   if (!permissionsRes.ok) {
@@ -62,6 +67,7 @@ async function ensureDrivePermission(fileId, emailAddress, authHeader) {
       }),
     },
   );
+
   const createPermissionData = await createPermissionRes.json();
 
   if (!createPermissionRes.ok) {
@@ -73,7 +79,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { file_url, file_name, client_email, viewer_email } = await req.json();
     const normalizedClientEmail = String(client_email || '').trim().toLowerCase();
@@ -123,14 +132,16 @@ Deno.serve(async (req) => {
     }
 
     const fileRes = await fetch(file_url);
+
     if (!fileRes.ok) {
       throw new Error('Failed to download file from storage');
     }
+
     const fileBlob = await fileRes.blob();
     const mimeType = fileBlob.type || 'application/octet-stream';
 
     const metadata = { name: file_name, parents: [targetFolderId] };
-    const boundary = 'boundary_' + Date.now();
+    const boundary = `boundary_${Date.now()}`;
     const metadataPart = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(metadata)}\r\n`;
     const filePart = `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`;
     const endPart = `\r\n--${boundary}--`;
@@ -155,6 +166,7 @@ Deno.serve(async (req) => {
     });
 
     const uploaded = await uploadRes.json();
+
     if (!uploadRes.ok) {
       return Response.json({ error: 'Drive upload failed', details: uploaded }, { status: 500 });
     }

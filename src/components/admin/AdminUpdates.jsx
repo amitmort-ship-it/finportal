@@ -110,10 +110,9 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [data, fileRequests, userList, profiles] = await Promise.all([
+      const [data, fileRequests, profiles] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
         base44.entities.FileRequest.filter({}, '-created_date'),
-        base44.entities.User.filter({}),
         base44.entities.ClientProfile.filter({}),
       ]);
 
@@ -140,7 +139,7 @@ export default function AdminUpdates({ selectedClient }) {
       setUpdates(filteredUpdates);
       setAdminNotifications(filteredAdminEvents);
       setClientNames(profileMap);
-      setUsers(userList.filter((u) => u.role !== 'admin'));
+      setUsers(profiles);
     } catch (err) {
       console.error('Failed to load data:', err);
       toast.error('שגיאה בטעינת הנתונים');
@@ -170,6 +169,8 @@ export default function AdminUpdates({ selectedClient }) {
       response?.error ||
       response?.data?.error ||
       response?.response?.data?.error ||
+      response?.data?.message ||
+      response?.message ||
       null;
 
     if (notionError) {
@@ -202,6 +203,7 @@ export default function AdminUpdates({ selectedClient }) {
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
+
     try {
       const userMap = Object.fromEntries(
         users.map((u) => [String(u.email || '').toLowerCase(), u.full_name || u.email]),
@@ -212,13 +214,15 @@ export default function AdminUpdates({ selectedClient }) {
           users.map(async (u) => {
             const update = await base44.entities.ClientUpdate.create({
               client_email: u.email,
-              message: message.trim()
+              message: message.trim(),
             });
+
             await syncUpdateToNotion(update, userMap);
+
             return base44.functions.invoke('sendUpdateEmail', {
-              data: { ...update, app_url: window.location.origin }
+              data: { ...update, app_url: window.location.origin },
             });
-          })
+          }),
         );
 
         const failures = results.filter((item) => item.status === 'rejected');
@@ -232,21 +236,26 @@ export default function AdminUpdates({ selectedClient }) {
           setSending(false);
           return;
         }
+
         const update = await base44.entities.ClientUpdate.create({
           client_email: client,
-          message: message.trim()
+          message: message.trim(),
         });
+
         await syncUpdateToNotion(update, userMap);
+
         await base44.functions.invoke('sendUpdateEmail', {
-          data: { ...update, app_url: window.location.origin }
+          data: { ...update, app_url: window.location.origin },
         });
+
         toast.success('העדכון נשלח ללקוח וסונכרן לנושן');
       }
+
       setMessage('');
       load();
     } catch (err) {
-      console.error(err);
-      toast.error(err.message || 'העדכון נשמר אך הסנכרון לנושן או שליחת המייל נכשלו');
+      console.error('Notion sync full error:', err);
+      toast.error(String(err?.message || err || 'שגיאה לא ידועה'));
     } finally {
       setSending(false);
     }
@@ -267,11 +276,13 @@ export default function AdminUpdates({ selectedClient }) {
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center py-12">
-      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -284,7 +295,9 @@ export default function AdminUpdates({ selectedClient }) {
           <SelectContent>
             <SelectItem value="all">📢 כל הלקוחות</SelectItem>
             {users.map((u) => (
-              <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>
+              <SelectItem key={u.id} value={u.email}>
+                {u.full_name || u.email}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

@@ -43,35 +43,41 @@ export default function AdminPackages({ selectedClient }) {
     }
     setUploading(true);
 
-    let file_url = null, file_name = null;
-    if (docFile) {
-      const res = await base44.integrations.Core.UploadFile({ file: docFile });
-      file_url = res.file_url;
-      file_name = docFile.name;
+    try {
+      let file_url = null, file_name = null;
+      if (docFile) {
+        const res = await base44.integrations.Core.UploadFile({ file: docFile });
+        file_url = res.file_url;
+        file_name = docFile.name;
+      }
+
+      const uploadedScreenshots = await Promise.all(
+        screenshots.map(async (sc) => {
+          const res = await base44.integrations.Core.UploadFile({ file: sc });
+          return { url: res.file_url, name: sc.name };
+        })
+      );
+
+      await base44.entities.SelectedPackage.create({
+        ...form,
+        file_url,
+        file_name,
+        screenshots: uploadedScreenshots,
+      });
+
+      toast.success('התמהיל הועלה בהצלחה');
+      setOpen(false);
+      setForm({ client_email: selectedClient || '', title: '', description: '', notes: '' });
+      setDocFile(null);
+      setScreenshots([]);
+
+      const pkgs = await base44.entities.SelectedPackage.filter({}, '-created_date');
+      setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
+    } catch (err) {
+      toast.error('שגיאה בהעלאת התמהיל: ' + (err?.message || 'נסה שוב'));
+    } finally {
+      setUploading(false);
     }
-
-    const uploadedScreenshots = [];
-    for (const sc of screenshots) {
-      const res = await base44.integrations.Core.UploadFile({ file: sc });
-      uploadedScreenshots.push({ url: res.file_url, name: sc.name });
-    }
-
-    await base44.entities.SelectedPackage.create({
-      ...form,
-      file_url,
-      file_name,
-      screenshots: uploadedScreenshots,
-    });
-
-    toast.success('התמהיל הועלה בהצלחה');
-    setOpen(false);
-    setForm({ client_email: selectedClient || '', title: '', description: '', notes: '' });
-    setDocFile(null);
-    setScreenshots([]);
-    setUploading(false);
-
-    const pkgs = await base44.entities.SelectedPackage.filter({}, '-created_date');
-    setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
   };
 
   const handleDelete = async (id) => {

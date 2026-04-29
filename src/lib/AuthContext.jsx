@@ -5,10 +5,6 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
 
-function getSafeRedirectUrl() {
-  return `${window.location.origin}${window.location.pathname}`;
-}
-
 function getInvokeError(result) {
   return (
     result?.error ||
@@ -87,18 +83,16 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
 
-      // Override full_name with the name set by admin in ClientProfile
       try {
         const profiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
         if (profiles.length > 0 && profiles[0].full_name) {
           currentUser.full_name = profiles[0].full_name;
         }
       } catch (e) {
-        // silently ignore — fallback to auth name
       }
 
       setUser(currentUser);
-      const resolvedCase = await loadCaseAccess(currentUser);
+      await loadCaseAccess(currentUser);
 
       if (currentUser.role !== 'admin' && currentUser.email) {
         const sessionKey = `admin-login-notified:${String(currentUser.email).toLowerCase()}`;
@@ -112,9 +106,9 @@ export const AuthProvider = ({ children }) => {
             }
 
             sessionStorage.setItem(sessionKey, '1');
-            console.log('createAdminNotification result', notificationRes?.data || notificationRes);
+            console.log('trackClientLogin result', notificationRes?.data || notificationRes);
           } catch (notificationError) {
-            console.error('Failed to create admin login notification:', notificationError);
+            console.error('Failed to track client login:', notificationError);
           }
         }
       }
@@ -145,74 +139,30 @@ export const AuthProvider = ({ children }) => {
     let resolvedInvites = [];
 
     try {
-      const directProfiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
-      if (directProfiles.length > 0) {
-        resolvedCase = directProfiles[0];
-      } else {
-        try {
-          const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' });
-          if (memberships.length > 0) {
-            const caseProfileId = memberships[0].case_profile_id;
-            const caseProfiles = await base44.entities.ClientProfile.filter({ id: caseProfileId });
-            if (caseProfiles.length > 0) {
-              resolvedCase = caseProfiles[0];
-            }
-          }
-        } catch (membershipError) {
-          // CaseUser may not exist yet in older environments.
-        }
-      }
+       const directProfiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
+       if (directProfiles.length > 0) {
+         resolvedCase = directProfiles[0];
+       }
+     } catch (error) {
+       console.error('Case access resolution failed:', error);
+     }
 
-      if (resolvedCase) {
-        try {
-          const memberships = await base44.entities.CaseUser.filter({ case_profile_id: resolvedCase.id }, '-created_date');
-          resolvedMembers = memberships.map((membership) => ({
-            id: membership.id,
-            email: membership.user_email,
-            full_name: membership.full_name || membership.user_email,
-            role: membership.role || 'co_borrower',
-            status: membership.status || 'active',
-            joined_at: membership.joined_at || null,
-            invited_by_email: membership.invited_by_email || null,
-            is_primary: false,
-          }));
-        } catch (membershipLoadError) {
-          resolvedMembers = [];
-        }
-
-        try {
-          const invites = await base44.entities.CaseInvite.filter({ case_profile_id: resolvedCase.id }, '-created_date');
-          resolvedInvites = invites
-            .filter((invite) => invite.status === 'pending')
-            .map((invite) => ({
-              id: invite.id,
-              email: invite.email,
-              full_name: invite.full_name || invite.email,
-              invited_by_email: invite.invited_by_email || null,
-              status: invite.status || 'pending',
-              created_date: invite.created_date || null,
-            }));
-        } catch (inviteLoadError) {
-          resolvedInvites = [];
-        }
-
-        const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
-        if (!hasPrimaryMember) {
-          resolvedMembers.unshift({
-            id: `primary-${resolvedCase.id}`,
-            email: resolvedCase.email,
-            full_name: resolvedCase.full_name || resolvedCase.email,
-            role: 'primary_borrower',
-            status: 'active',
-            joined_at: null,
-            invited_by_email: null,
-            is_primary: true,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Case access resolution failed:', error);
-    }
+     // CaseUser and CaseInvite entities don't exist in this schema, skip their loading
+     if (resolvedCase) {
+       const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
+       if (!hasPrimaryMember) {
+         resolvedMembers.unshift({
+           id: `primary-${resolvedCase.id}`,
+           email: resolvedCase.email,
+           full_name: resolvedCase.full_name || resolvedCase.email,
+           role: 'primary_borrower',
+           status: 'active',
+           joined_at: null,
+           invited_by_email: null,
+           is_primary: true,
+         });
+       }
+     }
 
     setActiveCase(resolvedCase);
     setCaseMembers(resolvedMembers);
@@ -238,7 +188,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    base44.auth.redirectToLogin(getSafeRedirectUrl());
+    base44.auth.redirectToLogin(window.location.href);
   };
 
   return (

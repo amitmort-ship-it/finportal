@@ -346,7 +346,6 @@ function calculatePropertyPurchaseCosts(form) {
     showMortgageCosts,
   };
 }
-
 function CompoundInterestCalculator() {
   const isMobile = useIsMobile();
   const [form, setForm] = useState({
@@ -559,24 +558,24 @@ function CompoundInterestCalculator() {
 
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-right py-3 px-2 font-medium">שנה</th>
-                      <th className="text-right py-3 px-2 font-medium">יתרה</th>
-                      <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
-                      <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.yearlyData.map((row) => (
-                      <tr key={row.year} className="border-b border-border last:border-b-0">
-                        <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
-                        <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
-                        <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
-                        <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="text-right py-3 px-2 font-medium">שנה</th>
+                        <th className="text-right py-3 px-2 font-medium">יתרה</th>
+                        <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
+                        <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
                       </tr>
-                    ))}
-                  </tbody>
+                    </thead>
+                    <tbody>
+                      {results.yearlyData.map((row) => (
+                        <tr key={row.year} className="border-b border-border last:border-b-0">
+                          <td className="py-3 px-2 text-foreground font-medium">{row.year}</td>
+                          <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
+                          <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
+                          <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 </div>
               </>
@@ -589,7 +588,6 @@ function CompoundInterestCalculator() {
     </div>
   );
 }
-
 function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
   return (
     <div className="bg-card rounded-2xl border border-border p-4 md:p-5 space-y-4">
@@ -820,7 +818,6 @@ function LoanComparisonCalculator() {
           />
         ))}
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {activeLoans.map((loan) => {
           const { metrics } = loan;
@@ -969,9 +966,7 @@ function LoanComparisonCalculator() {
                     {formatCurrency(loan.metrics.monthlyPayment)}
                   </td>
                   <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalPayments)}</td>
-                  <td className="py-3 px-2 text-foreground">
-                    {formatCurrency(loan.metrics.totalInterest)}
-                  </td>
+                  <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.totalInterest)}</td>
                   <td className="py-3 px-2 text-foreground">{formatCurrency(loan.metrics.oneTimeFees)}</td>
                   <td className={`py-3 px-2 ${loan.id === lowestTotalCostId ? 'text-emerald-700 font-semibold' : 'text-foreground'}`}>
                     {formatCurrency(loan.metrics.totalCost)}
@@ -990,7 +985,6 @@ function LoanComparisonCalculator() {
           </table>
         </div>
       </div>
-
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
         <div className="space-y-6">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -1198,7 +1192,6 @@ function LoanComparisonCalculator() {
     </div>
   );
 }
-
 function PropertyPurchaseCostsCalculator() {
   const [form, setForm] = useState({
     propertyPrice: 2000000,

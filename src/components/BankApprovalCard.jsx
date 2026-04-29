@@ -68,8 +68,12 @@ export default function BankApprovalCard({ approval }) {
           )}
 
           {approval.file_url && (
-            <a href={approval.file_url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-3 text-sm text-primary hover:underline">
+            <a
+              href={approval.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-3 text-sm text-primary hover:underline"
+            >
               <Download className="w-3.5 h-3.5" />
               {approval.file_name || 'הורד מסמך'}
             </a>

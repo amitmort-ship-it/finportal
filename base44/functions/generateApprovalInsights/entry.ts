@@ -1,136 +1,221 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
-const INSIGHTS_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['admin_summary', 'client_summary', 'market_context', 'strengths', 'watchouts', 'financial_flags'],
-  properties: {
-    admin_summary: { type: 'string' },
-    client_summary: { type: 'string' },
-    market_context: { type: 'string' },
-    strengths: {
-      type: 'array',
-      items: { type: 'string' },
+function asInsights(title: string, detail: string, extra?: string) {
+  return {
+    success: true,
+    insights: {
+      admin_summary: title,
+      client_summary: detail,
+      market_context: extra || '',
+      strengths: [],
+      watchouts: [],
+      financial_flags: [],
     },
-    watchouts: {
-      type: 'array',
-      items: { type: 'string' },
-    },
-    financial_flags: {
-      type: 'array',
-      items: { type: 'string' },
-    },
-  },
-} as const;
+  };
+}
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    let base44;
+    try {
+      base44 = createClientFromRequest(req);
+    } catch (error) {
+      return Response.json(
+        asInsights(
+          'createClientFromRequest failed',
+          error?.message || 'unknown error',
+          'stage: create_client',
+        ),
+      );
+    }
+
+    let user;
+    try {
+      user = await base44.auth.me();
+    } catch (error) {
+      return Response.json(
+        asInsights(
+          'auth.me failed',
+          error?.message || 'unknown error',
+          'stage: auth_me',
+        ),
+      );
+    }
 
     if (user?.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+      return Response.json(
+        asInsights(
+          'Admin access required',
+          `current role: ${user?.role || 'unknown'}`,
+          'stage: auth_role',
+        ),
+      );
+    }
+
+    let body;
+    try {
+      body = await req.json();
+    } catch (error) {
+      return Response.json(
+        asInsights(
+          'req.json failed',
+          error?.message || 'unknown error',
+          'stage: parse_body',
+        ),
+      );
     }
 
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      return Response.json({ error: 'Missing OPENAI_API_KEY' }, { status: 500 });
+      return Response.json(
+        asInsights(
+          'Missing OPENAI_API_KEY',
+          'No secret found',
+          'stage: secret',
+        ),
+      );
     }
 
-    const { approvals, client_name } = await req.json();
-    if (!Array.isArray(approvals) || approvals.length === 0) {
-      return Response.json({ error: 'Missing approvals list' }, { status: 400 });
+    let modelsRes;
+    let modelsJson;
+    try {
+      modelsRes = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      });
+      modelsJson = await modelsRes.json();
+    } catch (error) {
+      return Response.json(
+        asInsights(
+          'OpenAI models fetch failed',
+          error?.message || 'unknown error',
+          'stage: openai_models_fetch',
+        ),
+      );
+    }
+
+    if (!modelsRes.ok) {
+      return Response.json(
+        asInsights(
+          'OpenAI models request not ok',
+          modelsJson?.error?.message || 'unknown error',
+          'stage: openai_models_response',
+        ),
+      );
+    }
+
+    const ids = Array.isArray(modelsJson?.data)
+      ? modelsJson.data.map((m: any) => m.id).filter(Boolean)
+      : [];
+
+    const model =
+      ids.find((id: string) => ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-3.5-turbo'].includes(id)) ||
+      ids[0];
+
+    if (!model) {
+      return Response.json(
+        asInsights(
+          'No model available',
+          'The API key returned no usable models',
+          'stage: model_select',
+        ),
+      );
     }
 
     const prompt = `
-אתה יועץ פיננסי מנוסה למשכנתאות בישראל.
+Return valid JSON only with keys:
+admin_summary, client_summary, market_context, strengths, watchouts, financial_flags.
 
-המטרה:
-לנתח כמה אישורים עקרוניים ולהפיק תובנות תומכות החלטה.
+Client:
+${body?.client_name || 'unknown'}
 
-חשוב:
-- אל תכתוב הבטחות או ייעוץ משפטי.
-- אל תמציא נתוני שוק שלא ניתנו במפורש.
-- אם אין לך מידע להשוואה לשוק, כתוב זאת בזהירות תחת market_context.
-- admin_summary צריך להיות מפורט יותר ומקצועי.
-- client_summary צריך להיות ברור, מרגיע, וללא ניסוחים טכניים מדי.
-- strengths = נקודות חיוביות מרכזיות.
-- watchouts = על מה חשוב לשים לב.
-- financial_flags = דגלים פיננסיים כמו קפיצה עתידית בהחזר, תקופה ארוכה, עלות כוללת גבוהה, תוקף קרוב וכו'.
-
-שם הלקוח: ${client_name || 'לא סופק'}
-
-הצעות לניתוח:
-${JSON.stringify(approvals, null, 2)}
+Approvals:
+${JSON.stringify(body?.approvals || [], null, 2).slice(0, 6000)}
 `.trim();
 
-    const openAiRes = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        input: [
-          {
-            role: 'user',
-            content: [{ type: 'input_text', text: prompt }],
-          },
-        ],
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'approval_insights',
-            strict: true,
-            schema: INSIGHTS_SCHEMA,
-          },
+    let completionRes;
+    let completionJson;
+    try {
+      completionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          model,
+          response_format: { type: 'json_object' },
+          temperature: 0.3,
+          messages: [
+            { role: 'system', content: 'Return valid JSON only.' },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      });
 
-    const responseJson = await openAiRes.json();
-    if (!openAiRes.ok) {
-      const upstreamMessage =
-        responseJson?.error?.message ||
-        responseJson?.message ||
-        'OpenAI insight generation failed';
-
+      completionJson = await completionRes.json();
+    } catch (error) {
       return Response.json(
-        {
-          error: upstreamMessage,
-          stage: 'openai_request',
-          details: responseJson,
-        },
-        { status: 500 },
+        asInsights(
+          'OpenAI completion fetch failed',
+          error?.message || 'unknown error',
+          `stage: openai_completion_fetch | model: ${model}`,
+        ),
       );
     }
 
-    const rawText = responseJson.output_text;
-    if (!rawText) {
+    if (!completionRes.ok) {
       return Response.json(
-        {
-          error: 'No structured output returned from OpenAI',
-          stage: 'openai_response',
-          details: responseJson,
-        },
-        { status: 500 },
+        asInsights(
+          'OpenAI completion not ok',
+          completionJson?.error?.message || 'unknown error',
+          `stage: openai_completion_response | model: ${model}`,
+        ),
       );
     }
 
-    const parsed = JSON.parse(rawText);
+    const content = completionJson?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== 'string') {
+      return Response.json(
+        asInsights(
+          'No completion content',
+          'OpenAI returned no message content',
+          `stage: openai_content | model: ${model}`,
+        ),
+      );
+    }
 
-    return Response.json({
-      success: true,
-      insights: parsed,
-    });
+    try {
+      const parsed = JSON.parse(content);
+      return Response.json({
+        success: true,
+        insights: {
+          admin_summary: parsed?.admin_summary || '',
+          client_summary: parsed?.client_summary || '',
+          market_context: parsed?.market_context || '',
+          strengths: Array.isArray(parsed?.strengths) ? parsed.strengths : [],
+          watchouts: Array.isArray(parsed?.watchouts) ? parsed.watchouts : [],
+          financial_flags: Array.isArray(parsed?.financial_flags) ? parsed.financial_flags : [],
+        },
+      });
+    } catch (error) {
+      return Response.json(
+        asInsights(
+          'JSON parse failed',
+          error?.message || 'unknown error',
+          `stage: json_parse | raw: ${String(content).slice(0, 1500)}`,
+        ),
+      );
+    }
   } catch (error) {
     return Response.json(
-      {
-        error: error?.message || 'Unexpected generateApprovalInsights failure',
-        stage: 'unknown',
-      },
-      { status: 500 },
+      asInsights(
+        'Unexpected failure',
+        error?.message || 'unknown error',
+        'stage: unknown',
+      ),
     );
   }
 });

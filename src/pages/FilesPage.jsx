@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { FileUp, Loader2, Download, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function FilesPage() {
@@ -15,7 +16,7 @@ export default function FilesPage() {
       try {
         const data = await base44.entities.FileRequest.filter(
           { client_email: user?.email },
-          '-created_date',
+          '-created_date'
         );
         setRequests(data);
       } catch (error) {
@@ -35,10 +36,10 @@ export default function FilesPage() {
     const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
       if (event.data?.client_email === user?.email) {
         if (event.type === 'delete') {
-          setRequests((prev) => prev.filter((request) => request.id !== event.id));
+          setRequests((prev) => prev.filter((r) => r.id !== event.id));
         } else {
           setRequests((prev) => {
-            const existing = prev.findIndex((request) => request.id === event.id);
+            const existing = prev.findIndex((r) => r.id === event.id);
             if (existing >= 0) {
               const updated = [...prev];
               updated[existing] = event.data;
@@ -68,10 +69,10 @@ export default function FilesPage() {
             file_url,
             file_name: file.name,
           };
-        }),
+        })
       );
 
-      const request = requests.find((item) => item.id === requestId);
+      const request = requests.find((r) => r.id === requestId);
       const currentFiles = request?.uploaded_files || [];
       const allFiles = [...currentFiles, ...uploadedFiles];
 
@@ -120,61 +121,58 @@ export default function FilesPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{request.title}</h3>
-                  {request.description ? (
+                  {request.description && (
                     <p className="text-sm text-muted-foreground mt-1">{request.description}</p>
-                  ) : null}
+                  )}
                   <p className="text-xs text-muted-foreground mt-2">
                     קטגוריה: {request.category || 'כללי'}
                   </p>
                 </div>
 
                 <div className="text-right">
-                  {request.status === 'pending' ? (
+                  {request.status === 'pending' && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
                       <Clock className="w-3 h-3" />
                       ממתין
                     </span>
-                  ) : null}
-
-                  {request.status === 'uploaded' ? (
+                  )}
+                  {request.status === 'uploaded' && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
                       <FileUp className="w-3 h-3" />
                       בדיקה
                     </span>
-                  ) : null}
-
-                  {request.status === 'approved' ? (
+                  )}
+                  {request.status === 'approved' && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                       <CheckCircle2 className="w-3 h-3" />
                       אושר
                     </span>
-                  ) : null}
-
-                  {request.status === 'rejected' ? (
+                  )}
+                  {request.status === 'rejected' && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
                       <AlertCircle className="w-3 h-3" />
                       נדרשת תיקון
                     </span>
-                  ) : null}
+                  )}
                 </div>
               </div>
 
-              {request.admin_notes ? (
+              {request.admin_notes && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 p-3">
                   <p className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
                     הערה מהמשרד:
                   </p>
                   <p className="text-sm text-amber-800 dark:text-amber-300">{request.admin_notes}</p>
                 </div>
-              ) : null}
+              )}
 
-              {request.uploaded_files && request.uploaded_files.length > 0 ? (
+              {request.uploaded_files && request.uploaded_files.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-muted-foreground">קבצים שהועלו:</p>
                   <div className="space-y-1">
-                    {request.uploaded_files.map((file, index) => (
+                    {request.uploaded_files.map((file, idx) => (
                       <a
-                        key={index}
+                        key={idx}
                         href={file.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -186,16 +184,16 @@ export default function FilesPage() {
                     ))}
                   </div>
                 </div>
-              ) : null}
+              )}
 
-              {request.status !== 'approved' ? (
+              {request.status !== 'approved' && (
                 <div>
                   <label className="flex items-center gap-2 border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors">
                     <input
                       type="file"
                       multiple
                       className="hidden"
-                      onChange={(event) => handleFileUpload(request.id, event.target.files)}
+                      onChange={(e) => handleFileUpload(request.id, e.target.files)}
                       disabled={uploading[request.id]}
                     />
                     {uploading[request.id] ? (
@@ -214,7 +212,7 @@ export default function FilesPage() {
                     )}
                   </label>
                 </div>
-              ) : null}
+              )}
             </div>
           ))}
         </div>

@@ -27,10 +27,6 @@ Deno.serve(async (req) => {
     const currentEmail = normalizeEmail(currentUser.email);
     const invitedEmail = normalizeEmail(invite.email);
 
-    if (invite.status === 'accepted') {
-      return Response.json({ success: true, case_profile_id: invite.case_profile_id });
-    }
-
     if (currentEmail !== invitedEmail) {
       return Response.json({ error: 'Invite email does not match the signed-in user' }, { status: 403 });
     }
