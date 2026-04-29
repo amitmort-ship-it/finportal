@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import ProcessTracker from '../components/ProcessTracker';
 import ClientUpdates from '../components/ClientUpdates';
+import MortgagePulse from '../components/MortgagePulse';
 import { Building2, Shield, Package, FileText, AlertTriangle } from 'lucide-react';
 
 export default function Dashboard() {
@@ -103,13 +104,15 @@ export default function Dashboard() {
         </button>
       ) : null}
 
+      <MortgagePulse />
+
       <div className="grid md:grid-cols-2 gap-4">
-        <ProcessTracker
-          currentStage={processStage?.current_stage || null}
-          notes={processStage?.notes || ''}
-        />
-        <ClientUpdates />
-      </div>
+         <ProcessTracker
+           currentStage={processStage?.current_stage || null}
+           notes={processStage?.notes || ''}
+         />
+         <ClientUpdates />
+       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {summaryCards.map(({ label, count, icon: Icon, color, bg, route }) => (
