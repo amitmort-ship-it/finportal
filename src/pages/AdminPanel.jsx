@@ -249,53 +249,56 @@ export default function AdminPanel() {
 
   return (
     <div>
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
-          <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
-          <div className="mt-3 flex items-center gap-3">
-            <AdminColorPicker />
-            <div className="h-4 w-px bg-border shrink-0" />
-            <DailyQuote />
+      <div className="mb-8 space-y-3">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
+            <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => window.open('https://555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618', '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="w-4 h-4" />
+              ביטוח ישיר
+            </Button>
+
+            <Button
+              type="button"
+              className="gap-2 bg-black hover:bg-neutral-800 text-white"
+              onClick={() => window.open('https://zero-budget-copy-9e612e99.base44.app/dashboard', '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="w-4 h-4" />
+              ZeroBalance
+            </Button>
+
+            <Button
+              type="button"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => window.open('https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="w-4 h-4" />
+              Paperless
+            </Button>
+
+            <Button
+              type="button"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="w-4 h-4" />
+              SmartNPV
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            type="button"
-            className="gap-2 bg-red-600 hover:bg-red-700 text-white"
-            onClick={() => window.open('https://555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618', '_blank', 'noopener,noreferrer')}
-          >
-            <ExternalLink className="w-4 h-4" />
-            ביטוח ישיר
-          </Button>
-
-          <Button
-            type="button"
-            className="gap-2 bg-black hover:bg-neutral-800 text-white"
-            onClick={() => window.open('https://zero-budget-copy-9e612e99.base44.app/dashboard', '_blank', 'noopener,noreferrer')}
-          >
-            <ExternalLink className="w-4 h-4" />
-            ZeroBalance
-          </Button>
-
-          <Button
-            type="button"
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => window.open('https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', '_blank', 'noopener,noreferrer')}
-          >
-            <ExternalLink className="w-4 h-4" />
-            Paperless
-          </Button>
-
-          <Button
-            type="button"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
-          >
-            <ExternalLink className="w-4 h-4" />
-            SmartNPV
-          </Button>
+        <div className="flex items-center gap-3">
+          <AdminColorPicker />
+          <div className="h-4 w-px bg-border shrink-0" />
+          <DailyQuote />
         </div>
       </div>
 
