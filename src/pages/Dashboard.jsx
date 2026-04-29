@@ -83,12 +83,12 @@ export default function Dashboard() {
       {/* Mortgage Pulse Alert */}
       <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900/50">
         <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <Activity className="w-5 h-5 text-blue-600 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">מד דופק משכנתא:</p>
-              <p className="text-sm text-blue-900 dark:text-blue-200">המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.</p>
-            </div>
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-blue-900 dark:text-blue-200 flex-1">
+              <span className="font-semibold block mb-1">מד דופק משכנתא:</span>
+              <span className="block">המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.</span>
+            </p>
+            <Activity className="w-5 h-5 text-blue-600 shrink-0 flex-shrink-0" />
           </div>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 text-right">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
         </CardContent>
