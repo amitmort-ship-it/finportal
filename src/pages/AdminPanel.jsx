@@ -1,4 +1,4 @@
-import { Component, Suspense, lazy, useState } from 'react';
+import { Component, Suspense, lazy, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,14 +28,6 @@ const AdminProcessStage = lazy(() => import('@/components/admin/AdminProcessStag
 const AdminColorPicker = lazy(() => import('@/components/admin/AdminColorPicker'));
 const ClientsByStageTable = lazy(() => import('@/components/admin/ClientsByStageTable'));
 const RefinanceMonitor = lazy(() => import('@/components/admin/RefinanceMonitor'));
-const UseAdminPaletteBridge = lazy(() =>
-  import('@/components/admin/AdminColorPicker').then((module) => ({
-    default: function AdminPaletteBridge() {
-      module.useAdminPalette();
-      return null;
-    },
-  })),
-);
 
 class SectionErrorBoundary extends Component {
   constructor(props) {
@@ -107,6 +99,12 @@ export default function AdminPanel() {
   const [clientSearch, setClientSearch] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  useEffect(() => {
+    import('@/components/admin/AdminColorPicker').then((module) => {
+      module.useAdminPalette();
+    });
+  }, []);
+
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
@@ -125,10 +123,6 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <LazySection sectionName="ערכת צבעים">
-        <UseAdminPaletteBridge />
-      </LazySection>
-
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">לוח הניהול</h1>
