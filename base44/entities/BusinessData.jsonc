@@ -1,0 +1,79 @@
+{
+  "name": "BusinessData",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Unique key for this data record (e.g. 'main')"
+    },
+    "incomeLog": {
+      "type": "array",
+      "description": "Log of income entries",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "fixedExpenses": {
+      "type": "array",
+      "description": "Fixed monthly expenses",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "variableExpenses": {
+      "type": "array",
+      "description": "Variable expenses with installments",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "avgDealSize": {
+      "type": "number",
+      "description": "Average deal commission",
+      "default": 8000
+    },
+    "manualPipeline": {
+      "type": "number",
+      "description": "Manual pipeline override",
+      "default": 0
+    },
+    "assetsValue": {
+      "type": "number",
+      "description": "Value of income-producing assets",
+      "default": 0
+    },
+    "manualActiveCount": {
+      "type": "string",
+      "description": "Manual active case count override",
+      "default": ""
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

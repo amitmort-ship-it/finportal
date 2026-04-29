@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import SimulationPanel from './SimulationPanel';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -35,24 +35,11 @@ const TAX_BUFFER_RATE = 0.26;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
-
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
-const STORAGE_KEY = 'amit-business-data';
+const DB_KEY = 'main';
 
 function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
-}
-
-function loadStored() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function saveStored(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 function GaugeBar({ value, max, color, label, sublabel }) {
@@ -64,54 +51,71 @@ function GaugeBar({ value, max, color, label, sublabel }) {
         <span className="text-muted-foreground text-xs">{sublabel}</span>
       </div>
       <div className="h-3 bg-muted rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <div className="text-xs text-muted-foreground text-left">{Math.round(pct)}%</div>
     </div>
   );
 }
 
+const DEFAULT_DATA = {
+  incomeLog: [],
+  fixedExpenses: [],
+  variableExpenses: [],
+  avgDealSize: 8000,
+  manualPipeline: 0,
+  assetsValue: 0,
+  manualActiveCount: '',
+};
+
 export default function AdminBusiness() {
-  const [clients, setClients] = useState([]);
   const [stages, setStages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stored, setStored] = useState(loadStored);
+  const [saving, setSaving] = useState(false);
+  const [recordId, setRecordId] = useState(null);
 
-  // Income
+  // Data state
+  const [incomeLog, setIncomeLog] = useState([]);
+  const [fixedExpenses, setFixedExpenses] = useState([]);
+  const [variableExpenses, setVariableExpenses] = useState([]);
+  const [avgDealSize, setAvgDealSize] = useState(8000);
+  const [manualPipeline, setManualPipeline] = useState(0);
+  const [assetsValue, setAssetsValue] = useState(0);
+  const [manualActiveCount, setManualActiveCount] = useState('');
+
+  // Input state
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
-  const [incomeLog, setIncomeLog] = useState(stored.incomeLog || []);
-
-  // Fixed expenses
-  const [fixedExpenses, setFixedExpenses] = useState(stored.fixedExpenses || []);
   const [newFixedName, setNewFixedName] = useState('');
   const [newFixedAmount, setNewFixedAmount] = useState('');
-
-  // Variable expenses
-  const [variableExpenses, setVariableExpenses] = useState(stored.variableExpenses || []);
   const [newVarName, setNewVarName] = useState('');
   const [newVarAmount, setNewVarAmount] = useState('');
   const [newVarInstallments, setNewVarInstallments] = useState('1');
 
-  // Settings
-  const [avgDealSize, setAvgDealSize] = useState(stored.avgDealSize || 8000);
-  const [manualPipeline, setManualPipeline] = useState(stored.manualPipeline || 0);
-  const [assetsValue, setAssetsValue] = useState(stored.assetsValue || 0);
-  const [manualActiveCount, setManualActiveCount] = useState(stored.manualActiveCount ?? '');
+  // Debounce save
+  const saveTimer = useRef(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [profilesRes, stagesRes] = await Promise.all([
-          base44.entities.ClientProfile.filter({}, '-created_date'),
+        const [stagesRes, records] = await Promise.all([
           base44.entities.ProcessStage.filter({}, '-created_date'),
+          base44.entities.BusinessData.filter({ key: DB_KEY }),
         ]);
-        setClients(profilesRes);
         setStages(stagesRes);
+
+        if (records.length > 0) {
+          const r = records[0];
+          setRecordId(r.id);
+          setIncomeLog(r.incomeLog || []);
+          setFixedExpenses(r.fixedExpenses || []);
+          setVariableExpenses(r.variableExpenses || []);
+          setAvgDealSize(r.avgDealSize ?? 8000);
+          setManualPipeline(r.manualPipeline ?? 0);
+          setAssetsValue(r.assetsValue ?? 0);
+          setManualActiveCount(r.manualActiveCount ?? '');
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -121,10 +125,34 @@ export default function AdminBusiness() {
     load();
   }, []);
 
-  const persist = (patch) => {
-    const next = { ...stored, ...patch };
-    setStored(next);
-    saveStored(next);
+  const persist = async (patch) => {
+    const data = {
+      incomeLog,
+      fixedExpenses,
+      variableExpenses,
+      avgDealSize,
+      manualPipeline,
+      assetsValue,
+      manualActiveCount,
+      ...patch,
+    };
+
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      setSaving(true);
+      try {
+        if (recordId) {
+          await base44.entities.BusinessData.update(recordId, data);
+        } else {
+          const created = await base44.entities.BusinessData.create({ key: DB_KEY, ...data });
+          setRecordId(created.id);
+        }
+      } catch (err) {
+        toast.error('שגיאה בשמירת הנתונים');
+      } finally {
+        setSaving(false);
+      }
+    }, 600);
   };
 
   const handleAddIncome = () => {
@@ -157,7 +185,6 @@ export default function AdminBusiness() {
     persist({ incomeLog: next });
   };
 
-  // Fixed expenses handlers
   const handleToggleFixed = (id) => {
     const next = fixedExpenses.map((e) =>
       e.id === id ? { ...e, enabled: e.enabled === false ? true : false } : e
@@ -175,13 +202,13 @@ export default function AdminBusiness() {
     setNewFixedName('');
     setNewFixedAmount('');
   };
+
   const handleRemoveFixed = (id) => {
     const next = fixedExpenses.filter((e) => e.id !== id);
     setFixedExpenses(next);
     persist({ fixedExpenses: next });
   };
 
-  // Variable expenses handlers
   const handleAddVariable = () => {
     const amount = Number(String(newVarAmount).replace(/,/g, ''));
     const installments = Math.max(1, Number(newVarInstallments) || 1);
@@ -203,6 +230,7 @@ export default function AdminBusiness() {
     setNewVarInstallments('1');
     toast.success(`הוצאה "${entry.name}" נוספה — ${installments} תשלומים של ${fmt(entry.installmentAmount)}`);
   };
+
   const handlePayInstallment = (id) => {
     const next = variableExpenses.map((e) =>
       e.id === id ? { ...e, paidInstallments: Math.min(e.paidInstallments + 1, e.installments) } : e
@@ -210,6 +238,7 @@ export default function AdminBusiness() {
     setVariableExpenses(next);
     persist({ variableExpenses: next });
   };
+
   const handleRemoveVariable = (id) => {
     const next = variableExpenses.filter((e) => e.id !== id);
     setVariableExpenses(next);
@@ -221,53 +250,44 @@ export default function AdminBusiness() {
   const totalNet = useMemo(() => incomeLog.reduce((s, e) => s + e.net, 0), [incomeLog]);
   const totalTax = useMemo(() => incomeLog.reduce((s, e) => s + e.tax, 0), [incomeLog]);
 
-  const monthlyFixedTotal = useMemo(() => fixedExpenses.filter((e) => e.enabled !== false).reduce((s, e) => s + e.amount, 0), [fixedExpenses]);
+  const monthlyFixedTotal = useMemo(() =>
+    fixedExpenses.filter((e) => e.enabled !== false).reduce((s, e) => s + e.amount, 0),
+    [fixedExpenses]
+  );
   const activeVariableMonthly = useMemo(() =>
-    variableExpenses
-      .filter((e) => e.paidInstallments < e.installments)
-      .reduce((s, e) => s + e.installmentAmount, 0),
+    variableExpenses.filter((e) => e.paidInstallments < e.installments).reduce((s, e) => s + e.installmentAmount, 0),
     [variableExpenses]
   );
   const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
   const reservoirMonths = totalNet > 0 ? Math.floor(totalNet / SALARY_TARGET) : 0;
   const reservoirRemainder = totalNet % SALARY_TARGET;
 
-  // Active cases — manual override or auto from stages
   const activeCount = useMemo(() => {
     if (manualActiveCount !== '' && Number(manualActiveCount) >= 0) return Number(manualActiveCount);
     const activeStageEmails = new Set(
-      stages
-        .filter((s) => ACTIVE_STAGES.includes(s.current_stage))
-        .map((s) => s.client_email),
+      stages.filter((s) => ACTIVE_STAGES.includes(s.current_stage)).map((s) => s.client_email),
     );
     return activeStageEmails.size;
   }, [stages, manualActiveCount]);
 
-  // Pipeline — cases close to deal
-  const pipelineCount = useMemo(() => {
-    return stages.filter((s) => PIPELINE_STAGES.includes(s.current_stage)).length;
-  }, [stages]);
+  const pipelineCount = useMemo(() =>
+    stages.filter((s) => PIPELINE_STAGES.includes(s.current_stage)).length,
+    [stages]
+  );
 
   const autoPipelineForecast = pipelineCount * (avgDealSize || 8000);
   const pipelineForecast = Number(manualPipeline) > 0 ? Number(manualPipeline) : autoPipelineForecast;
 
-  // Category breakdown
   const categoryTotals = useMemo(() => {
     const map = {};
     INCOME_CATEGORIES.forEach((c) => { map[c] = 0; });
-    incomeLog.forEach((e) => {
-      const cat = e.category || 'אחר';
-      map[cat] = (map[cat] || 0) + e.net;
-    });
+    incomeLog.forEach((e) => { map[e.category || 'אחר'] = (map[e.category || 'אחר'] || 0) + e.net; });
     return map;
   }, [incomeLog]);
 
-  // Moving average chart — group by month
   const monthlyChart = useMemo(() => {
     const map = {};
-    incomeLog.forEach((e) => {
-      map[e.month] = (map[e.month] || 0) + e.net;
-    });
+    incomeLog.forEach((e) => { map[e.month] = (map[e.month] || 0) + e.net; });
     return Object.entries(map).map(([month, net]) => ({ month, net }));
   }, [incomeLog]);
 
@@ -283,7 +303,10 @@ export default function AdminBusiness() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* === ALERTS === */}
+      {saving && (
+        <div className="text-xs text-muted-foreground text-left">שומר...</div>
+      )}
+
       {isHighWorkload && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4 shadow-sm">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -352,30 +375,10 @@ export default function AdminBusiness() {
           <Info className="w-4 h-4 text-primary" />
           מדדי חוסן
         </h3>
-        <GaugeBar
-          value={totalNet}
-          max={SALARY_TARGET * 6}
-          color="bg-blue-500"
-          label="מאגר משכורות"
-          sublabel={`יעד: 6 חודשים × ${fmt(SALARY_TARGET)}`}
-        />
-        <GaugeBar
-          value={pipelineForecast}
-          max={SALARY_TARGET * 3}
-          color="bg-violet-500"
-          label="צנרת צפויה"
-          sublabel={`יעד חודשי: ${fmt(SALARY_TARGET)}`}
-        />
-        <GaugeBar
-          value={Number(assetsValue) || 0}
-          max={500000}
-          color="bg-emerald-500"
-          label="שווי נכסים מניבים"
-          sublabel="הזנה ידנית"
-        />
+        <GaugeBar value={totalNet} max={SALARY_TARGET * 6} color="bg-blue-500" label="מאגר משכורות" sublabel={`יעד: 6 חודשים × ${fmt(SALARY_TARGET)}`} />
+        <GaugeBar value={pipelineForecast} max={SALARY_TARGET * 3} color="bg-violet-500" label="צנרת צפויה" sublabel={`יעד חודשי: ${fmt(SALARY_TARGET)}`} />
+        <GaugeBar value={Number(assetsValue) || 0} max={500000} color="bg-emerald-500" label="שווי נכסים מניבים" sublabel="הזנה ידנית" />
       </div>
-
-
 
       {/* === INPUT ROW === */}
       <div className="grid md:grid-cols-3 gap-4">
@@ -384,25 +387,11 @@ export default function AdminBusiness() {
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
           <p className="text-xs text-muted-foreground">26% יועברו לקופת מיסים, היתרה למאגר</p>
           <Label>סכום גולמי (₪)</Label>
-          <Input
-            type="number"
-            value={newIncome}
-            onChange={(e) => setNewIncome(e.target.value)}
-            placeholder="למשל: 15000"
-            dir="ltr"
-          />
+          <Input type="number" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} placeholder="למשל: 15000" dir="ltr" />
           <Label>ממי / שם הלקוח</Label>
-          <Input
-            value={newIncomeSource}
-            onChange={(e) => setNewIncomeSource(e.target.value)}
-            placeholder="למשל: ישראל ישראלי"
-          />
+          <Input value={newIncomeSource} onChange={(e) => setNewIncomeSource(e.target.value)} placeholder="למשל: ישראל ישראלי" />
           <Label>קטגוריה</Label>
-          <select
-            value={newIncomeCategory}
-            onChange={(e) => setNewIncomeCategory(e.target.value)}
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          >
+          <select value={newIncomeCategory} onChange={(e) => setNewIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
             {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <Button className="w-full gap-2" onClick={handleAddIncome} disabled={!newIncome}>
@@ -416,58 +405,19 @@ export default function AdminBusiness() {
           <h3 className="font-bold text-foreground">הגדרות</h3>
           <div>
             <Label>עמלה ממוצעת לתיק (₪)</Label>
-            <Input
-              type="number"
-              value={avgDealSize}
-              onChange={(e) => {
-                setAvgDealSize(e.target.value);
-                persist({ avgDealSize: Number(e.target.value) });
-              }}
-              dir="ltr"
-              className="mt-1"
-            />
+            <Input type="number" value={avgDealSize} onChange={(e) => { setAvgDealSize(e.target.value); persist({ avgDealSize: Number(e.target.value) }); }} dir="ltr" className="mt-1" />
           </div>
           <div>
             <Label>צנרת ידנית (₪) — מבטל חישוב אוטומטי</Label>
-            <Input
-              type="number"
-              value={manualPipeline}
-              onChange={(e) => {
-                setManualPipeline(e.target.value);
-                persist({ manualPipeline: Number(e.target.value) });
-              }}
-              dir="ltr"
-              className="mt-1"
-              placeholder="0 = חישוב אוטומטי"
-            />
+            <Input type="number" value={manualPipeline} onChange={(e) => { setManualPipeline(e.target.value); persist({ manualPipeline: Number(e.target.value) }); }} dir="ltr" className="mt-1" placeholder="0 = חישוב אוטומטי" />
           </div>
           <div>
             <Label>שווי נכסים מניבים (₪)</Label>
-            <Input
-              type="number"
-              value={assetsValue}
-              onChange={(e) => {
-                setAssetsValue(e.target.value);
-                persist({ assetsValue: Number(e.target.value) });
-              }}
-              dir="ltr"
-              className="mt-1"
-            />
+            <Input type="number" value={assetsValue} onChange={(e) => { setAssetsValue(e.target.value); persist({ assetsValue: Number(e.target.value) }); }} dir="ltr" className="mt-1" />
           </div>
           <div>
             <Label>תיקים פעילים (ידני) — מבטל חישוב אוטומטי</Label>
-            <Input
-              type="number"
-              value={manualActiveCount}
-              onChange={(e) => {
-                setManualActiveCount(e.target.value);
-                persist({ manualActiveCount: e.target.value });
-              }}
-              dir="ltr"
-              className="mt-1"
-              placeholder="ריק = חישוב אוטומטי"
-              min="0"
-            />
+            <Input type="number" value={manualActiveCount} onChange={(e) => { setManualActiveCount(e.target.value); persist({ manualActiveCount: e.target.value }); }} dir="ltr" className="mt-1" placeholder="ריק = חישוב אוטומטי" min="0" />
           </div>
         </div>
 
@@ -568,29 +518,14 @@ export default function AdminBusiness() {
           </div>
           <p className="text-xs text-muted-foreground">חוזרות כל חודש אוטומטית</p>
           <div className="flex gap-2">
-            <Input
-              value={newFixedName}
-              onChange={(e) => setNewFixedName(e.target.value)}
-              placeholder="שם ההוצאה"
-              className="flex-1"
-            />
-            <Input
-              type="number"
-              value={newFixedAmount}
-              onChange={(e) => setNewFixedAmount(e.target.value)}
-              placeholder="₪"
-              dir="ltr"
-              className="w-28"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddFixed()}
-            />
+            <Input value={newFixedName} onChange={(e) => setNewFixedName(e.target.value)} placeholder="שם ההוצאה" className="flex-1" />
+            <Input type="number" value={newFixedAmount} onChange={(e) => setNewFixedAmount(e.target.value)} placeholder="₪" dir="ltr" className="w-28" onKeyDown={(e) => e.key === 'Enter' && handleAddFixed()} />
             <Button size="icon" onClick={handleAddFixed} disabled={!newFixedName || !newFixedAmount}>
               <Plus className="w-4 h-4" />
             </Button>
           </div>
           <div className="space-y-2 max-h-52 overflow-y-auto">
-            {fixedExpenses.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות קבועות</p>
-            )}
+            {fixedExpenses.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות קבועות</p>}
             {fixedExpenses.map((e) => {
               const active = e.enabled !== false;
               return (
@@ -598,11 +533,7 @@ export default function AdminBusiness() {
                   <span className={`font-medium ${active ? 'text-foreground' : 'text-muted-foreground line-through'}`}>{e.name}</span>
                   <div className="flex items-center gap-2">
                     <span className={`font-semibold ${active ? 'text-red-600' : 'text-muted-foreground'}`}>{fmt(e.amount)}</span>
-                    <button
-                      onClick={() => handleToggleFixed(e.id)}
-                      title={active ? 'כבה הוצאה החודש' : 'הדלק הוצאה'}
-                      className={`transition-colors ${active ? 'text-emerald-600 hover:text-emerald-800' : 'text-muted-foreground hover:text-emerald-600'}`}
-                    >
+                    <button onClick={() => handleToggleFixed(e.id)} title={active ? 'כבה הוצאה החודש' : 'הדלק הוצאה'} className={`transition-colors ${active ? 'text-emerald-600 hover:text-emerald-800' : 'text-muted-foreground hover:text-emerald-600'}`}>
                       <Power className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => handleRemoveFixed(e.id)} className="text-destructive hover:text-destructive/70">
@@ -629,29 +560,10 @@ export default function AdminBusiness() {
           </div>
           <p className="text-xs text-muted-foreground">מתפרסות על פני מספר חודשים</p>
           <div className="space-y-2">
-            <Input
-              value={newVarName}
-              onChange={(e) => setNewVarName(e.target.value)}
-              placeholder="שם ההוצאה"
-            />
+            <Input value={newVarName} onChange={(e) => setNewVarName(e.target.value)} placeholder="שם ההוצאה" />
             <div className="flex gap-2">
-              <Input
-                type="number"
-                value={newVarAmount}
-                onChange={(e) => setNewVarAmount(e.target.value)}
-                placeholder="סכום כולל ₪"
-                dir="ltr"
-                className="flex-1"
-              />
-              <Input
-                type="number"
-                value={newVarInstallments}
-                onChange={(e) => setNewVarInstallments(e.target.value)}
-                placeholder="תשלומים"
-                dir="ltr"
-                className="w-28"
-                min="1"
-              />
+              <Input type="number" value={newVarAmount} onChange={(e) => setNewVarAmount(e.target.value)} placeholder="סכום כולל ₪" dir="ltr" className="flex-1" />
+              <Input type="number" value={newVarInstallments} onChange={(e) => setNewVarInstallments(e.target.value)} placeholder="תשלומים" dir="ltr" className="w-28" min="1" />
               <Button size="icon" onClick={handleAddVariable} disabled={!newVarName || !newVarAmount}>
                 <Plus className="w-4 h-4" />
               </Button>
@@ -663,9 +575,7 @@ export default function AdminBusiness() {
             )}
           </div>
           <div className="space-y-2 max-h-52 overflow-y-auto">
-            {variableExpenses.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות משתנות</p>
-            )}
+            {variableExpenses.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות משתנות</p>}
             {variableExpenses.map((e) => {
               const remaining = e.installments - e.paidInstallments;
               const done = remaining === 0;
@@ -684,18 +594,11 @@ export default function AdminBusiness() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${done ? 'bg-emerald-500' : 'bg-orange-400'}`}
-                        style={{ width: `${(e.paidInstallments / e.installments) * 100}%` }}
-                      />
+                      <div className={`h-full rounded-full ${done ? 'bg-emerald-500' : 'bg-orange-400'}`} style={{ width: `${(e.paidInstallments / e.installments) * 100}%` }} />
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {e.paidInstallments}/{e.installments} תשלומים
-                    </span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{e.paidInstallments}/{e.installments} תשלומים</span>
                     {!done && (
-                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => handlePayInstallment(e.id)}>
-                        שולם
-                      </Button>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => handlePayInstallment(e.id)}>שולם</Button>
                     )}
                   </div>
                 </div>
@@ -738,12 +641,7 @@ export default function AdminBusiness() {
                   <span className="text-emerald-600 font-medium">נטו {fmt(entry.net)}</span>
                   <span className="text-red-500">מיסים {fmt(entry.tax)}</span>
                   <span>{entry.date}</span>
-                  <button
-                    onClick={() => handleRemoveIncome(entry.id)}
-                    className="text-destructive hover:underline"
-                  >
-                    הסר
-                  </button>
+                  <button onClick={() => handleRemoveIncome(entry.id)} className="text-destructive hover:underline">הסר</button>
                 </div>
               </div>
             ))}
