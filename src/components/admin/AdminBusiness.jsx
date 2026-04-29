@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import SimulationPanel from './SimulationPanel';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -669,6 +670,9 @@ export default function AdminBusiness() {
           )}
         </div>
       </div>
+
+      {/* === SIMULATION === */}
+      <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} />
 
       {/* === INCOME LOG === */}
       {incomeLog.length > 0 && (
