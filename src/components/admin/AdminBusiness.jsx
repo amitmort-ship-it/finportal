@@ -102,6 +102,7 @@ export default function AdminBusiness() {
   const [avgDealSize, setAvgDealSize] = useState(stored.avgDealSize || 8000);
   const [manualPipeline, setManualPipeline] = useState(stored.manualPipeline || 0);
   const [assetsValue, setAssetsValue] = useState(stored.assetsValue || 0);
+  const [manualActiveCount, setManualActiveCount] = useState(stored.manualActiveCount ?? '');
 
   useEffect(() => {
     const load = async () => {
@@ -232,15 +233,16 @@ export default function AdminBusiness() {
   const reservoirMonths = totalNet > 0 ? Math.floor(totalNet / SALARY_TARGET) : 0;
   const reservoirRemainder = totalNet % SALARY_TARGET;
 
-  // Active cases (clients with a stage that isn't done)
+  // Active cases — manual override or auto from stages
   const activeCount = useMemo(() => {
+    if (manualActiveCount !== '' && Number(manualActiveCount) >= 0) return Number(manualActiveCount);
     const activeStageEmails = new Set(
       stages
         .filter((s) => ACTIVE_STAGES.includes(s.current_stage))
         .map((s) => s.client_email),
     );
     return activeStageEmails.size;
-  }, [stages]);
+  }, [stages, manualActiveCount]);
 
   // Pipeline — cases close to deal
   const pipelineCount = useMemo(() => {
@@ -330,7 +332,9 @@ export default function AdminBusiness() {
             <span>תיקים פעילים</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{activeCount}</p>
-          <p className="text-xs text-muted-foreground">סף עומס: {HIGH_WORKLOAD_THRESHOLD}</p>
+          <p className="text-xs text-muted-foreground">
+            {manualActiveCount !== '' ? 'הזנה ידנית' : 'אוטומטי'} · סף עומס: {HIGH_WORKLOAD_THRESHOLD}
+          </p>
         </div>
 
         <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
@@ -450,6 +454,21 @@ export default function AdminBusiness() {
               }}
               dir="ltr"
               className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>תיקים פעילים (ידני) — מבטל חישוב אוטומטי</Label>
+            <Input
+              type="number"
+              value={manualActiveCount}
+              onChange={(e) => {
+                setManualActiveCount(e.target.value);
+                persist({ manualActiveCount: e.target.value });
+              }}
+              dir="ltr"
+              className="mt-1"
+              placeholder="ריק = חישוב אוטומטי"
+              min="0"
             />
           </div>
         </div>
