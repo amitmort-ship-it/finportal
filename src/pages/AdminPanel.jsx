@@ -307,6 +307,7 @@ export default function AdminPanel() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-9 mb-6 h-auto">
+          <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
           <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
@@ -314,7 +315,6 @@ export default function AdminPanel() {
           <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
           <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
           <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
-          <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
             <span>עדכונים</span>
             {updatesBadgeCount > 0 ? (
