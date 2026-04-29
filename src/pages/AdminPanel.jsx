@@ -10,49 +10,51 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import { Suspense, lazy } from 'react';
 
+const ErrorFallback = ({ message }) => <div className="text-red-500 p-4">{message}</div>;
+
 const AdminClients = lazy(() =>
   import('../components/admin/AdminClients').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת מנהל הלקוחות</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת מנהל הלקוחות" />,
   }))
 );
 const AdminCollaterals = lazy(() =>
   import('../components/admin/AdminCollaterals').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת בטחונות</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת בטחונות" />,
   }))
 );
 const AdminPackages = lazy(() =>
   import('../components/admin/AdminPackages').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת תמהיל</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת תמהיל" />,
   }))
 );
 const AdminBankApprovals = lazy(() =>
   import('../components/admin/AdminBankApprovals').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת אישורים</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת אישורים" />,
   }))
 );
 const AdminProcessStage = lazy(() =>
   import('../components/admin/AdminProcessStage').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת שלב</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת שלב" />,
   }))
 );
 const AdminUpdates = lazy(() =>
   import('../components/admin/AdminUpdates').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת עדכונים</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת עדכונים" />,
   }))
 );
 const AdminViewDocuments = lazy(() =>
   import('../components/admin/AdminViewDocuments').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת מסמכים</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת מסמכים" />,
   }))
 );
 const AdminNotifications = lazy(() =>
   import('../components/admin/AdminNotifications').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת התראות</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת התראות" />,
   }))
 );
 const AdminBusiness = lazy(() =>
   import('../components/admin/AdminBusiness').catch(() => ({
-    default: () => <div className="text-red-500 p-4">שגיאה בטעינת ניהול עסק</div>,
+    default: () => <ErrorFallback message="שגיאה בטעינת ניהול עסק" />,
   }))
 );
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
