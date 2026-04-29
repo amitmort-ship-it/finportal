@@ -238,9 +238,9 @@ export default function AdminColorPicker() {
   };
 
   return (
-    <div className="flex items-center gap-3 flex-wrap">
+    <div className="flex items-center gap-2 shrink-0">
       <Palette className="w-4 h-4 text-muted-foreground shrink-0" />
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5">
         {PALETTES.map((palette) => (
           <button
             key={palette.id}
@@ -262,9 +262,6 @@ export default function AdminColorPicker() {
           </button>
         ))}
       </div>
-      <span className="text-xs text-muted-foreground">
-        {PALETTES.find((p) => p.id === selected)?.label}
-      </span>
     </div>
   );
 }
