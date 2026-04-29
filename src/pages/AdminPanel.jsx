@@ -63,7 +63,7 @@ export default function AdminPanel() {
         <AdminColorPicker />
       </div>
 
-      <RefinanceMonitor />
+
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
