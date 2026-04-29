@@ -103,7 +103,7 @@ export default function MortgagePulse({ clientEmail }) {
             <div className="font-bold text-right text-yellow-800">המשכנתא שלך</div>
           </div>
           <div className="text-right">
-            <div className="inline-block bg-yellow-200 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded">בנק הפועלים</div>
+            <div className="inline-block bg-yellow-200 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded">{mortgage.bank_name || 'בנק'}</div>
             <div className="text-xs text-yellow-700 mt-1">סה"כ קרן: ₪{(mortgage.tracks || []).reduce((sum, t) => sum + (t.principal || 0), 0).toLocaleString()}</div>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function MortgagePulse({ clientEmail }) {
               <span className="text-yellow-700">{track.years}שנ'</span>
               <span className="font-bold text-yellow-800">{track.interest_rate}%</span>
               <span className="text-yellow-600">₪{(track.principal || 0).toLocaleString()}</span>
-              <span className="text-yellow-700">{track.track_type}</span>
+              <span className="text-yellow-700 font-medium">{track.track_type}</span>
             </div>
           ))}
         </div>
