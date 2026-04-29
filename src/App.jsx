@@ -1,6 +1,6 @@
-import { Toaster } from '@/components/ui/toaster';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClientInstance } from '@/lib/query-client';
+import { Toaster } from "@/components/ui/toaster"
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ThemeProvider } from 'next-themes';
@@ -22,7 +22,7 @@ const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
   </div>
 );
 
@@ -80,7 +80,7 @@ function App() {
         </ThemeProvider>
       </QueryClientProvider>
     </AuthProvider>
-  );
+  )
 }
 
-export default App;
+export default App

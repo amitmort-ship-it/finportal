@@ -2,16 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Users, Bell, Building2, FileText, Package,
-  Lock, ListChecks, LayoutDashboard, TrendingUp,
-} from 'lucide-react';
-
+import { Input } from '@/components/ui/input';
 import ClientSearchFilter from '@/components/ClientSearchFilter';
-import AdminBusiness from '@/components/admin/AdminBusiness';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminUpdates from '@/components/admin/AdminUpdates';
-import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
 import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
 import AdminPackages from '@/components/admin/AdminPackages';
@@ -20,23 +14,25 @@ import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
-
-function ClientSearchBox({ onSelect }) {
-  return (
-    <div className="bg-card rounded-xl border border-border p-5">
-      <label className="text-sm font-medium">חיפוש לקוח</label>
-      <div className="mt-2">
-        <ClientSearchFilter onSelect={onSelect} />
-      </div>
-    </div>
-  );
-}
+import AdminBusiness from '@/components/admin/AdminBusiness';
+import Dashboard from '@/pages/Dashboard';
+import {
+  Users,
+  Bell,
+  Building2,
+  FileText,
+  Package,
+  Lock,
+  ListChecks,
+  LayoutDashboard,
+  TrendingUp,
+} from 'lucide-react';
 
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSearch, setClientSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('clients');
 
   useAdminPalette();
 
@@ -58,7 +54,7 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">לוח הניהול</h1>
           <p className="text-muted-foreground mt-1">ניהול לקוחות ומעקב תהליכים</p>
@@ -70,7 +66,7 @@ export default function AdminPanel() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
-          {tabs.map((tab) => {
+          {tabs.map(tab => {
             const Icon = tab.icon;
             return (
               <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm">
@@ -82,7 +78,6 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <AdminNotifications selectedClient={selectedClient} />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>
 
@@ -95,32 +90,62 @@ export default function AdminPanel() {
         </TabsContent>
 
         <TabsContent value="updates" className="space-y-6">
-          <ClientSearchBox onSelect={setClientSearch} />
-          <AdminUpdates selectedClient={clientSearch || null} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
+          </div>
+          <AdminUpdates selectedClientFilter={clientSearch} />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
-          <ClientSearchBox onSelect={setClientSearch} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
+          </div>
           <AdminBankApprovals selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          <ClientSearchBox onSelect={setClientSearch} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
+          </div>
           <AdminViewDocuments selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="packages" className="space-y-6">
-          <ClientSearchBox onSelect={setClientSearch} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
+          </div>
           <AdminPackages selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="collaterals" className="space-y-6">
-          <ClientSearchBox onSelect={setClientSearch} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
+          </div>
           <AdminCollaterals selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="process" className="space-y-6">
-          <ClientSearchBox onSelect={setClientSearch} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <div className="mt-2">
+              <ClientSearchFilter onSelect={setClientSearch} />
+            </div>
+          </div>
           <AdminProcessStage selectedClient={clientSearch || null} />
         </TabsContent>
       </Tabs>
