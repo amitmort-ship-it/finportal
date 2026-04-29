@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import ClientSearchFilter from '@/components/ClientSearchFilter';
 import AdminBusiness from '@/components/admin/AdminBusiness';
 import AdminClients from '@/components/admin/AdminClients';
@@ -16,8 +15,6 @@ import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
-
-import Dashboard from '@/pages/Dashboard';
 import {
   Users,
   Bell,
@@ -68,7 +65,7 @@ export default function AdminPanel() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
-          {tabs.map(tab => {
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm">
