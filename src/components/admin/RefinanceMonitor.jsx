@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertCircle, TrendingDown, CheckCircle2, Mail, Loader2 } from 'lucide-react';
+import { AlertCircle, TrendingDown, CheckCircle2, Mail, Loader2, Phone, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import RefinanceAddTemp from './RefinanceAddTemp';
 
-const THRESHOLD = 0.5; // פער מינימלי לסימון (ריבית קיימת גבוהה מריבית שוק ב-0.5% לפחות)
+const THRESHOLD = 0.5;
 const COOLOFF_MONTHS = 12;
 
 function monthsDiff(dateStr) {
@@ -21,8 +22,26 @@ function getYearsRange(years) {
   return '25-30';
 }
 
+function calcAvgGap(mortgage, rateMap) {
+  let totalWeightedGap = 0;
+  let totalPrincipal = 0;
+  (mortgage.tracks || []).forEach(track => {
+    const range = getYearsRange(track.years || 0);
+    const key = `${track.track_type}__${range}`;
+    const targetRate = rateMap[key];
+    if (targetRate === undefined) return;
+    const gap = track.interest_rate - targetRate;
+    totalWeightedGap += gap * (track.principal || 0);
+    totalPrincipal += (track.principal || 0);
+  });
+  if (totalPrincipal === 0) return null;
+  return totalWeightedGap / totalPrincipal;
+}
+
 export default function RefinanceMonitor() {
-  const [candidates, setCandidates] = useState([]);
+  const [savedCandidates, setSavedCandidates] = useState([]);
+  const [tempCandidates, setTempCandidates] = useState([]);
+  const [rateMap, setRateMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [sendingEmail, setSendingEmail] = useState({});
 
@@ -36,51 +55,52 @@ export default function RefinanceMonitor() {
 
       const profileMap = Object.fromEntries(profiles.map(p => [p.email, p.full_name || p.email]));
 
-      const rateMap = {};
-      marketRates.forEach(r => {
-        const key = `${r.track_type}__${r.years_range}`;
-        rateMap[key] = r.target_rate;
-      });
+      const map = {};
+      marketRates.forEach(r => { map[`${r.track_type}__${r.years_range}`] = r.target_rate; });
+      setRateMap(map);
 
       const results = [];
       mortgages.forEach(m => {
         const months = monthsDiff(m.execution_date);
-        if (months < COOLOFF_MONTHS) return; // cool-off
+        if (months < COOLOFF_MONTHS) return;
 
-        let totalWeightedGap = 0;
-        let totalPrincipal = 0;
+        const avgGap = calcAvgGap(m, map);
+        if (avgGap === null || avgGap < THRESHOLD) return;
 
-        (m.tracks || []).forEach(track => {
-          const range = getYearsRange(track.years || 0);
-          const key = `${track.track_type}__${range}`;
-          const targetRate = rateMap[key];
-          if (targetRate === undefined) return;
-          // gap חיובי = ריבית קיימת גבוהה מריבית שוק = הזדמנות למחזור
-          const gap = track.interest_rate - targetRate;
-          totalWeightedGap += gap * (track.principal || 0);
-          totalPrincipal += (track.principal || 0);
+        results.push({
+          ...m,
+          clientName: profileMap[m.client_email] || m.client_email,
+          avgGap: Math.round(avgGap * 100) / 100,
+          months,
         });
-
-        if (totalPrincipal === 0) return;
-        const avgGap = totalWeightedGap / totalPrincipal;
-
-        // avgGap חיובי = ריבית קיימת גבוהה מהשוק = כדאי למחזר
-        if (avgGap >= THRESHOLD) {
-          results.push({
-            ...m,
-            clientName: profileMap[m.client_email] || m.client_email,
-            avgGap: Math.round(avgGap * 100) / 100,
-            months,
-          });
-        }
       });
 
       results.sort((a, b) => b.avgGap - a.avgGap);
-      setCandidates(results);
+      setSavedCandidates(results);
       setLoading(false);
     };
     load();
   }, []);
+
+  const handleAddTemp = (tempClient) => {
+    const months = monthsDiff(tempClient.execution_date);
+    const avgGap = calcAvgGap(tempClient, rateMap);
+    const enriched = {
+      ...tempClient,
+      months,
+      avgGap: avgGap !== null ? Math.round(avgGap * 100) / 100 : null,
+    };
+    setTempCandidates(prev => [...prev, enriched]);
+    if (avgGap !== null && avgGap >= THRESHOLD) {
+      toast.success(`נמצאה הזדמנות למחזור עבור ${tempClient.clientName}!`);
+    } else if (months < COOLOFF_MONTHS) {
+      toast.info(`${tempClient.clientName} — טרם עברו ${COOLOFF_MONTHS} חודשים מביצוע`);
+    } else {
+      toast.info(`${tempClient.clientName} — אין הזדמנות למחזור כרגע`);
+    }
+  };
+
+  const removeTemp = (id) => setTempCandidates(prev => prev.filter(c => c.id !== id));
 
   const handleSendEmail = async (candidate) => {
     setSendingEmail(prev => ({ ...prev, [candidate.id]: true }));
@@ -92,8 +112,8 @@ export default function RefinanceMonitor() {
 
 בדיקה שוטפת של ריביות השוק מצאה הזדמנות פוטנציאלית למחזור המשכנתא שלך.
 
-הריבית הממוצעת שלך גבוהה מריביות השוק הנוכחיות בכ-${candidate.avgGap.toFixed(2)}%.
-המשכנתא שלך בוצעה לפני ${candidate.months} חודשים בבנק ${candidate.bank_name}.
+הריבית הממוצעת שלך גבוהה מריביות השוק הנוכחיות בכ-${candidate.avgGap?.toFixed(2)}%.
+המשכנתא שלך בוצעה לפני ${candidate.months} חודשים${candidate.bank_name ? ` בבנק ${candidate.bank_name}` : ''}.
 
 מחזור משכנתא עשוי לחסוך לך כסף בתשלומים החודשיים.
 
@@ -103,67 +123,106 @@ export default function RefinanceMonitor() {
 צוות היועצים`,
       });
       toast.success(`מייל נשלח ל-${candidate.clientName}`);
-    } catch (err) {
+    } catch {
       toast.error('שגיאה בשליחת המייל');
     } finally {
       setSendingEmail(prev => ({ ...prev, [candidate.id]: false }));
     }
   };
 
+  const allCandidates = savedCandidates;
+  const tempWithOpportunity = tempCandidates.filter(c => c.avgGap !== null && c.avgGap >= THRESHOLD);
+  const tempNoOpportunity = tempCandidates.filter(c => c.avgGap === null || c.avgGap < THRESHOLD);
+
   if (loading) return null;
 
-  if (candidates.length === 0) {
-    return (
-      <div className="bg-card rounded-xl border border-border p-5 mb-6 flex items-center gap-3" dir="rtl">
-        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-        <div>
-          <p className="font-semibold text-sm">אין לקוחות הממתינים למחזור</p>
-          <p className="text-xs text-muted-foreground">כל התיקים המתועדים עומדים בריביות השוק</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6" dir="rtl">
-      <div className="flex items-center gap-2 mb-4">
-        <AlertCircle className="w-5 h-5 text-amber-600" />
-        <h3 className="font-bold text-amber-800">
-          לקוחות עם הזדמנות למחזור ({candidates.length})
-        </h3>
-        <span className="text-xs text-amber-600 mr-1">— ריבית שוק נמוכה מריבית קיימת ב-{THRESHOLD}% ומעלה</span>
-      </div>
-      <div className="space-y-2">
-        {candidates.map(c => (
-          <div key={c.id} className="bg-white rounded-lg border border-amber-200 px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <span className="font-semibold text-sm">{c.clientName}</span>
-              <span className="text-xs text-muted-foreground mr-2">{c.bank_name}</span>
-              <span className="text-xs text-muted-foreground">· {c.months} חודשים מביצוע</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                <TrendingDown className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold">פוטנציאל חיסכון {c.avgGap.toFixed(2)}%</span>
+    <div className="mb-6" dir="rtl">
+      <RefinanceAddTemp onAdd={handleAddTemp} />
+
+      {/* לקוחות ארעיים ללא הזדמנות */}
+      {tempNoOpportunity.length > 0 && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+          <p className="text-xs font-semibold text-slate-500 mb-2">לקוחות ארעיים — אין הזדמנות כרגע</p>
+          <div className="space-y-2">
+            {tempNoOpportunity.map(c => (
+              <div key={c.id} className="bg-white rounded-lg border border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <span className="font-semibold text-sm">{c.clientName}</span>
+                  {c.clientPhone && <span className="text-xs text-muted-foreground mr-2"><Phone className="w-3 h-3 inline ml-0.5" />{c.clientPhone}</span>}
+                  <span className="text-xs text-muted-foreground mr-2">{c.client_email}</span>
+                  {c.months < COOLOFF_MONTHS
+                    ? <span className="text-xs text-blue-500">· עוד {COOLOFF_MONTHS - c.months} חודשים לתקופת הצינון</span>
+                    : <span className="text-xs text-slate-400">· ריביות תואמות שוק</span>
+                  }
+                </div>
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeTemp(c.id)}>
+                  <X className="w-3.5 h-3.5" />
+                </Button>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs gap-1.5 border-amber-300 hover:bg-amber-100 text-amber-800"
-                onClick={() => handleSendEmail(c)}
-                disabled={!!sendingEmail[c.id]}
-              >
-                {sendingEmail[c.id] ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Mail className="w-3.5 h-3.5" />
-                )}
-                שלח התראה
-              </Button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* לקוחות עם הזדמנות למחזור */}
+      {allCandidates.length === 0 && tempWithOpportunity.length === 0 ? (
+        <div className="bg-card rounded-xl border border-border p-5 flex items-center gap-3">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">אין לקוחות הממתינים למחזור</p>
+            <p className="text-xs text-muted-foreground">כל התיקים המתועדים עומדים בריביות השוק</p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="w-5 h-5 text-amber-600" />
+            <h3 className="font-bold text-amber-800">
+              לקוחות עם הזדמנות למחזור ({allCandidates.length + tempWithOpportunity.length})
+            </h3>
+            <span className="text-xs text-amber-600 mr-1">— ריבית שוק נמוכה מריבית קיימת ב-{THRESHOLD}% ומעלה</span>
+          </div>
+          <div className="space-y-2">
+            {[...allCandidates, ...tempWithOpportunity].map(c => (
+              <div key={c.id} className="bg-white rounded-lg border border-amber-200 px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <span className="font-semibold text-sm">{c.clientName}</span>
+                  {c.isTemp && c.clientPhone && (
+                    <span className="text-xs text-muted-foreground mr-2">
+                      <Phone className="w-3 h-3 inline ml-0.5" />{c.clientPhone}
+                    </span>
+                  )}
+                  {c.isTemp && <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded mr-1">ארעי</span>}
+                  {c.bank_name && <span className="text-xs text-muted-foreground mr-2">{c.bank_name}</span>}
+                  <span className="text-xs text-muted-foreground">· {c.months} חודשים מביצוע</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold">פוטנציאל חיסכון {c.avgGap?.toFixed(2)}%</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1.5 border-amber-300 hover:bg-amber-100 text-amber-800"
+                    onClick={() => handleSendEmail(c)}
+                    disabled={!!sendingEmail[c.id]}
+                  >
+                    {sendingEmail[c.id] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                    שלח התראה
+                  </Button>
+                  {c.isTemp && (
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeTemp(c.id)}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
