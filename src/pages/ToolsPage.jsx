@@ -1193,6 +1193,7 @@ function LoanComparisonCalculator() {
   );
 }
 function PropertyPurchaseCostsCalculator() {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({
     propertyPrice: 2000000,
     purchaseType: 'single',
