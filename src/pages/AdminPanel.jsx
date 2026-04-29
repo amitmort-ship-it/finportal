@@ -64,11 +64,11 @@ export default function AdminPanel() {
   const tabs = [
     { id: 'main', label: 'ראשי', icon: Home },
     { id: 'clients', label: 'לקוחות', icon: Users },
+    { id: 'process', label: 'שלבים', icon: ListChecks },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
     { id: 'documents', label: 'מסמכים', icon: FileText },
     { id: 'packages', label: 'תמהיל', icon: Package },
     { id: 'collaterals', label: 'בטחונות', icon: Lock },
-    { id: 'process', label: 'שלבים', icon: ListChecks },
     { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
   ];
 
