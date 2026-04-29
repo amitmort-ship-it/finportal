@@ -33,7 +33,7 @@ export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSearch, setClientSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('clients');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useAdminPalette();
 
