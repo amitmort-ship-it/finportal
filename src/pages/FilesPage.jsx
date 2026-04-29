@@ -35,7 +35,7 @@ export default function FilesPage() {
     if (!user?.email) return;
 
     const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
-      if (event.data?.client_email === user.email) {
+      if (event.data?.client_email === user?.email) {
         if (event.type === 'delete') {
           setRequests((prev) => prev.filter((request) => request.id !== event.id));
         } else {
