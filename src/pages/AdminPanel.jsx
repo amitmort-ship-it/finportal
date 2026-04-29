@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import { Suspense, lazy } from 'react';
 
-const AdminClients = lazy(() => import('../components/admin/AdminClients').catch(() => {
-  return { default: () => <div className="text-red-500 p-4">שגיאה בטעינת מנהל הלקוחות</div> };
-}));
+const AdminClients = lazy(() =>
+  import('../components/admin/AdminClients').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת מנהל הלקוחות</div>,
+  }))
+);
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminPackages from '../components/admin/AdminPackages';
 import AdminBankApprovals from '../components/admin/AdminBankApprovals';
