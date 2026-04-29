@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import AdminClients from '@/components/admin/AdminClients';
-import AdminNotifications from '@/components/admin/AdminNotifications';
+import AdminUpdates from '@/components/admin/AdminUpdates';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
 import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
 import AdminPackages from '@/components/admin/AdminPackages';
@@ -29,6 +30,7 @@ import {
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
+  const [clientSearch, setClientSearch] = useState('');
   const [activeTab, setActiveTab] = useState('clients');
 
   useAdminPalette();
@@ -41,7 +43,7 @@ export default function AdminPanel() {
     { id: 'dashboard', label: 'דף ראשי', icon: LayoutDashboard },
     { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
     { id: 'clients', label: 'לקוחות', icon: Users },
-    { id: 'notifications', label: 'הודעות', icon: Bell },
+    { id: 'updates', label: 'עדכונים', icon: Bell },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
     { id: 'documents', label: 'מסמכים', icon: FileText },
     { id: 'packages', label: 'תמהיל', icon: Package },
@@ -75,7 +77,6 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <AdminNotifications selectedClient={selectedClient} />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>
 
@@ -87,50 +88,82 @@ export default function AdminPanel() {
           <AdminClients />
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
-          <AdminNotifications selectedClient={selectedClient} />
-          <ClientsByStageTable onSelectClient={setSelectedClient} />
+        <TabsContent value="updates" className="space-y-6">
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <Input
+              placeholder="הקלד שם או אימייל..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AdminUpdates selectedClientFilter={clientSearch} />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">בחר לקוח</label>
-            <select
-              value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
-              className="mt-2 w-full rounded-md border border-input px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-              {/* Clients loaded dynamically in component */}
-            </select>
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <Input
+              placeholder="הקלד שם או אימייל..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="mt-2"
+            />
           </div>
-          <AdminBankApprovals selectedClient={selectedClient} />
+          <AdminBankApprovals selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
           <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">בחר לקוח</label>
-            <select
-              value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
-              className="mt-2 w-full rounded-md border border-input px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-            </select>
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <Input
+              placeholder="הקלד שם או אימייל..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="mt-2"
+            />
           </div>
-          <AdminViewDocuments selectedClient={selectedClient} />
+          <AdminViewDocuments selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="packages" className="space-y-6">
-          <AdminPackages selectedClient={selectedClient} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <Input
+              placeholder="הקלד שם או אימייל..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AdminPackages selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="collaterals" className="space-y-6">
-          <AdminCollaterals selectedClient={selectedClient} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <Input
+              placeholder="הקלד שם או אימייל..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AdminCollaterals selectedClient={clientSearch || null} />
         </TabsContent>
 
         <TabsContent value="process" className="space-y-6">
-          <AdminProcessStage selectedClient={selectedClient} />
+          <div className="bg-card rounded-xl border border-border p-5">
+            <label className="text-sm font-medium">חיפוש לקוח</label>
+            <Input
+              placeholder="הקלד שם או אימייל..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AdminProcessStage selectedClient={clientSearch || null} />
         </TabsContent>
       </Tabs>
     </div>
