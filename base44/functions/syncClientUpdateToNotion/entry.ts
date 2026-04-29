@@ -23,13 +23,8 @@ async function notionFetch(path: string, init: RequestInit, apiKey: string) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(
-      JSON.stringify({
-        step: path,
-        status: response.status,
-        notion_error: data,
-      }),
-    );
+    const message = data?.message || `Notion request failed with status ${response.status}`;
+    throw new Error(message);
   }
 
   return data;
@@ -49,7 +44,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
 
     if (user?.role !== 'admin') {
-      return Response.json({ error: 'Unauthorized' });
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const apiKey = Deno.env.get('NOTION_API_KEY');
@@ -57,12 +52,15 @@ Deno.serve(async (req) => {
     const emailPropertyName = DEFAULT_EMAIL_PROPERTY;
 
     if (!apiKey) {
-      return Response.json({
-        error: 'Missing Notion configuration',
-        missing: {
-          NOTION_API_KEY: true,
+      return Response.json(
+        {
+          error: 'Missing Notion configuration',
+          missing: {
+            NOTION_API_KEY: !apiKey,
+          },
         },
-      });
+        { status: 500 },
+      );
     }
 
     const payload = await req.json();
@@ -72,7 +70,7 @@ Deno.serve(async (req) => {
     const clientName = String(payload?.client_name || clientEmail || 'לקוח').trim();
 
     if (!clientEmail || !message) {
-      return Response.json({ error: 'Missing required fields' });
+      return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const queryResult = await notionFetch(
@@ -95,12 +93,14 @@ Deno.serve(async (req) => {
     const page = findPageByEmail(queryResult?.results || [], clientEmail, emailPropertyName);
 
     if (!page?.id) {
-      return Response.json({
-        error: 'Client page not found in Notion',
-        client_email: clientEmail,
-        property: emailPropertyName,
-        query_count: queryResult?.results?.length || 0,
-      });
+      return Response.json(
+        {
+          error: 'Client page not found in Notion',
+          client_email: clientEmail,
+          property: emailPropertyName,
+        },
+        { status: 404 },
+      );
     }
 
     await notionFetch(
@@ -137,8 +137,7 @@ Deno.serve(async (req) => {
       client_name: clientName,
     });
   } catch (error) {
-    return Response.json({
-      error: error?.message || 'Unknown error',
-    });
+    console.error('syncClientUpdateToNotion error:', error);
+    return Response.json({ error: error.message || 'Unknown error' }, { status: 500 });
   }
 });
