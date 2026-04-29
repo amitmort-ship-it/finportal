@@ -22,9 +22,9 @@ export default function ClientSearchFilter({ onSelect }) {
 
   useEffect(() => {
     if (search.trim()) {
-      const results = clients.filter(c =>
-        c.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-        c.email?.toLowerCase().includes(search.toLowerCase())
+      const results = clients.filter((client) =>
+        client.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+        client.email?.toLowerCase().includes(search.toLowerCase()),
       );
       setFiltered(results);
       setOpen(true);
@@ -45,12 +45,12 @@ export default function ClientSearchFilter({ onSelect }) {
       <Input
         placeholder="הקלד שם או אימייל..."
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={(event) => setSearch(event.target.value)}
       />
-      {open && filtered.length > 0 && (
+      {open && filtered.length > 0 ? (
         <div className="absolute top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg z-50">
           <div className="max-h-64 overflow-y-auto">
-            {filtered.map(client => (
+            {filtered.map((client) => (
               <button
                 key={client.id}
                 onClick={() => handleSelect(client.email)}
@@ -62,7 +62,7 @@ export default function ClientSearchFilter({ onSelect }) {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
