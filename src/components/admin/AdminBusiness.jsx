@@ -13,6 +13,9 @@ import {
   CheckCircle2,
   Clock,
   Info,
+  Trash2,
+  Repeat,
+  CreditCard,
 } from 'lucide-react';
 import {
   BarChart,
@@ -75,14 +78,27 @@ export default function AdminBusiness() {
   const [loading, setLoading] = useState(true);
   const [stored, setStored] = useState(loadStored);
 
-  // Editable fields
+  // Income
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
+  const [incomeLog, setIncomeLog] = useState(stored.incomeLog || []);
+
+  // Fixed expenses
+  const [fixedExpenses, setFixedExpenses] = useState(stored.fixedExpenses || []);
+  const [newFixedName, setNewFixedName] = useState('');
+  const [newFixedAmount, setNewFixedAmount] = useState('');
+
+  // Variable expenses
+  const [variableExpenses, setVariableExpenses] = useState(stored.variableExpenses || []);
+  const [newVarName, setNewVarName] = useState('');
+  const [newVarAmount, setNewVarAmount] = useState('');
+  const [newVarInstallments, setNewVarInstallments] = useState('1');
+
+  // Settings
   const [avgDealSize, setAvgDealSize] = useState(stored.avgDealSize || 8000);
   const [manualPipeline, setManualPipeline] = useState(stored.manualPipeline || 0);
   const [assetsValue, setAssetsValue] = useState(stored.assetsValue || 0);
-  const [incomeLog, setIncomeLog] = useState(stored.incomeLog || []);
 
   useEffect(() => {
     const load = async () => {
@@ -138,10 +154,70 @@ export default function AdminBusiness() {
     persist({ incomeLog: next });
   };
 
+  // Fixed expenses handlers
+  const handleAddFixed = () => {
+    const amount = Number(String(newFixedAmount).replace(/,/g, ''));
+    if (!newFixedName.trim() || !amount) return;
+    const next = [...fixedExpenses, { id: Date.now(), name: newFixedName.trim(), amount }];
+    setFixedExpenses(next);
+    persist({ fixedExpenses: next });
+    setNewFixedName('');
+    setNewFixedAmount('');
+  };
+  const handleRemoveFixed = (id) => {
+    const next = fixedExpenses.filter((e) => e.id !== id);
+    setFixedExpenses(next);
+    persist({ fixedExpenses: next });
+  };
+
+  // Variable expenses handlers
+  const handleAddVariable = () => {
+    const amount = Number(String(newVarAmount).replace(/,/g, ''));
+    const installments = Math.max(1, Number(newVarInstallments) || 1);
+    if (!newVarName.trim() || !amount) return;
+    const entry = {
+      id: Date.now(),
+      name: newVarName.trim(),
+      totalAmount: amount,
+      installments,
+      installmentAmount: Math.round(amount / installments),
+      paidInstallments: 0,
+      startDate: new Date().toLocaleDateString('he-IL'),
+    };
+    const next = [...variableExpenses, entry];
+    setVariableExpenses(next);
+    persist({ variableExpenses: next });
+    setNewVarName('');
+    setNewVarAmount('');
+    setNewVarInstallments('1');
+    toast.success(`הוצאה "${entry.name}" נוספה — ${installments} תשלומים של ${fmt(entry.installmentAmount)}`);
+  };
+  const handlePayInstallment = (id) => {
+    const next = variableExpenses.map((e) =>
+      e.id === id ? { ...e, paidInstallments: Math.min(e.paidInstallments + 1, e.installments) } : e
+    );
+    setVariableExpenses(next);
+    persist({ variableExpenses: next });
+  };
+  const handleRemoveVariable = (id) => {
+    const next = variableExpenses.filter((e) => e.id !== id);
+    setVariableExpenses(next);
+    persist({ variableExpenses: next });
+  };
+
   // === Derived metrics ===
   const totalGross = useMemo(() => incomeLog.reduce((s, e) => s + e.gross, 0), [incomeLog]);
   const totalNet = useMemo(() => incomeLog.reduce((s, e) => s + e.net, 0), [incomeLog]);
   const totalTax = useMemo(() => incomeLog.reduce((s, e) => s + e.tax, 0), [incomeLog]);
+
+  const monthlyFixedTotal = useMemo(() => fixedExpenses.reduce((s, e) => s + e.amount, 0), [fixedExpenses]);
+  const activeVariableMonthly = useMemo(() =>
+    variableExpenses
+      .filter((e) => e.paidInstallments < e.installments)
+      .reduce((s, e) => s + e.installmentAmount, 0),
+    [variableExpenses]
+  );
+  const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
   const reservoirMonths = totalNet > 0 ? Math.floor(totalNet / SALARY_TARGET) : 0;
   const reservoirRemainder = totalNet % SALARY_TARGET;
 
@@ -207,7 +283,7 @@ export default function AdminBusiness() {
       )}
 
       {/* === TOP KPI ROW === */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Droplets className="w-4 h-4 text-blue-500" />
@@ -244,6 +320,15 @@ export default function AdminBusiness() {
           </div>
           <p className="text-2xl font-bold text-foreground">{activeCount}</p>
           <p className="text-xs text-muted-foreground">סף עומס: {HIGH_WORKLOAD_THRESHOLD}</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+            <CreditCard className="w-4 h-4 text-red-500" />
+            <span>הוצאות חודשיות</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{fmt(totalMonthlyExpenses)}</p>
+          <p className="text-xs text-muted-foreground">קבועות: {fmt(monthlyFixedTotal)} | משתנות: {fmt(activeVariableMonthly)}</p>
         </div>
       </div>
 
@@ -441,6 +526,149 @@ export default function AdminBusiness() {
           </div>
         </div>
       )}
+
+      {/* === EXPENSES === */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Fixed Expenses */}
+        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Repeat className="w-4 h-4 text-red-500" />
+            <h3 className="font-bold text-foreground">הוצאות קבועות חודשיות</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">חוזרות כל חודש אוטומטית</p>
+          <div className="flex gap-2">
+            <Input
+              value={newFixedName}
+              onChange={(e) => setNewFixedName(e.target.value)}
+              placeholder="שם ההוצאה"
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              value={newFixedAmount}
+              onChange={(e) => setNewFixedAmount(e.target.value)}
+              placeholder="₪"
+              dir="ltr"
+              className="w-28"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddFixed()}
+            />
+            <Button size="icon" onClick={handleAddFixed} disabled={!newFixedName || !newFixedAmount}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="space-y-2 max-h-52 overflow-y-auto">
+            {fixedExpenses.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות קבועות</p>
+            )}
+            {fixedExpenses.map((e) => (
+              <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+                <span className="font-medium text-foreground">{e.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-600 font-semibold">{fmt(e.amount)}</span>
+                  <button onClick={() => handleRemoveFixed(e.id)} className="text-destructive hover:text-destructive/70">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {fixedExpenses.length > 0 && (
+            <div className="pt-1 border-t border-border text-sm font-semibold flex justify-between">
+              <span className="text-muted-foreground">סה"כ חודשי:</span>
+              <span className="text-red-600">{fmt(monthlyFixedTotal)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Variable Expenses */}
+        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <CreditCard className="w-4 h-4 text-orange-500" />
+            <h3 className="font-bold text-foreground">הוצאות משתנות (תשלומים)</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">מתפרסות על פני מספר חודשים</p>
+          <div className="space-y-2">
+            <Input
+              value={newVarName}
+              onChange={(e) => setNewVarName(e.target.value)}
+              placeholder="שם ההוצאה"
+            />
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={newVarAmount}
+                onChange={(e) => setNewVarAmount(e.target.value)}
+                placeholder="סכום כולל ₪"
+                dir="ltr"
+                className="flex-1"
+              />
+              <Input
+                type="number"
+                value={newVarInstallments}
+                onChange={(e) => setNewVarInstallments(e.target.value)}
+                placeholder="תשלומים"
+                dir="ltr"
+                className="w-28"
+                min="1"
+              />
+              <Button size="icon" onClick={handleAddVariable} disabled={!newVarName || !newVarAmount}>
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            {newVarAmount && newVarInstallments && Number(newVarInstallments) > 1 && (
+              <p className="text-xs text-muted-foreground">
+                {Number(newVarInstallments)} × {fmt(Math.round(Number(newVarAmount) / Number(newVarInstallments)))} לחודש
+              </p>
+            )}
+          </div>
+          <div className="space-y-2 max-h-52 overflow-y-auto">
+            {variableExpenses.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-4">אין הוצאות משתנות</p>
+            )}
+            {variableExpenses.map((e) => {
+              const remaining = e.installments - e.paidInstallments;
+              const done = remaining === 0;
+              return (
+                <div key={e.id} className={`rounded-lg border px-3 py-2.5 text-sm space-y-1.5 ${done ? 'border-emerald-200 bg-emerald-50/50' : 'border-border'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`font-medium ${done ? 'text-emerald-700 line-through' : 'text-foreground'}`}>{e.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold text-xs ${done ? 'text-emerald-600' : 'text-orange-600'}`}>
+                        {done ? 'שולם' : `${fmt(e.installmentAmount)}/חודש`}
+                      </span>
+                      <button onClick={() => handleRemoveVariable(e.id)} className="text-destructive hover:text-destructive/70">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${done ? 'bg-emerald-500' : 'bg-orange-400'}`}
+                        style={{ width: `${(e.paidInstallments / e.installments) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {e.paidInstallments}/{e.installments} תשלומים
+                    </span>
+                    {!done && (
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => handlePayInstallment(e.id)}>
+                        שולם
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {variableExpenses.some((e) => e.paidInstallments < e.installments) && (
+            <div className="pt-1 border-t border-border text-sm font-semibold flex justify-between">
+              <span className="text-muted-foreground">חודש נוכחי:</span>
+              <span className="text-orange-600">{fmt(activeVariableMonthly)}</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* === INCOME LOG === */}
       {incomeLog.length > 0 && (
