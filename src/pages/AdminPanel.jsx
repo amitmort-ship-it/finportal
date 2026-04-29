@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import ClientSearchFilter from '@/components/ClientSearchFilter';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminUpdates from '@/components/admin/AdminUpdates';
