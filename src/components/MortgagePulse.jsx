@@ -65,22 +65,10 @@ export default function MortgagePulse({ clientEmail }) {
   return (
     <>
     <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 mb-6" dir="rtl">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          {status === 'opportunity' ? (
-            <p className="text-sm text-blue-800">המשכנתא שלך משתוררת מול ריביות השוק. שנערך בשיטוציה הדומה להחזור. למידע נוסף התקשר.</p>
-          ) : (
-            <p className="text-sm text-blue-800">המשכנתא שלך משתוררת מול ריביות השוק. שנערך בשיטוציה הדומה להחזור. למידע נוסף התקשר.</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="font-bold text-blue-700 text-sm">מד דופק משכנתא</span>
-          <Activity className="w-5 h-5 text-blue-600" />
-        </div>
-      </div>
-      {mortgage?.execution_date && (
-        <p className="text-xs text-blue-600 mt-2 text-right">בנק הפועלים · {new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</p>
-      )}
+      <p className="text-sm text-blue-800">
+        <span className="font-bold">מדווח משכנתא:</span> המשכנתא שלך תוקצתה בבנק הנבחר. כל המסמכים דרושים והתמונים והעדכונים על הדרך להחזור שוטף למשוואה.
+      </p>
+      <p className="text-xs text-blue-600 mt-3 text-right">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
     </div>
 
     {mortgage && (
