@@ -31,6 +31,7 @@ const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחו
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
 
+const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 const STORAGE_KEY = 'amit-business-data';
 
 function fmt(n) {
@@ -77,7 +78,9 @@ export default function AdminBusiness() {
   // Editable fields
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
+  const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
   const [avgDealSize, setAvgDealSize] = useState(stored.avgDealSize || 8000);
+  const [manualPipeline, setManualPipeline] = useState(stored.manualPipeline || 0);
   const [assetsValue, setAssetsValue] = useState(stored.assetsValue || 0);
   const [incomeLog, setIncomeLog] = useState(stored.incomeLog || []);
 
@@ -116,6 +119,7 @@ export default function AdminBusiness() {
       net,
       tax,
       source: newIncomeSource.trim() || 'לא צוין',
+      category: newIncomeCategory,
       date: new Date().toLocaleDateString('he-IL'),
       month: new Date().toLocaleString('he-IL', { month: 'long', year: 'numeric' }),
     };
@@ -124,6 +128,7 @@ export default function AdminBusiness() {
     persist({ incomeLog: next });
     setNewIncome('');
     setNewIncomeSource('');
+    setNewIncomeCategory('משכנתאות');
     toast.success(`הכנסה של ${fmt(amount)} נרשמה. נטו למאגר: ${fmt(net)}`);
   };
 
@@ -155,7 +160,19 @@ export default function AdminBusiness() {
     return stages.filter((s) => PIPELINE_STAGES.includes(s.current_stage)).length;
   }, [stages]);
 
-  const pipelineForecast = pipelineCount * (avgDealSize || 8000);
+  const autoPipelineForecast = pipelineCount * (avgDealSize || 8000);
+  const pipelineForecast = Number(manualPipeline) > 0 ? Number(manualPipeline) : autoPipelineForecast;
+
+  // Category breakdown
+  const categoryTotals = useMemo(() => {
+    const map = {};
+    INCOME_CATEGORIES.forEach((c) => { map[c] = 0; });
+    incomeLog.forEach((e) => {
+      const cat = e.category || 'אחר';
+      map[cat] = (map[cat] || 0) + e.net;
+    });
+    return map;
+  }, [incomeLog]);
 
   // Moving average chart — group by month
   const monthlyChart = useMemo(() => {
@@ -215,7 +232,9 @@ export default function AdminBusiness() {
             <span>צנרת 2 חודשים</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{fmt(pipelineForecast)}</p>
-          <p className="text-xs text-muted-foreground">{pipelineCount} תיקים בשלבי סגירה</p>
+          <p className="text-xs text-muted-foreground">
+            {Number(manualPipeline) > 0 ? 'הזנה ידנית' : `${pipelineCount} תיקים אוטומטי`}
+          </p>
         </div>
 
         <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
@@ -277,6 +296,14 @@ export default function AdminBusiness() {
             onChange={(e) => setNewIncomeSource(e.target.value)}
             placeholder="למשל: ישראל ישראלי"
           />
+          <Label>קטגוריה</Label>
+          <select
+            value={newIncomeCategory}
+            onChange={(e) => setNewIncomeCategory(e.target.value)}
+            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
           <Button className="w-full gap-2" onClick={handleAddIncome} disabled={!newIncome}>
             <Plus className="w-4 h-4" />
             הוסף הכנסה
@@ -297,6 +324,20 @@ export default function AdminBusiness() {
               }}
               dir="ltr"
               className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>צנרת ידנית (₪) — מבטל חישוב אוטומטי</Label>
+            <Input
+              type="number"
+              value={manualPipeline}
+              onChange={(e) => {
+                setManualPipeline(e.target.value);
+                persist({ manualPipeline: Number(e.target.value) });
+              }}
+              dir="ltr"
+              className="mt-1"
+              placeholder="0 = חישוב אוטומטי"
             />
           </div>
           <div>
@@ -375,6 +416,32 @@ export default function AdminBusiness() {
         </div>
       )}
 
+      {/* === CATEGORY BREAKDOWN === */}
+      {incomeLog.length > 0 && (
+        <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+          <h3 className="font-bold text-foreground mb-4">פילוח הכנסות לפי קטגוריה (נטו)</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {INCOME_CATEGORIES.map((cat) => {
+              const val = categoryTotals[cat] || 0;
+              const pct = totalNet > 0 ? Math.round((val / totalNet) * 100) : 0;
+              const colors = {
+                'משכנתאות': 'bg-blue-50 border-blue-200 text-blue-700',
+                'כ.ד': 'bg-emerald-50 border-emerald-200 text-emerald-700',
+                'הייטק': 'bg-violet-50 border-violet-200 text-violet-700',
+                'אחר': 'bg-slate-50 border-slate-200 text-slate-600',
+              };
+              return (
+                <div key={cat} className={`rounded-xl border p-4 ${colors[cat] || colors['אחר']}`}>
+                  <p className="text-sm font-semibold">{cat}</p>
+                  <p className="text-xl font-bold mt-1">{fmt(val)}</p>
+                  <p className="text-xs opacity-70 mt-0.5">{pct}% מסך הנטו</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* === INCOME LOG === */}
       {incomeLog.length > 0 && (
         <div className="bg-white rounded-xl border border-border shadow-sm p-5">
@@ -390,6 +457,9 @@ export default function AdminBusiness() {
                   <span className="text-muted-foreground mr-2 text-xs">גולמי</span>
                   {entry.source && entry.source !== 'לא צוין' && (
                     <span className="text-xs text-primary font-medium mr-1">· {entry.source}</span>
+                  )}
+                  {entry.category && (
+                    <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded mr-1">{entry.category}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
