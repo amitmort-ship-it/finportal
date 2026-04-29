@@ -175,7 +175,6 @@ export default function ResponsiveLayout() {
 
       <main
         className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto"
-        ref={(el) => el && location.pathname && el.scrollTo(0, 0)}
       >
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
           <img
