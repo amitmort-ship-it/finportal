@@ -23,6 +23,7 @@ import {
   Lock,
   ListChecks,
   Search,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function AdminPanel() {
@@ -69,12 +70,53 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">לוח הניהול</h1>
-          <p className="text-muted-foreground mt-1">ניהול לקוחות ומעקב תהליכים</p>
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">לוח ניהול</h1>
+            <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים וביטחונות</p>
+          </div>
+          <AdminColorPicker />
         </div>
-        <AdminColorPicker />
+
+        <div className="flex gap-3 flex-wrap mb-6">
+          <a
+            href="https://www.smartnpv.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+          >
+            SmartNPV
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a
+            href="https://www.paperless.co.il"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          >
+            Paperless
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a
+            href="https://www.notion.so"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-black hover:bg-gray-800 transition-colors"
+          >
+            Notion
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a
+            href="https://www.bituach.gov.il"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+          >
+            ביטוח יישור
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-5 space-y-3">
