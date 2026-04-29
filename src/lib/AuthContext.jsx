@@ -21,12 +21,18 @@ export const AuthProvider = ({ children }) => {
   const [pendingCaseInvites, setPendingCaseInvites] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
   useEffect(() => {
-    checkAppState();
+    checkUserAuth().catch(err => {
+      console.warn('Auth init failed:', err);
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+    }).finally(() => {
+      setIsLoadingAuth(false);
+    });
   }, []);
 
   const checkAppState = async () => {
@@ -120,8 +126,10 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
 
-      if (error.status === 401 || error.status === 403) {
+      if (error?.status === 401 || error?.status === 403) {
         setAuthError({ type: 'auth_required', message: 'Authentication required' });
+      } else {
+        setAuthError({ type: 'auth_check_failed', message: error?.message || 'Auth check failed' });
       }
     }
   };

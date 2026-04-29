@@ -25,7 +25,7 @@ const adminItems = [
 
 export default function ResponsiveLayout() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isLoadingAuth } = useAuth();
   const isAdmin = user?.role === 'admin';
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -37,6 +37,14 @@ export default function ResponsiveLayout() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  if (isLoadingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" />
+      </div>
+    );
+  }
 
   const isDark = resolvedTheme === 'dark';
 
@@ -173,9 +181,7 @@ export default function ResponsiveLayout() {
         </div>
       </header>
 
-      <main
-        className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto"
-      >
+      <main className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto">
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
           <img
             src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png"
