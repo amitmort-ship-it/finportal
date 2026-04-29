@@ -138,7 +138,6 @@ export default function RefinanceMonitor() {
 
   return (
     <div className="mb-6" dir="rtl">
-      <RefinanceAddTemp onAdd={handleAddTemp} />
 
       {/* לקוחות ארעיים ללא הזדמנות */}
       {tempNoOpportunity.length > 0 && (
@@ -223,6 +222,7 @@ export default function RefinanceMonitor() {
           </div>
         </div>
       )}
+      <RefinanceAddTemp onAdd={handleAddTemp} />
     </div>
   );
 }
