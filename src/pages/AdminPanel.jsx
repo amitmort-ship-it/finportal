@@ -268,11 +268,11 @@ export default function AdminPanel() {
 
             <Button
               type="button"
-              className="gap-2 bg-black hover:bg-neutral-800 text-white"
-              onClick={() => window.open('https://zero-budget-copy-9e612e99.base44.app/dashboard', '_blank', 'noopener,noreferrer')}
+              className="gap-2 bg-neutral-800 hover:bg-neutral-700 text-white"
+              onClick={() => window.open('https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc', '_blank', 'noopener,noreferrer')}
             >
               <ExternalLink className="w-4 h-4" />
-              ZeroBalance
+              Notion
             </Button>
 
             <Button
