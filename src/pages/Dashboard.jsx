@@ -76,7 +76,7 @@ export default function Dashboard() {
             שלום, {user?.full_name?.split(' ')?.[0] || 'משתמש'}
             <span className="text-4xl">👋</span>
           </h1>
-          <p className="text-muted-foreground mt-1">ברוכו הבא ליישום ניהול המשכנתא שלך</p>
+          <p className="text-muted-foreground mt-1">ברוכים הבאים ליישום ניהול המשכנתא שלך</p>
         </div>
       </div>
 
