@@ -21,10 +21,10 @@ export default function PackagePage() {
       setPackages(data);
       setLoading(false);
     };
-
     loadPackages();
   }, [caseEmail]);
 
+  // Cache for 2 minutes
   useEffect(() => {
     const timer = setInterval(() => {}, 120000);
     return () => clearInterval(timer);
@@ -44,6 +44,8 @@ export default function PackagePage() {
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">תמהיל נבחר</h1>
         <p className="text-muted-foreground mt-1">העלה את התמהיל המסוכם</p>
       </div>
+
+
 
       {packages.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
