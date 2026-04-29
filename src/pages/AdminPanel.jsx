@@ -79,6 +79,25 @@ export default function AdminPanel() {
           <h1 className="text-3xl font-bold">לוח ניהול</h1>
           <AdminColorPicker />
         </div>
+
+        <div className="flex gap-3 flex-wrap">
+          <a href="https://smartnpv.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors">
+            SmartNPV
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a href="https://paperless.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
+            Paperless
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a href="https://notion.so" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black hover:bg-gray-900 text-white font-medium text-sm transition-colors">
+            Notion
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a href="#" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors">
+            בקישור וישור
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
