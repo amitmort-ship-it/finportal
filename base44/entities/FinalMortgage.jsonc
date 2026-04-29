@@ -1,0 +1,79 @@
+{
+  "name": "FinalMortgage",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "\u05d0\u05d9\u05de\u05d9\u05d9\u05dc \u05d4\u05dc\u05e7\u05d5\u05d7"
+    },
+    "bank_name": {
+      "type": "string",
+      "description": "\u05d1\u05e0\u05e7 \u05de\u05d1\u05e6\u05e2"
+    },
+    "execution_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d1\u05d9\u05e6\u05d5\u05e2 (\u05d7\u05ea\u05d9\u05de\u05d4)"
+    },
+    "tracks": {
+      "type": "array",
+      "description": "\u05de\u05e1\u05dc\u05d5\u05dc\u05d9 \u05d4\u05ea\u05de\u05d4\u05d9\u05dc",
+      "items": {
+        "type": "object",
+        "properties": {
+          "track_type": {
+            "type": "string"
+          },
+          "principal": {
+            "type": "number"
+          },
+          "interest_rate": {
+            "type": "number"
+          },
+          "years": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "notes": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d5\u05ea"
+    }
+  },
+  "required": [
+    "client_email",
+    "bank_name",
+    "execution_date"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
