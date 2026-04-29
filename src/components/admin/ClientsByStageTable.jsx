@@ -78,7 +78,7 @@ export default function ClientsByStageTable({ onSelectClient }) {
           <thead>
             <tr className="border-b border-border">
               {STAGES.map(stage => (
-                <th key={stage} className="px-4 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap text-xs">
+                <th key={stage} className="px-4 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap text-xs border-l first:border-l-0 border-border">
                   <span className={`inline-block px-2 py-1 rounded-full border text-xs font-semibold ${STAGE_COLORS[stage]}`}>
                     {stage}
                   </span>
@@ -89,7 +89,7 @@ export default function ClientsByStageTable({ onSelectClient }) {
           <tbody>
             <tr>
               {STAGES.map(stage => (
-                <td key={stage} className="px-4 py-3 align-top text-center border-l border-t border-border/40 first:border-l-0">
+                <td key={stage} className="px-4 py-3 align-top text-center border-l border-t border-border first:border-l-0">
                   <div className="max-h-40 overflow-y-auto space-y-1.5">
                     {stageMap[stage]?.length === 0 ? (
                       <span className="text-xs text-muted-foreground">—</span>
