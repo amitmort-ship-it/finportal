@@ -79,38 +79,40 @@ export default function AdminPanel() {
           <h1 className="text-3xl font-bold">לוח ניהול</h1>
           <AdminColorPicker />
         </div>
-
-        <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground shrink-0">בחר לקוח:</span>
-          <select
-            value={selectedClient || ''}
-            onChange={e => setSelectedClient(e.target.value || null)}
-            className="flex-1 h-9 rounded-md border border-input px-3 py-2 text-sm bg-transparent"
-            dir="rtl"
-          >
-            <option value="">כל הלקוחות</option>
-            {!loading && clients.map(client => (
-              <option key={client.id} value={client.email}>
-                {client.full_name || client.email}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="overflow-x-auto">
-          <TabsList className="inline-flex w-max gap-0">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              return (
-                <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm whitespace-nowrap">
-                  <Icon className="w-4 h-4 lg:mr-2" />
-                  <span className="hidden lg:inline">{tab.label}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+        <div className="sticky top-0 bg-background z-10 border-b border-border space-y-4 pb-4 -mx-4 px-4 pt-4">
+          <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground shrink-0">בחר לקוח:</span>
+            <select
+              value={selectedClient || ''}
+              onChange={e => setSelectedClient(e.target.value || null)}
+              className="flex-1 h-9 rounded-md border border-input px-3 py-2 text-sm bg-transparent"
+              dir="rtl"
+            >
+              <option value="">כל הלקוחות</option>
+              {!loading && clients.map(client => (
+                <option key={client.id} value={client.email}>
+                  {client.full_name || client.email}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex w-max gap-0">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm whitespace-nowrap">
+                    <Icon className="w-4 h-4 lg:mr-2" />
+                    <span className="hidden lg:inline">{tab.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
         </div>
 
         <TabsContent value="main" className="space-y-6">
@@ -136,32 +138,12 @@ export default function AdminPanel() {
 
 
         <TabsContent value="approvals" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">בחר לקוח</label>
-            <select
-              value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
-              className="mt-2 w-full rounded-md border border-input px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-            </select>
-          </div>
           <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
             <AdminBankApprovals selectedClient={selectedClient} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">בחר לקוח</label>
-            <select
-              value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
-              className="mt-2 w-full rounded-md border border-input px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-            </select>
-          </div>
           <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
             <AdminViewDocuments selectedClient={selectedClient} />
           </Suspense>
