@@ -313,7 +313,7 @@ export default function AdminPanel() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-11 mb-6 h-auto">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-10 mb-6 h-auto">
           <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
           <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
           <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
@@ -323,7 +323,6 @@ export default function AdminPanel() {
           <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
           <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
           <TabsTrigger value="mortgage" className="text-xs md:text-sm">משכנתא בוצעה</TabsTrigger>
-          <TabsTrigger value="market-rates" className="text-xs md:text-sm">דופק שוק</TabsTrigger>
           <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
             <span>עדכונים</span>
             {updatesBadgeCount > 0 ? (
@@ -369,16 +368,15 @@ export default function AdminPanel() {
           <AdminFinalMortgage selectedClient={selectedClient} />
         </TabsContent>
 
-        <TabsContent value="market-rates">
-          <AdminMarketRates />
-        </TabsContent>
-
         <TabsContent value="business">
           <AdminBusiness />
         </TabsContent>
 
         <TabsContent value="updates">
           <AdminUpdates selectedClient={selectedClient} />
+          <div className="mt-8">
+            <AdminMarketRates />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
