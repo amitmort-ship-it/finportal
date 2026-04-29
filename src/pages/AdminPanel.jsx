@@ -2,10 +2,6 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 
 const AdminClients = lazy(() => import('../components/admin/AdminClients'));
@@ -133,6 +129,13 @@ export default function AdminPanel() {
   }
 
   const tabLoader = <div className="text-center py-8 text-muted-foreground">טוען...</div>;
+  const tabButtonClass = (tabValue) => (
+    `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+      activeTab === tabValue
+        ? 'bg-primary text-primary-foreground'
+        : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground'
+    }`
+  );
 
   return (
     <div>
@@ -143,129 +146,127 @@ export default function AdminPanel() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button
+          <button
             type="button"
-            className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             onClick={() => window.open('https://555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618', '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
             ביטוח ישיר
-          </Button>
+          </button>
 
-          <Button
+          <button
             type="button"
-            className="gap-2 bg-black hover:bg-neutral-800 text-white"
+            className="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
             onClick={() => window.open('https://zero-budget-copy-9e612e99.base44.app/dashboard', '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
             ZeroBalance
-          </Button>
+          </button>
 
-          <Button
+          <button
             type="button"
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
             onClick={() => window.open('https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
             Paperless
-          </Button>
+          </button>
 
-          <Button
+          <button
             type="button"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
             onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
           >
             <ExternalLink className="w-4 h-4" />
             SmartNPV
-          </Button>
+          </button>
         </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-4 mb-6">
-        <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
-        <Select value={selectedClient || '_all'} onValueChange={(value) => setSelectedClient(value === '_all' ? null : value)}>
-          <SelectTrigger className="w-full md:w-80">
-            <SelectValue placeholder="כל הלקוחות" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">כל הלקוחות</SelectItem>
-            {users.map((item) => (
-              <SelectItem key={item.id} value={item.email}>
-                {item.full_name || item.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <label className="text-sm block mb-2">בחר לקוח (אופציונלי)</label>
+        <select
+          value={selectedClient || '_all'}
+          onChange={(event) => setSelectedClient(event.target.value === '_all' ? null : event.target.value)}
+          className="w-full md:w-80 h-10 rounded-md border border-input bg-background px-3 text-sm"
+          dir="rtl"
+        >
+          <option value="_all">כל הלקוחות</option>
+          {users.map((item) => (
+            <option key={item.id} value={item.email}>
+              {item.full_name || item.email}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
-          <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
-          <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
-          <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
-          <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
-          <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
-          <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
-          <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
-          <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
-            <span>עדכונים</span>
-            {updatesBadgeCount > 0 ? (
-              <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">
-                {updatesBadgeCount > 99 ? '99+' : updatesBadgeCount}
-              </span>
-            ) : null}
-          </TabsTrigger>
-        </TabsList>
+      <div className="mb-6 flex flex-wrap gap-2">
+        <button type="button" onClick={() => setActiveTab('clients')} className={tabButtonClass('clients')}>לקוחות</button>
+        <button type="button" onClick={() => setActiveTab('document-request')} className={tabButtonClass('document-request')}>בקש מסמכים</button>
+        <button type="button" onClick={() => setActiveTab('documents')} className={tabButtonClass('documents')}>מסמכים</button>
+        <button type="button" onClick={() => setActiveTab('collaterals')} className={tabButtonClass('collaterals')}>בטחונות</button>
+        <button type="button" onClick={() => setActiveTab('packages')} className={tabButtonClass('packages')}>תמהיל</button>
+        <button type="button" onClick={() => setActiveTab('approvals')} className={tabButtonClass('approvals')}>אישורים</button>
+        <button type="button" onClick={() => setActiveTab('process')} className={tabButtonClass('process')}>שלב</button>
+        <button type="button" onClick={() => setActiveTab('updates')} className={tabButtonClass('updates')}>
+          עדכונים
+          {updatesBadgeCount > 0 ? (
+            <span className="mr-2 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">
+              {updatesBadgeCount > 99 ? '99+' : updatesBadgeCount}
+            </span>
+          ) : null}
+        </button>
+      </div>
 
-        <TabsContent value="clients">
-          <Suspense fallback={tabLoader}>
-            <AdminNotifications selectedClient={selectedClient} />
-            <AdminClients />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'clients' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminNotifications selectedClient={selectedClient} />
+          <AdminClients />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="document-request">
-          <Suspense fallback={tabLoader}>
-            <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'document-request' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="documents">
-          <Suspense fallback={tabLoader}>
-            <AdminViewDocuments selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'documents' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminViewDocuments selectedClient={selectedClient} />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="collaterals">
-          <Suspense fallback={tabLoader}>
-            <AdminCollaterals selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'collaterals' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminCollaterals selectedClient={selectedClient} />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="packages">
-          <Suspense fallback={tabLoader}>
-            <AdminPackages selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'packages' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminPackages selectedClient={selectedClient} />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="approvals">
-          <Suspense fallback={tabLoader}>
-            <AdminBankApprovals selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'approvals' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminBankApprovals selectedClient={selectedClient} />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="process">
-          <Suspense fallback={tabLoader}>
-            <AdminProcessStage selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
+      {activeTab === 'process' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminProcessStage selectedClient={selectedClient} />
+        </Suspense>
+      ) : null}
 
-        <TabsContent value="updates">
-          <Suspense fallback={tabLoader}>
-            <AdminUpdates selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      {activeTab === 'updates' ? (
+        <Suspense fallback={tabLoader}>
+          <AdminUpdates selectedClient={selectedClient} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
