@@ -11,16 +11,16 @@ import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-r
 import { useTheme } from 'next-themes';
 
 const navItems = [
-  { path: '/portal', label: 'ראשי', icon: LayoutDashboard },
-  { path: '/portal/files', label: 'מסמכים', icon: FileText },
-  { path: '/portal/package', label: 'תמהיל נבחר', icon: Package },
-  { path: '/portal/approvals', label: 'אישורי בנקים', icon: Building2 },
-  { path: '/portal/collaterals', label: 'בטחונות', icon: Shield },
-  { path: '/portal/tools', label: 'כלים שימושיים', icon: Calculator },
+  { path: '/', label: 'ראשי', icon: LayoutDashboard },
+  { path: '/files', label: 'מסמכים', icon: FileText },
+  { path: '/package', label: 'תמהיל נבחר', icon: Package },
+  { path: '/approvals', label: 'אישורי בנקים', icon: Building2 },
+  { path: '/collaterals', label: 'בטחונות', icon: Shield },
+  { path: '/tools', label: 'כלים שימושיים', icon: Calculator },
 ];
 
 const adminItems = [
-  { path: '/portal/admin', label: 'ניהול', icon: Settings },
+  { path: '/admin', label: 'ניהול', icon: Settings },
 ];
 
 export default function ResponsiveLayout() {
