@@ -3,7 +3,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
@@ -17,7 +16,6 @@ import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import {
   Users,
-  Bell,
   Building2,
   FileText,
   Package,
@@ -33,7 +31,6 @@ export default function AdminPanel() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [activeTab, setActiveTab] = useState('clients');
   const [clients, setClients] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useAdminPalette();
@@ -49,16 +46,13 @@ export default function AdminPanel() {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
-
-  const filteredClients = clients.filter(c =>
-    (c.full_name || c.email).toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const tabs = [
     { id: 'main', label: 'ראשי', icon: Home },
@@ -77,26 +71,60 @@ export default function AdminPanel() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">לוח ניהול</h1>
           <div className="flex gap-3 flex-wrap">
-            <a href="https://www.snpv.co.il/clients" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors">
+            <a
+              href="https://www.snpv.co.il/clients"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors"
+            >
               SmartNPV
               <ExternalLink className="w-4 h-4" />
             </a>
-            <a href="https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
+
+            <a
+              href="https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
+            >
               Paperless
               <ExternalLink className="w-4 h-4" />
             </a>
-            <a href="https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black hover:bg-gray-900 text-white font-medium text-sm transition-colors">
+
+            <a
+              href="https://zero-budget-copy-9e612e99.base44.app/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black hover:bg-gray-900 text-white font-medium text-sm transition-colors"
+            >
+              ZeroBalance
+              <ExternalLink className="w-4 h-4" />
+            </a>
+
+            <a
+              href="https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-800 hover:bg-black text-white font-medium text-sm transition-colors"
+            >
               Notion
               <ExternalLink className="w-4 h-4" />
             </a>
-            <a href="https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors">
+
+            <a
+              href="https://555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors"
+            >
               ביטוח ישיר
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>
         </div>
+
         <div className="flex items-center justify-between">
-          <div></div>
+          <div />
           <AdminColorPicker />
         </div>
       </div>
@@ -107,12 +135,12 @@ export default function AdminPanel() {
             <span className="text-sm font-medium text-muted-foreground shrink-0">בחר לקוח:</span>
             <select
               value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
+              onChange={(event) => setSelectedClient(event.target.value || null)}
               className="flex-1 h-9 rounded-md border border-input px-3 py-2 text-sm bg-transparent"
               dir="rtl"
             >
               <option value="">כל הלקוחות</option>
-              {!loading && clients.map(client => (
+              {!loading && clients.map((client) => (
                 <option key={client.id} value={client.email}>
                   {client.full_name || client.email}
                 </option>
@@ -122,7 +150,7 @@ export default function AdminPanel() {
 
           <div className="overflow-x-auto">
             <TabsList className="inline-flex w-max gap-0">
-              {tabs.map(tab => {
+              {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm whitespace-nowrap">
