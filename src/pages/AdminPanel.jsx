@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import ClientSearchFilter from '@/components/ClientSearchFilter';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminUpdates from '@/components/admin/AdminUpdates';
+import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
 import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
 import AdminPackages from '@/components/admin/AdminPackages';
@@ -78,6 +79,7 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
+          <AdminNotifications selectedClient={selectedClient} />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>
 
