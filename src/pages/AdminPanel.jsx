@@ -3,11 +3,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AdminClients from '@/components/admin/AdminClients';
+import ClientSearchCombobox from '@/components/admin/ClientSearchCombobox';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
 import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
@@ -190,20 +189,7 @@ export default function AdminPanel() {
       </div>
 
       <div className="bg-card rounded-xl border border-border p-4">
-        <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
-        <Select value={selectedClient || '_all'} onValueChange={(value) => setSelectedClient(value === '_all' ? null : value)}>
-          <SelectTrigger className="w-full md:w-80">
-            <SelectValue placeholder="כל הלקוחות" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">כל הלקוחות</SelectItem>
-            {users.map((item) => (
-              <SelectItem key={item.id} value={item.email}>
-                {item.full_name || item.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ClientSearchCombobox users={users} value={selectedClient} onValueChange={setSelectedClient} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
