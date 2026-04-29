@@ -1,18 +1,9 @@
-import { useState, Suspense, lazy } from 'react';
+import { useState, Suspense } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminClients from '@/components/admin/AdminClients';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
-
-const AdminClients = lazy(() => import('@/components/admin/AdminClients'));
-const AdminNotifications = lazy(() => import('@/components/admin/AdminNotifications'));
-const AdminBankApprovals = lazy(() => import('@/components/admin/AdminBankApprovals'));
-const AdminViewDocuments = lazy(() => import('@/components/admin/AdminViewDocuments'));
-const AdminPackages = lazy(() => import('@/components/admin/AdminPackages'));
-const AdminCollaterals = lazy(() => import('@/components/admin/AdminCollaterals'));
-const AdminProcessStage = lazy(() => import('@/components/admin/AdminProcessStage'));
-const ClientsByStageTable = lazy(() => import('@/components/admin/ClientsByStageTable'));
-const RefinanceMonitor = lazy(() => import('@/components/admin/RefinanceMonitor'));
 import {
   Users,
   Bell,
@@ -22,6 +13,8 @@ import {
   Lock,
   ListChecks,
 } from 'lucide-react';
+
+const PageLoader = () => <div className="text-center py-6">טוען...</div>;
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -54,10 +47,6 @@ export default function AdminPanel() {
         <AdminColorPicker />
       </div>
 
-      <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-        <RefinanceMonitor />
-      </Suspense>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
           {tabs.map(tab => {
@@ -72,67 +61,33 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="clients" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+          <Suspense fallback={<PageLoader />}>
             <AdminClients />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminNotifications selectedClient={selectedClient} />
-            <ClientsByStageTable onSelectClient={setSelectedClient} />
-          </Suspense>
+          <PageLoader />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">בחר לקוח</label>
-            <select
-              value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
-              className="mt-2 w-full rounded-md border border-input px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-              {/* Clients loaded dynamically in component */}
-            </select>
-          </div>
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminBankApprovals selectedClient={selectedClient} />
-          </Suspense>
+          <PageLoader />
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <label className="text-sm font-medium">בחר לקוח</label>
-            <select
-              value={selectedClient || ''}
-              onChange={e => setSelectedClient(e.target.value || null)}
-              className="mt-2 w-full rounded-md border border-input px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-            </select>
-          </div>
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminViewDocuments selectedClient={selectedClient} />
-          </Suspense>
+          <PageLoader />
         </TabsContent>
 
         <TabsContent value="packages" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminPackages selectedClient={selectedClient} />
-          </Suspense>
+          <PageLoader />
         </TabsContent>
 
         <TabsContent value="collaterals" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminCollaterals selectedClient={selectedClient} />
-          </Suspense>
+          <PageLoader />
         </TabsContent>
 
         <TabsContent value="process" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminProcessStage selectedClient={selectedClient} />
-          </Suspense>
+          <PageLoader />
         </TabsContent>
       </Tabs>
     </div>
