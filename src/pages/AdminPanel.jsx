@@ -8,60 +8,8 @@ import { Label } from '@/components/ui/label';
 import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
-import { Suspense, lazy } from 'react';
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 import DailyQuote from '../components/admin/DailyQuote';
-import ClientsByStageTable from '../components/admin/ClientsByStageTable';
-import AdminMarketRates from '../components/admin/AdminMarketRates';
-import RefinanceMonitor from '../components/admin/RefinanceMonitor';
-
-const AdminClients = lazy(() => import('../components/admin/AdminClients'));
-const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals'));
-const AdminPackages = lazy(() => import('../components/admin/AdminPackages'));
-const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals'));
-const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage'));
-const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates'));
-const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments'));
-const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications'));
-const AdminBusiness = lazy(() => import('../components/admin/AdminBusiness'));
-
-function buildFileUploadNotifications(requests) {
-  return (requests || [])
-    .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
-    .map((request) => {
-      const nonAdminFiles = request.uploaded_files.filter((file) => (
-        file?.uploaded_by_email !== 'admin' &&
-        file?.uploaded_by_name !== 'הועלה על ידי המשרד'
-      ));
-
-      if (!nonAdminFiles.length) return null;
-
-      const latestFile = [...nonAdminFiles].sort((a, b) => {
-        const aDate = new Date(a?.uploaded_at || 0).getTime();
-        const bDate = new Date(b?.uploaded_at || 0).getTime();
-        return bDate - aDate;
-      })[0];
-
-      return {
-        id: `file-request-${request.id}`,
-        type: 'file_upload',
-        clientEmail: request.client_email,
-        createdAt: latestFile?.uploaded_at || request.updated_date || request.created_date || null,
-      };
-    })
-    .filter(Boolean);
-}
-
-function buildLoginNotificationsFromProfiles(profiles) {
-  return (profiles || [])
-    .filter((profile) => profile?.last_login_at)
-    .map((profile) => ({
-      id: `profile-login-${profile.id}`,
-      type: 'login',
-      clientEmail: profile.email,
-      createdAt: profile.last_login_at,
-    }));
-}
 
 function ClientSearchSelector({ users, selectedClient, onSelect }) {
   const [search, setSearch] = useState('');
@@ -156,8 +104,6 @@ export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [users, setUsers] = useState([]);
-  const [updatesBadgeCount, setUpdatesBadgeCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
     const load = async () => {
@@ -166,61 +112,6 @@ export default function AdminPanel() {
     };
     load();
   }, []);
-
-  useEffect(() => {
-    const loadNotificationCount = async () => {
-      try {
-        const [fileRequests, profiles] = await Promise.all([
-          base44.entities.FileRequest.filter({}, '-created_date'),
-          base44.entities.ClientProfile.filter({}),
-        ]);
-
-        const loginNotifications = buildLoginNotificationsFromProfiles(profiles);
-        const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
-
-        const merged = [...loginNotifications, ...fileUploadNotifications]
-          .filter((item) => !selectedClient || item.clientEmail === selectedClient)
-          .sort((a, b) => {
-            const aDate = new Date(a.createdAt || 0).getTime();
-            const bDate = new Date(b.createdAt || 0).getTime();
-            return bDate - aDate;
-          });
-
-        const lastSeenAt = Number(localStorage.getItem('admin-updates-last-seen-at') || 0);
-        const unreadCount = merged.filter((item) => {
-          const createdAt = new Date(item.createdAt || 0).getTime();
-          return createdAt > lastSeenAt;
-        }).length;
-
-        setUpdatesBadgeCount(unreadCount);
-      } catch (error) {
-        console.error('Failed to load admin badge count:', error);
-      }
-    };
-
-    loadNotificationCount();
-
-    const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
-      loadNotificationCount();
-    });
-
-    const unsubscribeProfiles = base44.entities.ClientProfile.subscribe(() => {
-      loadNotificationCount();
-    });
-
-    return () => {
-      if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
-      if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
-    };
-  }, [selectedClient]);
-
-  useEffect(() => {
-    if (activeTab === 'updates') {
-      const now = Date.now();
-      localStorage.setItem('admin-updates-last-seen-at', String(now));
-      setUpdatesBadgeCount(0);
-    }
-  }, [activeTab]);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
@@ -287,86 +178,9 @@ export default function AdminPanel() {
         onSelect={setSelectedClient}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex w-full overflow-x-auto mb-6 h-auto justify-start">
-          <TabsTrigger value="home" className="text-xs md:text-sm">ראשי</TabsTrigger>
-          <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
-          <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
-          <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
-          <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
-          <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
-          <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
-          <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
-            <span>עדכונים</span>
-            {updatesBadgeCount > 0 ? (
-              <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">
-                {updatesBadgeCount > 99 ? '99+' : updatesBadgeCount}
-              </span>
-            ) : null}
-          </TabsTrigger>
-          <TabsTrigger value="business" className="text-xs md:text-sm">ניהול עסק</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="home">
-          <RefinanceMonitor />
-          <ClientsByStageTable onSelectClient={setSelectedClient} />
-          <AdminNotifications selectedClient={selectedClient} />
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminClients />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="clients">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminClients />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminViewDocuments selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="collaterals">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminCollaterals selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="packages">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminPackages selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="approvals">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminBankApprovals selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="process">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminProcessStage selectedClient={selectedClient} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="business">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminBusiness />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="updates">
-          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
-            <AdminUpdates selectedClient={selectedClient} />
-          </Suspense>
-          <div className="mt-8">
-            <AdminMarketRates />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="bg-card rounded-xl border border-border p-6">
+        <p className="text-muted-foreground">Admin panel content coming soon...</p>
+      </div>
     </div>
   );
 }
