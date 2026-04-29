@@ -104,7 +104,7 @@ export default function Dashboard() {
         </button>
       ) : null}
 
-      <MortgagePulse />
+      <MortgagePulse clientEmail={caseEmail} />
 
       <div className="grid md:grid-cols-2 gap-4">
          <ProcessTracker
