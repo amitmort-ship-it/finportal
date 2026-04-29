@@ -90,11 +90,11 @@ export default function ClientsByStageTable({ onSelectClient }) {
             <tr>
               {STAGES.map(stage => (
                 <td key={stage} className="px-4 py-3 align-top text-center border-l border-border/40 first:border-l-0">
-                  {stageMap[stage]?.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {stageMap[stage].map(email => (
+                  <div className="max-h-40 overflow-y-auto space-y-1.5">
+                    {stageMap[stage]?.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      stageMap[stage].map(email => (
                         <button
                           key={email}
                           onClick={() => onSelectClient?.(email)}
@@ -103,9 +103,9 @@ export default function ClientsByStageTable({ onSelectClient }) {
                         >
                           {profiles[email] || email}
                         </button>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </td>
               ))}
             </tr>
