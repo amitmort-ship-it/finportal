@@ -77,104 +77,27 @@ export default function AdminPanel() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">לוח ניהול</h1>
-            <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים וביטחונות</p>
-          </div>
+          <h1 className="text-3xl font-bold">לוח ניהול</h1>
           <AdminColorPicker />
         </div>
 
-        <div className="flex gap-3 flex-wrap mb-6">
-          <a
-            href="https://www.smartnpv.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
-          >
-            SmartNPV
-            <ExternalLink className="w-4 h-4" />
-          </a>
-          <a
-            href="https://www.paperless.co.il"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-          >
-            Paperless
-            <ExternalLink className="w-4 h-4" />
-          </a>
-          <a
-            href="https://www.notion.so"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-black hover:bg-gray-800 transition-colors"
-          >
-            Notion
-            <ExternalLink className="w-4 h-4" />
-          </a>
-          <a
-            href="https://www.bituach.gov.il"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
-          >
-            ביטוח יישור
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-xl border border-border p-5 space-y-3">
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="חיפוש לקוח לפי שם או אימייל..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1"
+        <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground shrink-0">בחר לקוח:</span>
+          <select
+            value={selectedClient || ''}
+            onChange={e => setSelectedClient(e.target.value || null)}
+            className="flex-1 h-9 rounded-md border border-input px-3 py-2 text-sm bg-transparent"
             dir="rtl"
-          />
-        </div>
-
-        {selectedClient && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              נבחר: <span className="font-medium text-foreground">
-                {clients.find(c => c.email === selectedClient)?.full_name || selectedClient}
-              </span>
-            </span>
-            <button
-              onClick={() => setSelectedClient(null)}
-              className="text-xs text-primary hover:underline"
-            >
-              נקה בחירה
-            </button>
-          </div>
-        )}
-
-        {!loading && filteredClients.length > 0 && (
-          <div className="max-h-48 overflow-y-auto border border-border rounded-lg">
-            {filteredClients.map(client => (
-              <button
-                key={client.id}
-                onClick={() => setSelectedClient(client.email)}
-                className={`w-full text-right px-3 py-2 text-sm transition-colors ${
-                  selectedClient === client.email
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
-                }`}
-              >
-                <div className="font-medium">{client.full_name || client.email}</div>
-                <div className="text-xs opacity-70">{client.email}</div>
-              </button>
+          >
+            <option value="">כל הלקוחות</option>
+            {!loading && clients.map(client => (
+              <option key={client.id} value={client.email}>
+                {client.full_name || client.email}
+              </option>
             ))}
-          </div>
-        )}
+          </select>
+        </div>
       </div>
-
-      <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-        <RefinanceMonitor />
-      </Suspense>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
