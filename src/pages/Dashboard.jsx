@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Bell, Home, Landmark, FileText, Building2 } from 'lucide-react';
+import { Bell, Home, Landmark, FileText, Building2, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProcessTracker from '@/components/ProcessTracker';
 
@@ -83,10 +83,13 @@ export default function Dashboard() {
       {/* Mortgage Pulse Alert */}
       <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900/50">
         <CardContent className="pt-6">
-          <p className="text-sm text-blue-900 dark:text-blue-200">
-            <span className="font-semibold">מד דופק משכנתא:</span> המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.
-          </p>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-blue-900 dark:text-blue-200 flex-1">
+              <span className="font-semibold">מד דופק משכנתא:</span> המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.
+            </p>
+            <Activity className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          </div>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 text-right">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
         </CardContent>
       </Card>
 
