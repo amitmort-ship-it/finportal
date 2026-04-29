@@ -1,216 +1,250 @@
-import { useState, Suspense, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AdminClients from '@/components/admin/AdminClients';
-import AdminNotifications from '@/components/admin/AdminNotifications';
-import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
-import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
-import AdminPackages from '@/components/admin/AdminPackages';
-import AdminCollaterals from '@/components/admin/AdminCollaterals';
-import AdminProcessStage from '@/components/admin/AdminProcessStage';
-import AdminBusiness from '@/components/admin/AdminBusiness';
-import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
-import ClientsByStageTable from '@/components/admin/ClientsByStageTable';
-import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
-import {
-  Users,
-  Building2,
-  FileText,
-  Package,
-  Lock,
-  ListChecks,
-  ExternalLink,
-  TrendingUp,
-  Home,
-} from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import AdminClients from '../components/admin/AdminClients';
+import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
+import AdminCollaterals from '../components/admin/AdminCollaterals';
+import AdminPackages from '../components/admin/AdminPackages';
+import AdminBankApprovals from '../components/admin/AdminBankApprovals';
+import AdminProcessStage from '../components/admin/AdminProcessStage';
+import AdminUpdates from '../components/admin/AdminUpdates';
+import AdminViewDocuments from '../components/admin/AdminViewDocuments';
+import AdminNotifications from '../components/admin/AdminNotifications';
+
+function buildFileUploadNotifications(requests) {
+  return (requests || [])
+    .filter((request) => Array.isArray(request.uploaded_files) && request.uploaded_files.length > 0)
+    .map((request) => {
+      const nonAdminFiles = request.uploaded_files.filter((file) => (
+        file?.uploaded_by_email !== 'admin' &&
+        file?.uploaded_by_name !== 'הועלה על ידי המשרד'
+      ));
+
+      if (!nonAdminFiles.length) {
+        return null;
+      }
+
+      const latestFile = [...nonAdminFiles].sort((a, b) => {
+        const aDate = new Date(a?.uploaded_at || 0).getTime();
+        const bDate = new Date(b?.uploaded_at || 0).getTime();
+        return bDate - aDate;
+      })[0];
+
+      return {
+        id: `file-request-${request.id}`,
+        type: 'file_upload',
+        clientEmail: request.client_email,
+        createdAt: latestFile?.uploaded_at || request.updated_date || request.created_date || null,
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildLoginNotificationsFromProfiles(profiles) {
+  return (profiles || [])
+    .filter((profile) => profile?.last_login_at)
+    .map((profile) => ({
+      id: `profile-login-${profile.id}`,
+      type: 'login',
+      clientEmail: profile.email,
+      createdAt: profile.last_login_at,
+    }));
+}
 
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [updatesBadgeCount, setUpdatesBadgeCount] = useState(0);
   const [activeTab, setActiveTab] = useState('clients');
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useAdminPalette();
 
   useEffect(() => {
     const load = async () => {
+      const profiles = await base44.entities.ClientProfile.filter({}, '-created_date');
+      setUsers(profiles);
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const loadNotificationCount = async () => {
       try {
-        const profiles = await base44.entities.ClientProfile.filter({}, '-created_date');
-        setClients(profiles);
+        const [fileRequests, profiles] = await Promise.all([
+          base44.entities.FileRequest.filter({}, '-created_date'),
+          base44.entities.ClientProfile.filter({}),
+        ]);
+
+        const loginNotifications = buildLoginNotificationsFromProfiles(profiles);
+        const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
+
+        const merged = [...loginNotifications, ...fileUploadNotifications]
+          .filter((item) => !selectedClient || item.clientEmail === selectedClient)
+          .sort((a, b) => {
+            const aDate = new Date(a.createdAt || 0).getTime();
+            const bDate = new Date(b.createdAt || 0).getTime();
+            return bDate - aDate;
+          });
+
+        const lastSeenAt = Number(localStorage.getItem('admin-updates-last-seen-at') || 0);
+        const unreadCount = merged.filter((item) => {
+          const createdAt = new Date(item.createdAt || 0).getTime();
+          return createdAt > lastSeenAt;
+        }).length;
+
+        setUpdatesBadgeCount(unreadCount);
       } catch (error) {
-        console.error('Failed to load clients:', error);
-      } finally {
-        setLoading(false);
+        console.error('Failed to load admin badge count:', error);
       }
     };
 
-    load();
-  }, []);
+    loadNotificationCount();
+
+    const unsubscribeFiles = base44.entities.FileRequest.subscribe(() => {
+      loadNotificationCount();
+    });
+
+    const unsubscribeProfiles = base44.entities.ClientProfile.subscribe(() => {
+      loadNotificationCount();
+    });
+
+    return () => {
+      if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
+      if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
+    };
+  }, [selectedClient]);
+
+  useEffect(() => {
+    if (activeTab === 'updates') {
+      const now = Date.now();
+      localStorage.setItem('admin-updates-last-seen-at', String(now));
+      setUpdatesBadgeCount(0);
+    }
+  }, [activeTab]);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 
-  const tabs = [
-    { id: 'main', label: 'ראשי', icon: Home },
-    { id: 'clients', label: 'לקוחות', icon: Users },
-    { id: 'process', label: 'שלבים', icon: ListChecks },
-    { id: 'documents', label: 'מסמכים', icon: FileText },
-    { id: 'approvals', label: 'אישורים', icon: Building2 },
-    { id: 'packages', label: 'תמהיל', icon: Package },
-    { id: 'collaterals', label: 'בטחונות', icon: Lock },
-    { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
-  ];
-
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">לוח ניהול</h1>
-          <div className="flex gap-3 flex-wrap">
-            <a
-              href="https://www.snpv.co.il/clients"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors"
-            >
-              SmartNPV
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            <a
-              href="https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
-            >
-              Paperless
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            <a
-              href="https://zero-budget-copy-9e612e99.base44.app/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black hover:bg-gray-900 text-white font-medium text-sm transition-colors"
-            >
-              ZeroBalance
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            <a
-              href="https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-800 hover:bg-black text-white font-medium text-sm transition-colors"
-            >
-              Notion
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            <a
-              href="https://555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors"
-            >
-              ביטוח ישיר
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
+    <div>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
+          <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div />
-          <AdminColorPicker />
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            type="button"
+            className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => window.open('https://555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            ביטוח ישיר
+          </Button>
+
+          <Button
+            type="button"
+            className="gap-2 bg-black hover:bg-neutral-800 text-white"
+            onClick={() => window.open('https://zero-budget-copy-9e612e99.base44.app/dashboard', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            ZeroBalance
+          </Button>
+
+          <Button
+            type="button"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => window.open('https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            Paperless
+          </Button>
+
+          <Button
+            type="button"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => window.open('https://www.snpv.co.il/clients', '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4" />
+            SmartNPV
+          </Button>
         </div>
       </div>
 
+      <div className="bg-card rounded-xl border border-border p-4 mb-6">
+        <Label className="text-sm block mb-2">בחר לקוח (אופציונלי)</Label>
+        <Select value={selectedClient || '_all'} onValueChange={(value) => setSelectedClient(value === '_all' ? null : value)}>
+          <SelectTrigger className="w-full md:w-80">
+            <SelectValue placeholder="כל הלקוחות" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">כל הלקוחות</SelectItem>
+            {users.map((item) => (
+              <SelectItem key={item.id} value={item.email}>
+                {item.full_name || item.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="sticky top-0 bg-background z-10 border-b border-border space-y-4 pb-4 -mx-4 px-4 pt-4">
-          <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground shrink-0">בחר לקוח:</span>
-            <select
-              value={selectedClient || ''}
-              onChange={(event) => setSelectedClient(event.target.value || null)}
-              className="flex-1 h-9 rounded-md border border-input px-3 py-2 text-sm bg-transparent"
-              dir="rtl"
-            >
-              <option value="">כל הלקוחות</option>
-              {!loading && clients.map((client) => (
-                <option key={client.id} value={client.email}>
-                  {client.full_name || client.email}
-                </option>
-              ))}
-            </select>
-          </div>
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
+          <TabsTrigger value="clients" className="text-xs md:text-sm">לקוחות</TabsTrigger>
+          <TabsTrigger value="document-request" className="text-xs md:text-sm">בקש מסמכים</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs md:text-sm">מסמכים</TabsTrigger>
+          <TabsTrigger value="collaterals" className="text-xs md:text-sm">בטחונות</TabsTrigger>
+          <TabsTrigger value="packages" className="text-xs md:text-sm">תמהיל</TabsTrigger>
+          <TabsTrigger value="approvals" className="text-xs md:text-sm">אישורים</TabsTrigger>
+          <TabsTrigger value="process" className="text-xs md:text-sm">שלב</TabsTrigger>
+          <TabsTrigger value="updates" className="text-xs md:text-sm gap-1.5">
+            <span>עדכונים</span>
+            {updatesBadgeCount > 0 ? (
+              <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">
+                {updatesBadgeCount > 99 ? '99+' : updatesBadgeCount}
+              </span>
+            ) : null}
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="overflow-x-auto">
-            <TabsList className="inline-flex w-max gap-0">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm whitespace-nowrap">
-                    <Icon className="w-4 h-4 lg:mr-2" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </div>
-        </div>
-
-        <TabsContent value="main" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <RefinanceMonitor />
-            <ClientsByStageTable onSelectClient={setSelectedClient} />
-            <AdminNotifications selectedClient={selectedClient} />
-          </Suspense>
+        <TabsContent value="clients">
+          <AdminNotifications selectedClient={selectedClient} />
+          <AdminClients />
         </TabsContent>
 
-        <TabsContent value="clients" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminClients />
-          </Suspense>
+        <TabsContent value="document-request">
+          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
         </TabsContent>
 
-        <TabsContent value="business" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminBusiness />
-          </Suspense>
+        <TabsContent value="documents">
+          <AdminViewDocuments selectedClient={selectedClient} />
         </TabsContent>
 
-        <TabsContent value="approvals" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminBankApprovals selectedClient={selectedClient} />
-          </Suspense>
+        <TabsContent value="collaterals">
+          <AdminCollaterals selectedClient={selectedClient} />
         </TabsContent>
 
-        <TabsContent value="documents" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminViewDocuments selectedClient={selectedClient} />
-          </Suspense>
+        <TabsContent value="packages">
+          <AdminPackages selectedClient={selectedClient} />
         </TabsContent>
 
-        <TabsContent value="packages" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminPackages selectedClient={selectedClient} />
-          </Suspense>
+        <TabsContent value="approvals">
+          <AdminBankApprovals selectedClient={selectedClient} />
         </TabsContent>
 
-        <TabsContent value="collaterals" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminCollaterals selectedClient={selectedClient} />
-          </Suspense>
+        <TabsContent value="process">
+          <AdminProcessStage selectedClient={selectedClient} />
         </TabsContent>
 
-        <TabsContent value="process" className="space-y-6">
-          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
-            <AdminProcessStage selectedClient={selectedClient} />
-          </Suspense>
+        <TabsContent value="updates">
+          <AdminUpdates selectedClient={selectedClient} />
         </TabsContent>
       </Tabs>
     </div>
