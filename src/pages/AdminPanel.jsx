@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -7,15 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
-import AdminClients from '../components/admin/AdminClients';
-import AdminDocumentRequest from '../components/admin/AdminDocumentRequest';
-import AdminCollaterals from '../components/admin/AdminCollaterals';
-import AdminPackages from '../components/admin/AdminPackages';
-import AdminBankApprovals from '../components/admin/AdminBankApprovals';
-import AdminProcessStage from '../components/admin/AdminProcessStage';
-import AdminUpdates from '../components/admin/AdminUpdates';
-import AdminViewDocuments from '../components/admin/AdminViewDocuments';
-import AdminNotifications from '../components/admin/AdminNotifications';
+
+const AdminClients = lazy(() => import('../components/admin/AdminClients'));
+const AdminDocumentRequest = lazy(() => import('../components/admin/AdminDocumentRequest'));
+const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals'));
+const AdminPackages = lazy(() => import('../components/admin/AdminPackages'));
+const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals'));
+const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage'));
+const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates'));
+const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments'));
+const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications'));
 
 function buildFileUploadNotifications(requests) {
   return (requests || [])
@@ -131,6 +132,8 @@ export default function AdminPanel() {
     return <Navigate to="/" replace />;
   }
 
+  const tabLoader = <div className="text-center py-8 text-muted-foreground">טוען...</div>;
+
   return (
     <div>
       <div className="mb-8 flex items-start justify-between gap-4">
@@ -215,36 +218,52 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="clients">
-          <AdminNotifications selectedClient={selectedClient} />
-          <AdminClients />
+          <Suspense fallback={tabLoader}>
+            <AdminNotifications selectedClient={selectedClient} />
+            <AdminClients />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="document-request">
-          <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminDocumentRequest selectedClient={selectedClient} onClientChange={setSelectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="documents">
-          <AdminViewDocuments selectedClient={selectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminViewDocuments selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="collaterals">
-          <AdminCollaterals selectedClient={selectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminCollaterals selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="packages">
-          <AdminPackages selectedClient={selectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminPackages selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="approvals">
-          <AdminBankApprovals selectedClient={selectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminBankApprovals selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="process">
-          <AdminProcessStage selectedClient={selectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminProcessStage selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="updates">
-          <AdminUpdates selectedClient={selectedClient} />
+          <Suspense fallback={tabLoader}>
+            <AdminUpdates selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
