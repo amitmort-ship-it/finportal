@@ -9,6 +9,7 @@ const STAGES = [
   'בנק מנצח',
   'בטחונות וחתימות',
   'המתנה לביצוע',
+  'סיום טיפול',
 ];
 
 const STAGE_COLORS = {
@@ -18,6 +19,7 @@ const STAGE_COLORS = {
   'בנק מנצח':         'bg-amber-50 text-amber-700 border-amber-200',
   'בטחונות וחתימות':  'bg-orange-50 text-orange-700 border-orange-200',
   'המתנה לביצוע':     'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'סיום טיפול':       'bg-gray-100 text-gray-500 border-gray-200',
 };
 
 export default function ClientsByStageTable({ onSelectClient }) {
@@ -43,10 +45,15 @@ export default function ClientsByStageTable({ onSelectClient }) {
       const stageByEmail = {};
       stages.forEach(s => { stageByEmail[s.client_email] = s.current_stage; });
 
-      // Place every client profile into the correct stage (default: first stage)
+      // Place every client profile into the correct stage
+      // Clients marked as treatment ended go to 'סיום טיפול' column
       clientProfiles.forEach(p => {
-        const stage = stageByEmail[p.email] || STAGES[0];
-        if (map[stage]) map[stage].push(p.email);
+        if (p.treatment_ended_at) {
+          map['סיום טיפול'].push(p.email);
+        } else {
+          const stage = stageByEmail[p.email] || STAGES[0];
+          if (map[stage]) map[stage].push(p.email);
+        }
       });
 
       setStageMap(map);
