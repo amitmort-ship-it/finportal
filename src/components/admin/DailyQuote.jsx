@@ -320,10 +320,13 @@ export default function DailyQuote() {
   const quote = getDailyQuote();
 
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground max-w-sm">
-      <span className="text-indigo-300 text-xl leading-none font-serif shrink-0">"</span>
+    <div
+      className="flex items-center gap-1.5 text-sm min-w-0 flex-1"
+      title={`${quote.text} — ${quote.author}`}
+    >
+      <span className="text-indigo-300 text-lg leading-none font-serif shrink-0">"</span>
       <span className="text-foreground font-medium truncate">{quote.text}</span>
-      <span className="shrink-0 text-indigo-400 font-semibold">— {quote.author}</span>
+      <span className="text-indigo-400 font-semibold shrink-0">— {quote.author}</span>
     </div>
   );
 }
