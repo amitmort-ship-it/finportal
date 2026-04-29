@@ -2,6 +2,14 @@ const isNode = typeof window === 'undefined';
 const windowObj = isNode ? { localStorage: new Map() } : window;
 const storage = windowObj.localStorage;
 
+const getCurrentOrigin = () => {
+	if (isNode) {
+		return '';
+	}
+
+	return window.location.origin;
+};
+
 const toSnakeCase = (str) => {
 	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
@@ -44,7 +52,9 @@ const getAppParams = () => {
 		token: getAppParamValue("access_token", { removeFromUrl: true }),
 		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
 		functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
-		appBaseUrl: getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL }),
+		appBaseUrl: getAppParamValue("app_base_url", {
+			defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL || getCurrentOrigin(),
+		}),
 	}
 }
 
