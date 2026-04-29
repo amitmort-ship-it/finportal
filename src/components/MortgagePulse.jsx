@@ -66,7 +66,7 @@ export default function MortgagePulse({ clientEmail }) {
     <>
     <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 mb-6" dir="rtl">
       <p className="text-sm text-blue-800">
-        <span className="font-bold">מדווח משכנתא:</span> המשכנתא שלך תוקצתה בבנק הנבחר. כל המסמכים דרושים והתמונים והעדכונים על הדרך להחזור שוטף למשוואה.
+        <span className="font-bold">מד דופק משכנתא:</span> המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.
       </p>
       <p className="text-xs text-blue-600 mt-3 text-right">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
     </div>
