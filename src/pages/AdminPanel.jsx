@@ -1,4 +1,5 @@
 import { Component, Suspense, lazy, useState, useEffect } from 'react';
+import { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -99,11 +100,7 @@ export default function AdminPanel() {
   const [clientSearch, setClientSearch] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  useEffect(() => {
-    import('@/components/admin/AdminColorPicker').then((module) => {
-      module.useAdminPalette();
-    });
-  }, []);
+  useAdminPalette();
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
