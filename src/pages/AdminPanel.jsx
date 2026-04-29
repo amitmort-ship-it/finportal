@@ -10,8 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import { Suspense, lazy } from 'react';
 
-const ErrorFallback = ({ message }) => <div className="text-red-500 p-4">{message}</div>;
-
 const AdminClients = lazy(() => import('../components/admin/AdminClients'));
 const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals'));
 const AdminPackages = lazy(() => import('../components/admin/AdminPackages'));
