@@ -33,7 +33,7 @@ export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSearch, setClientSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('clients');
 
   useAdminPalette();
 
@@ -63,7 +63,7 @@ export default function AdminPanel() {
         <AdminColorPicker />
       </div>
 
-
+      <RefinanceMonitor />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
@@ -79,7 +79,6 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <RefinanceMonitor />
           <AdminNotifications selectedClient={selectedClient} />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>

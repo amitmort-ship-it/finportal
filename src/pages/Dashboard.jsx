@@ -4,7 +4,6 @@ import { base44 } from '@/api/base44Client';
 import { Bell, Package, Shield, FileText, Building2, Activity, Landmark } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProcessTracker from '@/components/ProcessTracker';
-import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -68,14 +67,8 @@ export default function Dashboard() {
     );
   }
 
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin';
-
   return (
     <div className="space-y-6">
-      {/* Refinance Monitor - Admin Only */}
-      {isAdmin && <RefinanceMonitor />}
-
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
