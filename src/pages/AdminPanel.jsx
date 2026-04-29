@@ -303,8 +303,6 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      <ClientsByStageTable onSelectClient={setSelectedClient} />
-
       <ClientSearchSelector
         users={users}
         selectedClient={selectedClient}
@@ -332,6 +330,7 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="clients">
+          <ClientsByStageTable onSelectClient={setSelectedClient} />
           <AdminNotifications selectedClient={selectedClient} />
           <AdminClients />
         </TabsContent>
