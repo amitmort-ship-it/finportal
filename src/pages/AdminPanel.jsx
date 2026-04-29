@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,7 +53,9 @@ export default function AdminPanel() {
         <AdminColorPicker />
       </div>
 
-      <RefinanceMonitor />
+      <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+        <RefinanceMonitor />
+      </Suspense>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
@@ -69,12 +71,16 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="clients" className="space-y-6">
-          <AdminClients />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminClients />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
-          <AdminNotifications selectedClient={selectedClient} />
-          <ClientsByStageTable onSelectClient={setSelectedClient} />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminNotifications selectedClient={selectedClient} />
+            <ClientsByStageTable onSelectClient={setSelectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
@@ -89,7 +95,9 @@ export default function AdminPanel() {
               {/* Clients loaded dynamically in component */}
             </select>
           </div>
-          <AdminBankApprovals selectedClient={selectedClient} />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminBankApprovals selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
@@ -103,19 +111,27 @@ export default function AdminPanel() {
               <option value="">כל הלקוחות</option>
             </select>
           </div>
-          <AdminViewDocuments selectedClient={selectedClient} />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminViewDocuments selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="packages" className="space-y-6">
-          <AdminPackages selectedClient={selectedClient} />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminPackages selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="collaterals" className="space-y-6">
-          <AdminCollaterals selectedClient={selectedClient} />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminCollaterals selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="process" className="space-y-6">
-          <AdminProcessStage selectedClient={selectedClient} />
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <AdminProcessStage selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
