@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertCircle, TrendingDown, CheckCircle2, Mail, Loader2, Phone, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Mail, Loader2, Phone, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import RefinanceAddTemp from './RefinanceAddTemp';
@@ -198,7 +198,6 @@ export default function RefinanceMonitor() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    <TrendingDown className="w-3.5 h-3.5" />
                     <span className="text-xs font-bold">פוטנציאל חיסכון {c.avgGap?.toFixed(2)}%</span>
                   </div>
                   <Button
