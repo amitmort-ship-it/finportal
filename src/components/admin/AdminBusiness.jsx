@@ -76,6 +76,7 @@ export default function AdminBusiness() {
 
   // Editable fields
   const [newIncome, setNewIncome] = useState('');
+  const [newIncomeSource, setNewIncomeSource] = useState('');
   const [avgDealSize, setAvgDealSize] = useState(stored.avgDealSize || 8000);
   const [assetsValue, setAssetsValue] = useState(stored.assetsValue || 0);
   const [incomeLog, setIncomeLog] = useState(stored.incomeLog || []);
@@ -114,6 +115,7 @@ export default function AdminBusiness() {
       gross: amount,
       net,
       tax,
+      source: newIncomeSource.trim() || 'לא צוין',
       date: new Date().toLocaleDateString('he-IL'),
       month: new Date().toLocaleString('he-IL', { month: 'long', year: 'numeric' }),
     };
@@ -121,6 +123,7 @@ export default function AdminBusiness() {
     setIncomeLog(next);
     persist({ incomeLog: next });
     setNewIncome('');
+    setNewIncomeSource('');
     toast.success(`הכנסה של ${fmt(amount)} נרשמה. נטו למאגר: ${fmt(net)}`);
   };
 
@@ -268,6 +271,12 @@ export default function AdminBusiness() {
             placeholder="למשל: 15000"
             dir="ltr"
           />
+          <Label>ממי / שם הלקוח</Label>
+          <Input
+            value={newIncomeSource}
+            onChange={(e) => setNewIncomeSource(e.target.value)}
+            placeholder="למשל: ישראל ישראלי"
+          />
           <Button className="w-full gap-2" onClick={handleAddIncome} disabled={!newIncome}>
             <Plus className="w-4 h-4" />
             הוסף הכנסה
@@ -379,6 +388,9 @@ export default function AdminBusiness() {
                 <div>
                   <span className="font-semibold text-foreground">{fmt(entry.gross)}</span>
                   <span className="text-muted-foreground mr-2 text-xs">גולמי</span>
+                  {entry.source && entry.source !== 'לא צוין' && (
+                    <span className="text-xs text-primary font-medium mr-1">· {entry.source}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="text-emerald-600 font-medium">נטו {fmt(entry.net)}</span>
