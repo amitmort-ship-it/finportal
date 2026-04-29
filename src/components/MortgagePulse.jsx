@@ -89,7 +89,7 @@ export default function MortgagePulse({ clientEmail }) {
             </>
           )}
           {mortgage?.execution_date && (
-            <p className="text-xs text-muted-foreground mt-1">בנק {mortgage.bank_name || ''} · {new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{mortgage.bank_name || ''} · {new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</p>
           )}
         </div>
       </div>
