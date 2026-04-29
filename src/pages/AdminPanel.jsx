@@ -9,26 +9,21 @@ import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
 import { Suspense, lazy } from 'react';
-
-const ErrorComponent = () => <div>Error loading component</div>;
-
-const AdminClients = lazy(() => import('../components/admin/AdminClients').catch(() => ({ default: ErrorComponent })));
-const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals').catch(() => ({ default: ErrorComponent })));
-const AdminPackages = lazy(() => import('../components/admin/AdminPackages').catch(() => ({ default: ErrorComponent })));
-const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals').catch(() => ({ default: ErrorComponent })));
-const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage').catch(() => ({ default: ErrorComponent })));
-const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates').catch(() => ({ default: ErrorComponent })));
-const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments').catch(() => ({ default: ErrorComponent })));
-const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications').catch(() => ({ default: ErrorComponent })));
-const AdminBusiness = lazy(() => import('../components/admin/AdminBusiness').catch(() => ({ default: ErrorComponent })));
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 import DailyQuote from '../components/admin/DailyQuote';
 import ClientsByStageTable from '../components/admin/ClientsByStageTable';
 import AdminMarketRates from '../components/admin/AdminMarketRates';
 import RefinanceMonitor from '../components/admin/RefinanceMonitor';
 
-const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
-const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
+const AdminClients = lazy(() => import('../components/admin/AdminClients'));
+const AdminCollaterals = lazy(() => import('../components/admin/AdminCollaterals'));
+const AdminPackages = lazy(() => import('../components/admin/AdminPackages'));
+const AdminBankApprovals = lazy(() => import('../components/admin/AdminBankApprovals'));
+const AdminProcessStage = lazy(() => import('../components/admin/AdminProcessStage'));
+const AdminUpdates = lazy(() => import('../components/admin/AdminUpdates'));
+const AdminViewDocuments = lazy(() => import('../components/admin/AdminViewDocuments'));
+const AdminNotifications = lazy(() => import('../components/admin/AdminNotifications'));
+const AdminBusiness = lazy(() => import('../components/admin/AdminBusiness'));
 
 function buildFileUploadNotifications(requests) {
   return (requests || [])
