@@ -74,7 +74,7 @@ export default function AdminPanel() {
 
         <TabsContent value="notifications" className="space-y-6">
           <AdminNotifications selectedClient={selectedClient} />
-          <ClientsByStageTable />
+          <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
