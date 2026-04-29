@@ -1,32 +1,36 @@
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from '@/components/ui/sonner';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClientInstance } from '@/lib/query-client';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ThemeProvider } from 'next-themes';
-import PageNotFound from './lib/PageNotFound';
+import PageNotFound from '@/lib/PageNotFound.jsx';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import ResponsiveLayout from './components/ResponsiveLayout';
+import UserNotRegisteredError from '@/components/UserNotRegisteredError.jsx';
+import ResponsiveLayout from '@/components/ResponsiveLayout.jsx';
 
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const FilesPage = lazy(() => import('./pages/FilesPage.jsx'));
-const PackagePage = lazy(() => import('./pages/PackagePage'));
-const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage'));
-const CollateralsPage = lazy(() => import('./pages/CollateralsPage'));
-const AdminPanel = lazy(() => import('./pages/AdminPanel'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const PackagePage = lazy(() => import('./pages/PackagePage.jsx'));
+const ApprovalsPage = lazy(() => import('./pages/ApprovalsPage.jsx'));
+const CollateralsPage = lazy(() => import('./pages/CollateralsPage.jsx'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel.jsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const ClientFiles = lazy(() => import('./pages/ClientFiles.jsx'));
-const JoinCasePage = lazy(() => import('./pages/JoinCasePage'));
+const JoinCasePage = lazy(() => import('./pages/JoinCasePage.jsx'));
 const ToolsPage = lazy(() => import('./pages/ToolsPage.jsx'));
+const MarketingHome = lazy(() => import('./pages/MarketingHome.jsx'));
+const MortgageFunnelPage = lazy(() => import('./pages/MortgageFunnelPage.jsx'));
+const BrandAssetsAdmin = lazy(() => import('./pages/BrandAssetsAdmin.jsx'));
 
 const PageLoader = () => (
-  <div className="fixed inset-0 flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  <div className="fixed inset-0 flex items-center justify-center bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" />
   </div>
 );
 
-const AuthenticatedApp = () => {
+function AuthenticatedApp() {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -36,7 +40,9 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
+    }
+
+    if (authError.type === 'auth_required') {
       navigateToLogin();
       return null;
     }
@@ -57,13 +63,17 @@ const AuthenticatedApp = () => {
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/join-case" element={<JoinCasePage />} />
         </Route>
+
+        <Route path="/marketing" element={<MarketingHome />} />
+        <Route path="/funnel" element={<MortgageFunnelPage />} />
+        <Route path="/brand-assets-admin" element={<BrandAssetsAdmin />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>
   );
-};
+}
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -77,10 +87,9 @@ function App() {
             <AuthenticatedApp />
           </Router>
           <Toaster />
+          <SonnerToaster />
         </ThemeProvider>
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
-
-export default App
