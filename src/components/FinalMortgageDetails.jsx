@@ -41,7 +41,7 @@ export default function FinalMortgageDetails({ clientEmail }) {
             <div className="flex items-center gap-3 text-sm">
               <span className="text-muted-foreground">₪{(t.principal || 0).toLocaleString('he-IL')}</span>
               <span className="text-blue-600 font-medium">{t.interest_rate}%</span>
-              <span className="text-muted-foreground">שנ' {t.years}</span>
+              <span className="text-muted-foreground">{t.years} שנ'</span>
             </div>
           </div>
         ))}
