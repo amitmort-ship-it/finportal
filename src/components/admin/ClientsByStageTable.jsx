@@ -89,7 +89,7 @@ export default function ClientsByStageTable({ onSelectClient }) {
           <tbody>
             <tr>
               {STAGES.map(stage => (
-                <td key={stage} className="px-4 py-3 align-top text-center border-l border-border/40 first:border-l-0">
+                <td key={stage} className="px-4 py-3 align-top text-center border-l border-t border-border/40 first:border-l-0">
                   <div className="max-h-40 overflow-y-auto space-y-1.5">
                     {stageMap[stage]?.length === 0 ? (
                       <span className="text-xs text-muted-foreground">—</span>
