@@ -106,6 +106,7 @@ export default function FilesPage() {
         <p className="text-muted-foreground mt-1">העלה מסמכים דרושים לתיק שלך</p>
       </div>
 
+      <div>
       {requests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
           <FileUp className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
@@ -221,6 +222,7 @@ export default function FilesPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
