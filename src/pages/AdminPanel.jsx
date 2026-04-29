@@ -1,7 +1,9 @@
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
@@ -20,18 +22,40 @@ import {
   Package,
   Lock,
   ListChecks,
+  Search,
 } from 'lucide-react';
 
 export default function AdminPanel() {
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [activeTab, setActiveTab] = useState('clients');
+  const [clients, setClients] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useAdminPalette();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const profiles = await base44.entities.ClientProfile.filter({}, '-created_date');
+        setClients(profiles);
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   if (user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+
+  const filteredClients = clients.filter(c =>
+    (c.full_name || c.email).toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const tabs = [
     { id: 'clients', label: 'לקוחות', icon: Users },
@@ -51,6 +75,54 @@ export default function AdminPanel() {
           <p className="text-muted-foreground mt-1">ניהול לקוחות ומעקב תהליכים</p>
         </div>
         <AdminColorPicker />
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Search className="w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="חיפוש לקוח לפי שם או אימייל..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1"
+            dir="rtl"
+          />
+        </div>
+
+        {selectedClient && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              נבחר: <span className="font-medium text-foreground">
+                {clients.find(c => c.email === selectedClient)?.full_name || selectedClient}
+              </span>
+            </span>
+            <button
+              onClick={() => setSelectedClient(null)}
+              className="text-xs text-primary hover:underline"
+            >
+              נקה בחירה
+            </button>
+          </div>
+        )}
+
+        {!loading && filteredClients.length > 0 && (
+          <div className="max-h-48 overflow-y-auto border border-border rounded-lg">
+            {filteredClients.map(client => (
+              <button
+                key={client.id}
+                onClick={() => setSelectedClient(client.email)}
+                className={`w-full text-right px-3 py-2 text-sm transition-colors ${
+                  selectedClient === client.email
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
+                }`}
+              >
+                <div className="font-medium">{client.full_name || client.email}</div>
+                <div className="text-xs opacity-70">{client.email}</div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
