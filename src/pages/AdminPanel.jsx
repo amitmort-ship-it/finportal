@@ -15,14 +15,46 @@ const AdminClients = lazy(() =>
     default: () => <div className="text-red-500 p-4">שגיאה בטעינת מנהל הלקוחות</div>,
   }))
 );
-import AdminCollaterals from '../components/admin/AdminCollaterals';
-import AdminPackages from '../components/admin/AdminPackages';
-import AdminBankApprovals from '../components/admin/AdminBankApprovals';
-import AdminProcessStage from '../components/admin/AdminProcessStage';
-import AdminUpdates from '../components/admin/AdminUpdates';
-import AdminViewDocuments from '../components/admin/AdminViewDocuments';
-import AdminNotifications from '../components/admin/AdminNotifications';
-import AdminBusiness from '../components/admin/AdminBusiness';
+const AdminCollaterals = lazy(() =>
+  import('../components/admin/AdminCollaterals').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת בטחונות</div>,
+  }))
+);
+const AdminPackages = lazy(() =>
+  import('../components/admin/AdminPackages').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת תמהיל</div>,
+  }))
+);
+const AdminBankApprovals = lazy(() =>
+  import('../components/admin/AdminBankApprovals').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת אישורים</div>,
+  }))
+);
+const AdminProcessStage = lazy(() =>
+  import('../components/admin/AdminProcessStage').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת שלב</div>,
+  }))
+);
+const AdminUpdates = lazy(() =>
+  import('../components/admin/AdminUpdates').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת עדכונים</div>,
+  }))
+);
+const AdminViewDocuments = lazy(() =>
+  import('../components/admin/AdminViewDocuments').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת מסמכים</div>,
+  }))
+);
+const AdminNotifications = lazy(() =>
+  import('../components/admin/AdminNotifications').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת התראות</div>,
+  }))
+);
+const AdminBusiness = lazy(() =>
+  import('../components/admin/AdminBusiness').catch(() => ({
+    default: () => <div className="text-red-500 p-4">שגיאה בטעינת ניהול עסק</div>,
+  }))
+);
 import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 import DailyQuote from '../components/admin/DailyQuote';
 import ClientsByStageTable from '../components/admin/ClientsByStageTable';
@@ -330,31 +362,45 @@ export default function AdminPanel() {
         </TabsContent>
 
         <TabsContent value="documents">
-          <AdminViewDocuments selectedClient={selectedClient} />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminViewDocuments selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="collaterals">
-          <AdminCollaterals selectedClient={selectedClient} />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminCollaterals selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="packages">
-          <AdminPackages selectedClient={selectedClient} />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminPackages selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="approvals">
-          <AdminBankApprovals selectedClient={selectedClient} />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminBankApprovals selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="process">
-          <AdminProcessStage selectedClient={selectedClient} />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminProcessStage selectedClient={selectedClient} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="business">
-          <AdminBusiness />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminBusiness />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="updates">
-          <AdminUpdates selectedClient={selectedClient} />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminUpdates selectedClient={selectedClient} />
+          </Suspense>
           <div className="mt-8">
             <AdminMarketRates />
           </div>
