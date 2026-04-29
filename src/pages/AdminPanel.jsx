@@ -68,7 +68,7 @@ export default function AdminPanel() {
     { id: 'notifications', label: 'הודעות', icon: Bell },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
     { id: 'documents', label: 'מסמכים', icon: FileText },
-    { id: 'packages', label: 'תבניות', icon: Package },
+    { id: 'packages', label: 'תמהיל', icon: Package },
     { id: 'collaterals', label: 'בטחונות', icon: Lock },
     { id: 'process', label: 'שלבים', icon: ListChecks },
   ];
