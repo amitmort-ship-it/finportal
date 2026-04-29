@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Bell, Home, Landmark, FileText, Building2, Activity } from 'lucide-react';
+import { Bell, Home, Shield, FileText, Building2, Activity, Landmark } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProcessTracker from '@/components/ProcessTracker';
 
@@ -182,33 +182,33 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900/50">
           <CardContent className="pt-6 text-center">
-            <Home className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+            <Home className="w-5 h-5 text-orange-500 mx-auto mb-3" />
             <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.refinance}</p>
-            <p className="text-xs text-orange-600 dark:text-orange-400">מחזורים</p>
+            <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">מחזורים</p>
           </CardContent>
         </Card>
 
         <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/50">
           <CardContent className="pt-6 text-center">
-            <Landmark className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+            <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-3" />
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{stats.collateral}</p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400">בטחונות</p>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">בטחונות</p>
           </CardContent>
         </Card>
 
         <Card className="border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-900/50">
           <CardContent className="pt-6 text-center">
-            <FileText className="w-6 h-6 text-violet-600 mx-auto mb-2" />
+            <FileText className="w-5 h-5 text-violet-500 mx-auto mb-3" />
             <p className="text-2xl font-bold text-violet-700 dark:text-violet-300">{stats.document}</p>
-            <p className="text-xs text-violet-600 dark:text-violet-400">מסמכים</p>
+            <p className="text-xs text-violet-600 dark:text-violet-400 font-medium">מסמכים</p>
           </CardContent>
         </Card>
 
         <Card className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20 dark:border-cyan-900/50">
           <CardContent className="pt-6 text-center">
-            <Building2 className="w-6 h-6 text-cyan-600 mx-auto mb-2" />
+            <Building2 className="w-5 h-5 text-cyan-500 mx-auto mb-3" />
             <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">{stats.approval}</p>
-            <p className="text-xs text-cyan-600 dark:text-cyan-400">אישורים בנקאיים</p>
+            <p className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">אישורים בנקאיים</p>
           </CardContent>
         </Card>
       </div>
