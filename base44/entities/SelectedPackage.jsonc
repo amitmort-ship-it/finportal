@@ -1,0 +1,94 @@
+{
+  "name": "SelectedPackage",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "title": {
+      "type": "string",
+      "description": "Package title/name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Package details"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded package document"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "screenshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Screenshots of the routes and interest rates",
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed"
+      ],
+      "default": "pending"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "client_email",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

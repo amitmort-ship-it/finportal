@@ -1,0 +1,59 @@
+{
+  "name": "ProcessStage",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "current_stage": {
+      "type": "string",
+      "enum": [
+        "\u05d0\u05d9\u05e1\u05d5\u05e3 \u05de\u05e1\u05de\u05db\u05d9\u05dd",
+        "\u05d1\u05e0\u05d9\u05d9\u05ea \u05ea\u05de\u05d4\u05d9\u05dc",
+        "\u05de\u05db\u05e8\u05d6 \u05e8\u05d9\u05d1\u05d9\u05d5\u05ea",
+        "\u05d1\u05e0\u05e7 \u05de\u05e0\u05e6\u05d7",
+        "\u05d1\u05d8\u05d7\u05d5\u05e0\u05d5\u05ea \u05d5\u05d7\u05ea\u05d9\u05de\u05d5\u05ea",
+        "\u05d4\u05de\u05ea\u05e0\u05d4 \u05dc\u05d1\u05d9\u05e6\u05d5\u05e2"
+      ],
+      "default": "\u05d0\u05d9\u05e1\u05d5\u05e3 \u05de\u05e1\u05de\u05db\u05d9\u05dd"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes about current stage"
+    }
+  },
+  "required": [
+    "client_email",
+    "current_stage"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.client_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
