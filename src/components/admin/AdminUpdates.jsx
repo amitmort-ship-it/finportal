@@ -110,10 +110,9 @@ export default function AdminUpdates({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [data, fileRequests, userList, profiles] = await Promise.all([
+      const [data, fileRequests, profiles] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
         base44.entities.FileRequest.filter({}, '-created_date'),
-        base44.entities.User.filter({}),
         base44.entities.ClientProfile.filter({}),
       ]);
 
@@ -140,7 +139,7 @@ export default function AdminUpdates({ selectedClient }) {
       setUpdates(filteredUpdates);
       setAdminNotifications(filteredAdminEvents);
       setClientNames(profileMap);
-      setUsers(userList.filter((u) => u.role !== 'admin'));
+      setUsers(profiles);
     } catch (err) {
       console.error('Failed to load data:', err);
       toast.error('שגיאה בטעינת הנתונים');
