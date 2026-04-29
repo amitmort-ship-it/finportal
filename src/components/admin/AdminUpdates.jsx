@@ -155,7 +155,7 @@ export default function AdminUpdates({ selectedClient }) {
 
   useEffect(() => {
     load();
-  }, [client]);
+  }, [load, client]);
 
   const syncUpdateToNotion = async (update, userMap = {}) => {
     const response = await base44.functions.invoke('syncClientUpdateToNotion', {
