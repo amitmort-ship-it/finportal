@@ -98,7 +98,7 @@ export default function AdminPanel() {
               <ClientSearchFilter onSelect={setClientSearch} />
             </div>
           </div>
-          <AdminUpdates selectedClientFilter={clientSearch} />
+          <AdminUpdates />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-6">
