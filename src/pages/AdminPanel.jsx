@@ -26,6 +26,7 @@ import {
   Search,
   ExternalLink,
   TrendingUp,
+  Home,
 } from 'lucide-react';
 
 export default function AdminPanel() {
@@ -61,6 +62,7 @@ export default function AdminPanel() {
   );
 
   const tabs = [
+    { id: 'main', label: 'ראשי', icon: Home },
     { id: 'clients', label: 'לקוחות', icon: Users },
     { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
     { id: 'notifications', label: 'הודעות', icon: Bell },
@@ -175,7 +177,7 @@ export default function AdminPanel() {
       </Suspense>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -186,6 +188,14 @@ export default function AdminPanel() {
             );
           })}
         </TabsList>
+
+        <TabsContent value="main" className="space-y-6">
+          <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
+            <RefinanceMonitor />
+            <ClientsByStageTable onSelectClient={setSelectedClient} />
+            <AdminNotifications selectedClient={selectedClient} />
+          </Suspense>
+        </TabsContent>
 
         <TabsContent value="clients" className="space-y-6">
           <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
