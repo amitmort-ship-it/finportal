@@ -38,11 +38,17 @@ export default function ClientsByStageTable({ onSelectClient }) {
 
       const map = {};
       STAGES.forEach(s => { map[s] = []; });
-      stages.forEach(s => {
-        if (map[s.current_stage]) {
-          map[s.current_stage].push(s.client_email);
-        }
+
+      // Build a map of email -> stage from ProcessStage records
+      const stageByEmail = {};
+      stages.forEach(s => { stageByEmail[s.client_email] = s.current_stage; });
+
+      // Place every client profile into the correct stage (default: first stage)
+      clientProfiles.forEach(p => {
+        const stage = stageByEmail[p.email] || STAGES[0];
+        if (map[stage]) map[stage].push(p.email);
       });
+
       setStageMap(map);
       setLoading(false);
     };
