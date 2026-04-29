@@ -18,6 +18,7 @@ import AdminUpdates from '../components/admin/AdminUpdates';
 import AdminViewDocuments from '../components/admin/AdminViewDocuments';
 import AdminNotifications from '../components/admin/AdminNotifications';
 import AdminBusiness from '../components/admin/AdminBusiness';
+import AdminColorPicker, { useAdminPalette } from '../components/admin/AdminColorPicker';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
@@ -165,6 +166,7 @@ function ClientSearchSelector({ users, selectedClient, onSelect }) {
 }
 
 export default function AdminPanel() {
+  useAdminPalette();
   const { user } = useAuth();
   const [selectedClient, setSelectedClient] = useState(null);
   const [users, setUsers] = useState([]);
@@ -250,6 +252,9 @@ export default function AdminPanel() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
           <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
+          <div className="mt-3">
+            <AdminColorPicker />
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
