@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { ChevronDown, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink } from 'lucide-react';
+import { Suspense } from 'react';
 import AdminClients from '../components/admin/AdminClients';
 import AdminCollaterals from '../components/admin/AdminCollaterals';
 import AdminPackages from '../components/admin/AdminPackages';
@@ -312,11 +313,15 @@ export default function AdminPanel() {
           <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
           <AdminNotifications selectedClient={selectedClient} />
-          <AdminClients />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminClients />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="clients">
-          <AdminClients />
+          <Suspense fallback={<div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>}>
+            <AdminClients />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="documents">
