@@ -253,9 +253,10 @@ export default function AdminPanel() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">לוח ניהול</h1>
           <p className="text-muted-foreground mt-1">ניהול לקוחות, מסמכים, אישורים ובטחונות</p>
-          <div className="mt-3 flex items-center gap-4 flex-wrap">
-            <DailyQuote />
+          <div className="mt-3 flex items-center gap-3">
             <AdminColorPicker />
+            <div className="h-4 w-px bg-border shrink-0" />
+            <DailyQuote />
           </div>
         </div>
 
