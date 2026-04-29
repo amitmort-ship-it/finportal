@@ -78,20 +78,20 @@ export default function AdminPanel() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">לוח ניהול</h1>
           <div className="flex gap-3 flex-wrap">
-            <a href="https://smartnpv.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors">
+            <a href="https://www.snpv.co.il/clients" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors">
               SmartNPV
               <ExternalLink className="w-4 h-4" />
             </a>
-            <a href="https://paperless.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
+            <a href="https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
               Paperless
               <ExternalLink className="w-4 h-4" />
             </a>
-            <a href="https://notion.so" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black hover:bg-gray-900 text-white font-medium text-sm transition-colors">
+            <a href="https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black hover:bg-gray-900 text-white font-medium text-sm transition-colors">
               Notion
               <ExternalLink className="w-4 h-4" />
             </a>
-            <a href="#" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors">
-              בקישור וישור
+            <a href="https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors">
+              ביטוח ישיר
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>
