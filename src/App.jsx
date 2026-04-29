@@ -6,8 +6,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ThemeProvider } from 'next-themes';
 import PageNotFound from '@/lib/PageNotFound.jsx';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError.jsx';
+import { AuthProvider } from '@/lib/AuthContext';
 import ResponsiveLayout from '@/components/ResponsiveLayout.jsx';
 
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -26,46 +25,6 @@ const PageLoader = () => (
   </div>
 );
 
-function AuthenticatedApp() {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return <PageLoader />;
-  }
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    }
-
-    if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
-  }
-
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route element={<ResponsiveLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/files" element={<FilesPage />} />
-          <Route path="/package" element={<PackagePage />} />
-          <Route path="/approvals" element={<ApprovalsPage />} />
-          <Route path="/collaterals" element={<CollateralsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/my-files" element={<ClientFiles />} />
-          <Route path="/tools" element={<ToolsPage />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/join-case" element={<JoinCasePage />} />
-        </Route>
-
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
-    </Suspense>
-  );
-}
-
 export default function App() {
   return (
     <AuthProvider>
@@ -77,7 +36,24 @@ export default function App() {
           disableTransitionOnChange
         >
           <Router>
-            <AuthenticatedApp />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route element={<ResponsiveLayout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/files" element={<FilesPage />} />
+                  <Route path="/package" element={<PackagePage />} />
+                  <Route path="/approvals" element={<ApprovalsPage />} />
+                  <Route path="/collaterals" element={<CollateralsPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/my-files" element={<ClientFiles />} />
+                  <Route path="/tools" element={<ToolsPage />} />
+                  <Route path="/admin" element={<AdminPanel />} />
+                  <Route path="/join-case" element={<JoinCasePage />} />
+                </Route>
+
+                <Route path="*" element={<PageNotFound />} />
+              </Routes>
+            </Suspense>
           </Router>
           <Toaster />
           <SonnerToaster />
