@@ -85,9 +85,10 @@ export default function Dashboard() {
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
             <Activity className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-            <p className="text-sm text-blue-900 dark:text-blue-200 flex-1">
-              <span className="font-semibold">מד דופק משכנתא:</span> המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.
-            </p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">מד דופק משכנתא:</p>
+              <p className="text-sm text-blue-900 dark:text-blue-200">המשכנתא שלך מנוטרת מול ריביות השוק. נעדכן כשתיווצר הזדמנות למחזור.</p>
+            </div>
           </div>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 text-right">בדיקה אחרונה: {new Date().toLocaleDateString('he-IL')}</p>
         </CardContent>
