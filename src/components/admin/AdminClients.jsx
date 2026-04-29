@@ -177,11 +177,8 @@ export default function AdminClients() {
     setSendingMemberInvite(true);
 
     try {
-      await base44.functions.invoke('inviteCaseUser', {
-        case_profile_id: selectedClient.id,
-        email,
-        full_name: fullName || null,
-      });
+      // Invite user first
+      await base44.users.inviteUser(email, 'user');
 
       toast.success('הזמנה למשתמש נוסף נשלחה בהצלחה');
       setMemberInviteOpen(false);
