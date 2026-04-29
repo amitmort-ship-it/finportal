@@ -40,30 +40,30 @@ const CATEGORIES = [
 ];
 
 export default function CollateralsPage() {
-  const { caseEmail } = useAuth();
+  const { user } = useAuth();
   const [collaterals, setCollaterals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!caseEmail) {
+    if (!user?.email) {
       setCollaterals([]);
       setLoading(false);
       return;
     }
 
     try {
-      const data = await base44.entities.Collateral.filter({ client_email: caseEmail }, '-created_date');
+      const data = await base44.entities.Collateral.filter({ client_email: user.email }, '-created_date');
       setCollaterals(data);
     } catch (err) {
       console.error('load collaterals error:', err);
     } finally {
       setLoading(false);
     }
-  }, [caseEmail]);
+  }, [user?.email]);
 
   useEffect(() => {
     load();
-  }, [caseEmail]);
+  }, [load]);
 
   if (loading) {
     return (
