@@ -23,7 +23,6 @@ import {
   Package,
   Lock,
   ListChecks,
-  Search,
   ExternalLink,
   TrendingUp,
   Home,
@@ -155,8 +154,6 @@ export default function AdminPanel() {
             <AdminBusiness />
           </Suspense>
         </TabsContent>
-
-
 
         <TabsContent value="approvals" className="space-y-6">
           <Suspense fallback={<div className="text-center py-6">טוען...</div>}>
