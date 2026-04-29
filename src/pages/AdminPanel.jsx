@@ -62,7 +62,7 @@ export default function AdminPanel() {
 
   const tabs = [
     { id: 'clients', label: 'לקוחות', icon: Users },
-    { id: 'business', label: 'עסק', icon: TrendingUp },
+    { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
     { id: 'notifications', label: 'הודעות', icon: Bell },
     { id: 'approvals', label: 'אישורים', icon: Building2 },
     { id: 'documents', label: 'מסמכים', icon: FileText },
