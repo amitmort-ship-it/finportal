@@ -79,6 +79,7 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
+          <RefinanceMonitor />
           <AdminNotifications selectedClient={selectedClient} />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>
