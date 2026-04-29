@@ -96,33 +96,27 @@ export default function MortgagePulse({ clientEmail }) {
     </div>
 
     {mortgage && (
-      <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 mt-4" dir="rtl">
-        <h3 className="font-bold text-orange-800 text-sm mb-4">המשכנתא המנוטרת</h3>
-        <div className="space-y-2 mb-4 text-sm">
-          <div className="flex justify-between"><span className="text-orange-700">בנק:</span><span className="font-medium text-orange-900">{mortgage.bank_name || '-'}</span></div>
-          <div className="flex justify-between"><span className="text-orange-700">תאריך ביצוע:</span><span className="font-medium text-orange-900">{new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</span></div>
-          <div className="flex justify-between"><span className="text-orange-700">סכום כללי:</span><span className="font-medium text-orange-900">₪{(mortgage.tracks || []).reduce((sum, t) => sum + (t.principal || 0), 0).toLocaleString()}</span></div>
+      <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 mt-4" dir="rtl">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <div className="text-xs text-yellow-600 mb-1">{new Date(mortgage.execution_date).toLocaleDateString('he-IL')}</div>
+            <div className="font-bold text-right text-yellow-800">המשכנתא שלך</div>
+          </div>
+          <div className="text-right">
+            <div className="inline-block bg-yellow-200 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded">בנק הפועלים</div>
+            <div className="text-xs text-yellow-700 mt-1">סה"כ קרן: ₪{(mortgage.tracks || []).reduce((sum, t) => sum + (t.principal || 0), 0).toLocaleString()}</div>
+          </div>
         </div>
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-orange-200">
-              <th className="text-right py-2 px-2 text-orange-700 font-medium">סוג מסלול</th>
-              <th className="text-right py-2 px-2 text-orange-700 font-medium">סכום</th>
-              <th className="text-right py-2 px-2 text-orange-700 font-medium">ריבית</th>
-              <th className="text-right py-2 px-2 text-orange-700 font-medium">שנים</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(mortgage.tracks || []).map((track, i) => (
-              <tr key={i} className="border-b border-orange-100 last:border-b-0">
-                <td className="text-right py-2 px-2 text-orange-900">{track.track_type}</td>
-                <td className="text-right py-2 px-2 text-orange-900">₪{(track.principal || 0).toLocaleString()}</td>
-                <td className="text-right py-2 px-2 text-orange-900">{track.interest_rate}%</td>
-                <td className="text-right py-2 px-2 text-orange-900">{track.years}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="space-y-2">
+          {(mortgage.tracks || []).map((track, i) => (
+            <div key={i} className="flex items-center justify-between text-xs bg-white/50 rounded px-3 py-2">
+              <span className="text-yellow-700">{track.years}שנ'</span>
+              <span className="font-bold text-yellow-800">{track.interest_rate}%</span>
+              <span className="text-yellow-600">₪{(track.principal || 0).toLocaleString()}</span>
+              <span className="text-yellow-700">{track.track_type}</span>
+            </div>
+          ))}
+        </div>
       </div>
     )}
     </>
