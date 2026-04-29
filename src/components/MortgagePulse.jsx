@@ -113,10 +113,10 @@ export default function MortgagePulse({ clientEmail }) {
         <div className="space-y-2">
           {(mortgage.tracks || []).map((track, i) => (
             <div key={i} className="flex items-center justify-between text-xs bg-white/50 rounded px-3 py-2">
-              <span className="text-yellow-700">{track.years}שנ'</span>
-              <span className="font-bold text-yellow-800">{track.interest_rate}%</span>
+              <span className="text-yellow-700 font-medium">{track.track_type}</span>
               <span className="text-yellow-600">₪{(track.principal || 0).toLocaleString()}</span>
-              <span className="text-yellow-700 font-medium text-right">{track.track_type}</span>
+              <span className="font-bold text-yellow-800">{track.interest_rate}%</span>
+              <span className="text-yellow-700">{track.years}שנ'</span>
             </div>
           ))}
         </div>
