@@ -131,6 +131,29 @@ export default function ResponsiveLayout() {
           )}
         </nav>
 
+        {isAdmin && (
+          <div className="px-4 pb-3 space-y-1">
+            <p className="text-xs text-muted-foreground font-medium mb-2">כלים חיצוניים</p>
+            {[
+              { label: 'ביטוח ישיר', url: 'https://www.bituchyashar.co.il' },
+              { label: 'Notion', url: 'https://www.notion.so' },
+              { label: 'SmartNPV', url: 'https://www.smartnpv.co.il' },
+              { label: 'Paperless', url: 'https://www.paperless.co.il' },
+            ].map(({ label, url }) => (
+              <a
+                key={label}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                {label}
+              </a>
+            ))}
+          </div>
+        )}
+
         <div className="p-4 border-t border-border space-y-2">
           <a
             href="https://wa.me/972502155910?text=שלום%20עמית%20-%20יש%20לי%20שאלה%20על%20התמהיל"
