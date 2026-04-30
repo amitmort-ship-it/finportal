@@ -15,6 +15,7 @@ import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColor
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
 import AdminNotifications from '@/components/admin/AdminNotifications';
+import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -75,7 +76,10 @@ export default function AdminPanel() {
           <h1 className="text-2xl md:text-3xl font-bold">לוח הניהול</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-0.5">ניהול לקוחות ומעקב תהליכים</p>
         </div>
-        <AdminColorPicker />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <AdminColorPicker />
+        </div>
       </div>
 
       {/* Global client filter */}
