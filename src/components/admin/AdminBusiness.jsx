@@ -311,18 +311,18 @@ export default function AdminBusiness() {
       )}
 
       {isHighWorkload && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4 shadow-sm">
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/25">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-amber-800">עומס גבוה מזוהה — {activeCount} תיקים פעילים</p>
-            <p className="text-sm text-amber-700 mt-0.5">סיכון לחריגה בתקציב זמן. מומלץ לתעדף ולהתארגן מראש.</p>
+            <p className="font-semibold text-amber-800 dark:text-amber-200">עומס גבוה מזוהה — {activeCount} תיקים פעילים</p>
+            <p className="text-sm text-amber-700 mt-0.5 dark:text-amber-300">סיכון לחריגה בתקציב זמן. מומלץ לתעדף ולהתארגן מראש.</p>
           </div>
         </div>
       )}
 
       {/* === TOP KPI ROW === */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Droplets className="w-4 h-4 text-blue-500" />
             <span>דלק במאגר</span>
@@ -331,7 +331,7 @@ export default function AdminBusiness() {
           <p className="text-xs text-muted-foreground">+ {fmt(reservoirRemainder)} עודף</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Wallet className="w-4 h-4 text-emerald-500" />
             <span>מאגר נטו</span>
@@ -340,7 +340,7 @@ export default function AdminBusiness() {
           <p className="text-xs text-muted-foreground">קופת מיסים: {fmt(totalTax)}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <TrendingUp className="w-4 h-4 text-violet-500" />
             <span>צנרת 2 חודשים</span>
@@ -351,7 +351,7 @@ export default function AdminBusiness() {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Clock className="w-4 h-4 text-orange-500" />
             <span>תיקים פעילים</span>
@@ -362,7 +362,7 @@ export default function AdminBusiness() {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <CreditCard className="w-4 h-4 text-red-500" />
             <span>הוצאות חודשיות</span>
@@ -373,7 +373,7 @@ export default function AdminBusiness() {
       </div>
 
       {/* === GAUGES === */}
-      <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-5">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-5">
         <h3 className="font-bold text-foreground flex items-center gap-2">
           <Info className="w-4 h-4 text-primary" />
           מדדי חוסן
@@ -386,7 +386,7 @@ export default function AdminBusiness() {
       {/* === INPUT ROW === */}
       <div className="grid md:grid-cols-3 gap-4">
         {/* Add Income */}
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
           <p className="text-xs text-muted-foreground">26% יועברו לקופת מיסים, היתרה למאגר</p>
           <Label>סכום גולמי (₪)</Label>
@@ -394,7 +394,7 @@ export default function AdminBusiness() {
           <Label>ממי / שם הלקוח</Label>
           <Input value={newIncomeSource} onChange={(e) => setNewIncomeSource(e.target.value)} placeholder="למשל: ישראל ישראלי" />
           <Label>קטגוריה</Label>
-          <select value={newIncomeCategory} onChange={(e) => setNewIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+          <select value={newIncomeCategory} onChange={(e) => setNewIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
             {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <Button className="w-full gap-2" onClick={handleAddIncome} disabled={!newIncome}>
@@ -404,7 +404,7 @@ export default function AdminBusiness() {
         </div>
 
         {/* Settings */}
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">הגדרות</h3>
           <div>
             <Label>עמלה ממוצעת לתיק (₪)</Label>
@@ -425,41 +425,41 @@ export default function AdminBusiness() {
         </div>
 
         {/* What to do now */}
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">מה לעשות עכשיו?</h3>
           <div className="space-y-2 text-sm">
             {reservoirMonths < 2 && (
-              <div className="flex items-start gap-2 text-red-700 bg-red-50 rounded-lg p-3">
+              <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-red-700 dark:bg-red-950/25 dark:text-red-300">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>המאגר נמוך מ-2 חודשים — יש לתעדף סגירת עסקאות.</span>
               </div>
             )}
             {reservoirMonths >= 2 && reservoirMonths < 4 && (
-              <div className="flex items-start gap-2 text-amber-700 bg-amber-50 rounded-lg p-3">
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-700 dark:bg-amber-950/25 dark:text-amber-300">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>מאגר בינוני — להמשיך לעבוד על הצנרת.</span>
               </div>
             )}
             {reservoirMonths >= 4 && (
-              <div className="flex items-start gap-2 text-emerald-700 bg-emerald-50 rounded-lg p-3">
+              <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300">
                 <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>מאגר חזק — אפשר להתמקד בצמיחה.</span>
               </div>
             )}
             {isHighWorkload && (
-              <div className="flex items-start gap-2 text-amber-700 bg-amber-50 rounded-lg p-3">
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-700 dark:bg-amber-950/25 dark:text-amber-300">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>עומס גבוה — לשקול האצלת אחריות.</span>
               </div>
             )}
             {pipelineCount === 0 && (
-              <div className="flex items-start gap-2 text-slate-700 bg-slate-50 rounded-lg p-3">
+              <div className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-slate-700 dark:bg-slate-950/70 dark:text-slate-300">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>הצנרת ריקה — להכניס תיקים חדשים.</span>
               </div>
             )}
             {pipelineCount > 0 && (
-              <div className="flex items-start gap-2 text-blue-700 bg-blue-50 rounded-lg p-3">
+              <div className="flex items-start gap-2 rounded-lg bg-blue-50 p-3 text-blue-700 dark:bg-blue-950/25 dark:text-blue-300">
                 <TrendingUp className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>{pipelineCount} תיקים בשלב סגירה — לדחוף לסיום.</span>
               </div>
@@ -470,7 +470,7 @@ export default function AdminBusiness() {
 
       {/* === INCOME CHART === */}
       {monthlyChart.length > 0 && (
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           <h3 className="font-bold text-foreground mb-4">הכנסות נטו לפי חודש</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyChart} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -487,17 +487,17 @@ export default function AdminBusiness() {
 
       {/* === CATEGORY BREAKDOWN === */}
       {incomeLog.length > 0 && (
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           <h3 className="font-bold text-foreground mb-4">פילוח הכנסות לפי קטגוריה (נטו)</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {INCOME_CATEGORIES.map((cat) => {
               const val = categoryTotals[cat] || 0;
               const pct = totalNet > 0 ? Math.round((val / totalNet) * 100) : 0;
               const colors = {
-                'משכנתאות': 'bg-blue-50 border-blue-200 text-blue-700',
-                'כ.ד': 'bg-emerald-50 border-emerald-200 text-emerald-700',
-                'הייטק': 'bg-violet-50 border-violet-200 text-violet-700',
-                'אחר': 'bg-slate-50 border-slate-200 text-slate-600',
+                'משכנתאות': 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/25 dark:border-blue-900/50 dark:text-blue-300',
+                'כ.ד': 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/25 dark:border-emerald-900/50 dark:text-emerald-300',
+                'הייטק': 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300',
+                'אחר': 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-950/70 dark:border-slate-800 dark:text-slate-300',
               };
               return (
                 <div key={cat} className={`rounded-xl border p-4 ${colors[cat] || colors['אחר']}`}>
@@ -514,7 +514,7 @@ export default function AdminBusiness() {
       {/* === EXPENSES === */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Fixed Expenses */}
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Repeat className="w-4 h-4 text-red-500" />
             <h3 className="font-bold text-foreground">הוצאות קבועות חודשיות</h3>
@@ -556,7 +556,7 @@ export default function AdminBusiness() {
         </div>
 
         {/* Variable Expenses */}
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <CreditCard className="w-4 h-4 text-orange-500" />
             <h3 className="font-bold text-foreground">הוצאות משתנות (תשלומים)</h3>
@@ -583,9 +583,9 @@ export default function AdminBusiness() {
               const remaining = e.installments - e.paidInstallments;
               const done = remaining === 0;
               return (
-                <div key={e.id} className={`rounded-lg border px-3 py-2.5 text-sm space-y-1.5 ${done ? 'border-emerald-200 bg-emerald-50/50' : 'border-border'}`}>
+                <div key={e.id} className={`rounded-lg border px-3 py-2.5 text-sm space-y-1.5 ${done ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/25' : 'border-border'}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`font-medium ${done ? 'text-emerald-700 line-through' : 'text-foreground'}`}>{e.name}</span>
+                    <span className={`font-medium ${done ? 'text-emerald-700 dark:text-emerald-300 line-through' : 'text-foreground'}`}>{e.name}</span>
                     <div className="flex items-center gap-2">
                       <span className={`font-semibold text-xs ${done ? 'text-emerald-600' : 'text-orange-600'}`}>
                         {done ? 'שולם' : `${fmt(e.installmentAmount)}/חודש`}
@@ -618,7 +618,7 @@ export default function AdminBusiness() {
       </div>
 
       {/* === FREE NOTES === */}
-      <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
         <h3 className="font-bold text-foreground flex items-center gap-2">
           <span>📝</span>
           רשימות והערות חופשיות
@@ -640,7 +640,7 @@ export default function AdminBusiness() {
 
       {/* === INCOME LOG === */}
       {incomeLog.length > 0 && (
-        <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-foreground">יומן הכנסות</h3>
             <span className="text-xs text-muted-foreground">סה״כ גולמי: {fmt(totalGross)}</span>
