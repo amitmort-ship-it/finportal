@@ -93,9 +93,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       const [data, clientRes, driveFolders] = await Promise.all([
         base44.entities.FileRequest.filter({}, '-created_date'),
-        users.length > 0
-          ? Promise.resolve({ data: { profiles: users } })
-          : base44.functions.invoke('getAllClients', {}),
+        base44.functions.invoke('getAllClients', {}),
         normalizedSelectedClient
           ? base44.entities.DriveFolder.filter({ client_email: normalizedSelectedClient })
           : Promise.resolve([]),
@@ -284,7 +282,7 @@ export default function AdminViewDocuments({ selectedClient }) {
             variant="outline"
             className="gap-2"
             onClick={handleOpenDriveFolder}
-            disabled={!selectedClient || !driveFolderUrl}
+            disabled={!selectedClient}
           >
             <FolderOpen className="w-4 h-4" />
             פתח תיקיית דרייב
