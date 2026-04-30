@@ -182,46 +182,50 @@ const CSS_VAR_KEYS = [
   '--sidebar-background','--sidebar-primary','--sidebar-border',
 ];
 
-// Store original values once on first load
-let _originals = null;
-function captureOriginals() {
-  if (_originals) return;
-  const style = getComputedStyle(document.documentElement);
-  _originals = {};
-  CSS_VAR_KEYS.forEach((key) => {
-    _originals[key] = style.getPropertyValue(key).trim();
-  });
-}
+// Light-mode default values (from index.css :root) — used when palette is 'default'
+const DEFAULT_LIGHT_VARS = {
+  '--background':           '220 20% 97%',
+  '--foreground':           '222 47% 11%',
+  '--card':                 '0 0% 100%',
+  '--card-foreground':      '222 47% 11%',
+  '--popover':              '0 0% 100%',
+  '--popover-foreground':   '222 47% 11%',
+  '--primary':              '221 83% 53%',
+  '--primary-foreground':   '0 0% 100%',
+  '--secondary':            '220 14% 96%',
+  '--secondary-foreground': '222 47% 11%',
+  '--muted':                '220 14% 96%',
+  '--muted-foreground':     '220 9% 46%',
+  '--accent':               '220 14% 96%',
+  '--accent-foreground':    '222 47% 11%',
+  '--border':               '220 13% 91%',
+  '--input':                '220 13% 91%',
+  '--ring':                 '221 83% 53%',
+  '--sidebar-background':   '0 0% 100%',
+  '--sidebar-primary':      '221 83% 53%',
+  '--sidebar-border':       '220 13% 91%',
+};
 
 function applyPalette(id) {
-  captureOriginals();
   const palette = PALETTES.find((p) => p.id === id);
   if (!palette) return;
 
-  if (!palette.vars) {
-    // restore originals
-    CSS_VAR_KEYS.forEach((key) => {
-      document.documentElement.style.setProperty(key, _originals[key]);
-    });
-  } else {
-    Object.entries(palette.vars).forEach(([key, val]) => {
-      document.documentElement.style.setProperty(key, val);
-    });
-  }
+  const vars = palette.vars || DEFAULT_LIGHT_VARS;
+  Object.entries(vars).forEach(([key, val]) => {
+    document.documentElement.style.setProperty(key, val);
+  });
 }
 
 function resetPalette() {
-  if (!_originals) return;
-  CSS_VAR_KEYS.forEach((key) => {
-    document.documentElement.style.setProperty(key, _originals[key]);
+  Object.entries(DEFAULT_LIGHT_VARS).forEach(([key, val]) => {
+    document.documentElement.style.setProperty(key, val);
   });
 }
 
 export function useAdminPalette() {
   useEffect(() => {
-    captureOriginals();
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) applyPalette(saved);
+    applyPalette(saved || 'default');
     return () => resetPalette();
   }, []);
 }
