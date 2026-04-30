@@ -14,6 +14,7 @@ import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
+import AdminNotifications from '@/components/admin/AdminNotifications';
 import {
   Users,
   Bell,
@@ -60,8 +61,6 @@ export default function AdminPanel() {
         <AdminColorPicker />
       </div>
 
-      <RefinanceMonitor />
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
           {TAB_CONFIG.map((tab) => {
@@ -76,6 +75,8 @@ export default function AdminPanel() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
+          <AdminNotifications />
+          <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
         </TabsContent>
 
