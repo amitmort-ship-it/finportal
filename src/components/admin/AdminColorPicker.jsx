@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { Palette } from 'lucide-react';
 
 // Each palette overrides the full set of CSS design tokens
@@ -7,7 +8,7 @@ const PALETTES = [
     id: 'default',
     label: 'כחול (ברירת מחדל)',
     preview: ['#dbeafe', '#93c5fd', '#3b82f6'],
-    vars: null, // means: remove all overrides → use original index.css values
+    vars: null,
   },
   {
     id: 'lavender',
@@ -182,52 +183,43 @@ const CSS_VAR_KEYS = [
   '--sidebar-background','--sidebar-primary','--sidebar-border',
 ];
 
-// Light-mode default values (from index.css :root) — used when palette is 'default'
-const DEFAULT_LIGHT_VARS = {
-  '--background':           '220 20% 97%',
-  '--foreground':           '222 47% 11%',
-  '--card':                 '0 0% 100%',
-  '--card-foreground':      '222 47% 11%',
-  '--popover':              '0 0% 100%',
-  '--popover-foreground':   '222 47% 11%',
-  '--primary':              '221 83% 53%',
-  '--primary-foreground':   '0 0% 100%',
-  '--secondary':            '220 14% 96%',
-  '--secondary-foreground': '222 47% 11%',
-  '--muted':                '220 14% 96%',
-  '--muted-foreground':     '220 9% 46%',
-  '--accent':               '220 14% 96%',
-  '--accent-foreground':    '222 47% 11%',
-  '--border':               '220 13% 91%',
-  '--input':                '220 13% 91%',
-  '--ring':                 '221 83% 53%',
-  '--sidebar-background':   '0 0% 100%',
-  '--sidebar-primary':      '221 83% 53%',
-  '--sidebar-border':       '220 13% 91%',
-};
+function clearPaletteOverrides() {
+  CSS_VAR_KEYS.forEach((key) => {
+    document.documentElement.style.removeProperty(key);
+  });
+}
 
 function applyPalette(id) {
   const palette = PALETTES.find((p) => p.id === id);
   if (!palette) return;
 
-  const vars = palette.vars || DEFAULT_LIGHT_VARS;
-  Object.entries(vars).forEach(([key, val]) => {
+  clearPaletteOverrides();
+
+  if (!palette.vars) return;
+
+  Object.entries(palette.vars).forEach(([key, val]) => {
     document.documentElement.style.setProperty(key, val);
   });
 }
 
 function resetPalette() {
-  Object.entries(DEFAULT_LIGHT_VARS).forEach(([key, val]) => {
-    document.documentElement.style.setProperty(key, val);
-  });
+  clearPaletteOverrides();
 }
 
 export function useAdminPalette() {
+  const { resolvedTheme } = useTheme();
+
   useEffect(() => {
+    if (resolvedTheme === 'dark') {
+      resetPalette();
+      return () => resetPalette();
+    }
+
     const saved = localStorage.getItem(STORAGE_KEY);
     applyPalette(saved || 'default');
+
     return () => resetPalette();
-  }, []);
+  }, [resolvedTheme]);
 }
 
 export default function AdminColorPicker() {
