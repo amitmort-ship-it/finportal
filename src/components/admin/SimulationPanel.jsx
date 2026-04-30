@@ -13,20 +13,27 @@ const CATEGORY_STYLES = {
   'אחר':       'bg-slate-50 border-slate-200 dark:bg-slate-950/70 dark:border-slate-800',
 };
 
+const INITIAL_CATEGORY_INPUTS = {
+  'משכנתאות': '',
+  'כ.ד': '',
+  'הייטק': '',
+  'אחר': '',
+};
+
 function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
 }
 
 function asNumber(value) {
-  const parsed = Number(value);
+  const normalized = String(value ?? '').replace(/,/g, '').trim();
+  if (normalized === '') return 0;
+  const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, variableExpenses, activeVariableMonthly }) {
   const [open, setOpen] = useState(true);
-  const [catInputs, setCatInputs] = useState(
-    Object.fromEntries(INCOME_CATEGORIES.map((c) => [c, '']))
-  );
+  const [catInputs, setCatInputs] = useState(INITIAL_CATEGORY_INPUTS);
 
   const safeFixedExpenses = useMemo(
     () => (Array.isArray(fixedExpenses) ? fixedExpenses.filter(Boolean) : []),
@@ -59,6 +66,79 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
   const afterExpenses = net - totalExpenses;
   const isPositive = afterExpenses >= 0;
 
+  const hasResults = Number.isFinite(totalGross) && totalGross > 0;
+
+  const renderResults = () => {
+    try {
+      return (
+        <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-2 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground">סה"כ גולמי</p>
+              <p className="font-bold text-lg text-foreground">{fmt(totalGross)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground">מיסים (26%)</p>
+              <p className="font-bold text-lg text-red-600">-{fmt(tax)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground">נטו אחרי מיסים</p>
+              <p className="font-bold text-lg text-blue-600">{fmt(net)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground">אחרי הוצאות ({fmt(totalExpenses)})</p>
+              <p className={`font-bold text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+                {isPositive ? '' : '-'}{fmt(Math.abs(afterExpenses))}
+              </p>
+            </div>
+          </div>
+
+          {(activeFixedExpenses.length > 0 || activeVariableExpenses.length > 0) && (
+            <div className="pt-3 border-t border-border space-y-2">
+              {activeFixedExpenses.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">הוצאות קבועות פעילות:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeFixedExpenses.map((expense, index) => (
+                      <span key={expense.id || `${expense.name || 'expense'}-${index}`} className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-300">
+                        {expense.name || 'הוצאה'}: {fmt(asNumber(expense.amount))}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeVariableExpenses.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">הוצאות משתנות פעילות:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeVariableExpenses.map((expense, index) => (
+                      <span key={expense.id || `${expense.name || 'variable'}-${index}`} className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/25 dark:text-orange-300">
+                        {expense.name || 'הוצאה'}: {fmt(asNumber(expense.installmentAmount))}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className={`mt-2 rounded-lg px-4 py-3 text-sm font-semibold ${isPositive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/25 dark:text-red-300'}`}>
+            {isPositive
+              ? `נשאר ${fmt(afterExpenses)} — אפשר לשים ${fmt(afterExpenses)} במאגר / חיסכון`
+              : `גירעון של ${fmt(Math.abs(afterExpenses))} — ההוצאות עולות על ההכנסה נטו`}
+          </div>
+        </div>
+      );
+    } catch (error) {
+      console.error('SimulationPanel render error:', error);
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-300">
+          הייתה בעיה בהצגת תוצאות הסימולציה עבור הנתונים הקיימים.
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-5">
       {/* Header — toggle */}
@@ -81,9 +161,10 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
               <div key={cat} className={`rounded-xl border p-3 space-y-2 ${CATEGORY_STYLES[cat]}`}>
                 <Label className="text-sm font-semibold text-foreground">{cat}</Label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={catInputs[cat]}
-                  onChange={(e) => setCatInputs((prev) => ({ ...prev, [cat]: e.target.value }))}
+                  onChange={(e) => setCatInputs((prev) => ({ ...prev, [cat]: e.target.value.replace(/[^\d.,-]/g, '') }))}
                   placeholder="₪ גולמי"
                   dir="ltr"
                   className="bg-background/80"
@@ -98,66 +179,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
           </div>
 
           {/* Results */}
-          {totalGross > 0 && (
-            <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-2 text-sm">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">סה"כ גולמי</p>
-                  <p className="font-bold text-lg text-foreground">{fmt(totalGross)}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">מיסים (26%)</p>
-                  <p className="font-bold text-lg text-red-600">-{fmt(tax)}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">נטו אחרי מיסים</p>
-                  <p className="font-bold text-lg text-blue-600">{fmt(net)}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">אחרי הוצאות ({fmt(totalExpenses)})</p>
-                  <p className={`font-bold text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {isPositive ? '' : '-'}{fmt(Math.abs(afterExpenses))}
-                  </p>
-                </div>
-              </div>
-
-              {/* Expenses breakdown */}
-              {(activeFixedExpenses.length > 0 || activeVariableExpenses.length > 0) && (
-                <div className="pt-3 border-t border-border space-y-2">
-                  {activeFixedExpenses.length > 0 && (
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1.5">הוצאות קבועות פעילות:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {activeFixedExpenses.map((expense) => (
-                          <span key={expense.id || `${expense.name || 'expense'}-${expense.amount || 0}`} className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-300">
-                            {expense.name || 'הוצאה'}: {fmt(asNumber(expense.amount))}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {activeVariableExpenses.length > 0 && (
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1.5">הוצאות משתנות פעילות:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {activeVariableExpenses.map((expense) => (
-                          <span key={expense.id || `${expense.name || 'variable'}-${expense.installmentAmount || 0}`} className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/25 dark:text-orange-300">
-                            {expense.name || 'הוצאה'}: {fmt(asNumber(expense.installmentAmount))}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className={`mt-2 rounded-lg px-4 py-3 text-sm font-semibold ${isPositive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/25 dark:text-red-300'}`}>
-                {isPositive
-                  ? `נשאר ${fmt(afterExpenses)} — אפשר לשים ${fmt(afterExpenses)} במאגר / חיסכון`
-                  : `גירעון של ${fmt(Math.abs(afterExpenses))} — ההוצאות עולות על ההכנסה נטו`}
-              </div>
-            </div>
-          )}
+          {hasResults && renderResults()}
         </div>
       )}
     </div>
