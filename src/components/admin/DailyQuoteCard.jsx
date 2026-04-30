@@ -1,8 +1,64 @@
 import { Sparkles } from 'lucide-react';
-import { getDailyQuote } from '@/lib/dailyQuotes';
+
+const OPENINGS = [
+  'כל יום חדש הוא הזדמנות',
+  'גם צעד קטן שנעשה בעקביות',
+  'התמדה שקטה',
+  'התקדמות אמיתית',
+  'בהירות מגיעה',
+  'אומץ מקצועי',
+  'סבלנות חכמה',
+  'משמעת יומית',
+  'בחירה אחת טובה בבוקר',
+  'מיקוד במה שחשוב',
+  'ניהול נכון של האנרגיה',
+  'שגרה יציבה',
+  'הקשבה לעצמך',
+  'אחריות רגועה',
+  'דיוק בפרטים',
+  'לב פתוח ולוח זמנים מסודר',
+];
+
+const MIDDLES = [
+  'שבונה ביטחון לטווח ארוך',
+  'שיוצר תנופה גם בימים עמוסים',
+  'שמחזק תוצאות לפני שמרגישים אותן',
+  'שמחבר בין מאמץ למשמעות',
+  'שפותח דלתות שלא נראו אתמול',
+  'שמלמדת את הדרך לסמוך עליך',
+  'שמצטבר להישגים גדולים',
+  'שמשאיר פחות מקום להסחות דעת',
+  'שמרגיע רעש ומחדד כיוון',
+  'שמעניק לעבודה עומק ויציבות',
+  'שבונה קצב שאפשר להחזיק לאורך זמן',
+  'שמחזק בהירות גם תחת לחץ',
+  'שמסדר מחשבות לפני שמסדר תוצאות',
+  'שמחזיר כוח להתמדה',
+  'שהופך כוונה להרגל',
+  'שמביא סדר למקומות שנראו מבולגנים',
+];
+
+const ENDINGS = [
+  'וגם היום אתה יכול לבחור בו.',
+  'והבחירה הזו שווה יותר ממה שנראה ברגע הראשון.',
+];
+
+const DAILY_QUOTES = OPENINGS.flatMap((opening) =>
+  MIDDLES.flatMap((middle) =>
+    ENDINGS.map((ending) => `${opening} ${middle} ${ending}`)
+  )
+);
+
+function getDailyQuote(date = new Date()) {
+  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const seed = Math.floor(localDate.getTime() / 86400000);
+  const index = Math.abs(seed) % DAILY_QUOTES.length;
+
+  return DAILY_QUOTES[index];
+}
 
 export default function DailyQuoteCard() {
-  const { text } = getDailyQuote();
+  const text = getDailyQuote();
 
   return (
     <div className="rounded-xl border border-primary/15 bg-gradient-to-l from-primary/10 via-card to-amber-50/70 p-6 shadow-sm dark:from-primary/10 dark:via-card dark:to-amber-950/20">
@@ -25,4 +81,3 @@ export default function DailyQuoteCard() {
     </div>
   );
 }
-
