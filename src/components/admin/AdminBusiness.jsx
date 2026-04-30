@@ -82,6 +82,7 @@ export default function AdminBusiness() {
   const [manualPipeline, setManualPipeline] = useState(0);
   const [assetsValue, setAssetsValue] = useState(0);
   const [manualActiveCount, setManualActiveCount] = useState('');
+  const [freeNotes, setFreeNotes] = useState('');
 
   // Input state
   const [newIncome, setNewIncome] = useState('');
@@ -115,6 +116,7 @@ export default function AdminBusiness() {
           setManualPipeline(r.manualPipeline ?? 0);
           setAssetsValue(r.assetsValue ?? 0);
           setManualActiveCount(r.manualActiveCount ?? '');
+          setFreeNotes(r.freeNotes ?? '');
         }
       } catch (err) {
         console.error(err);
@@ -134,6 +136,7 @@ export default function AdminBusiness() {
       manualPipeline,
       assetsValue,
       manualActiveCount,
+      freeNotes,
       ...patch,
     };
 
@@ -612,6 +615,24 @@ export default function AdminBusiness() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* === FREE NOTES === */}
+      <div className="bg-white rounded-xl border border-border shadow-sm p-5 space-y-3">
+        <h3 className="font-bold text-foreground flex items-center gap-2">
+          <span>📝</span>
+          רשימות והערות חופשיות
+        </h3>
+        <textarea
+          value={freeNotes}
+          onChange={(e) => {
+            setFreeNotes(e.target.value);
+            persist({ freeNotes: e.target.value });
+          }}
+          placeholder="כתוב כאן הערות, רשימות, תזכורות... הכל נשמר אוטומטית"
+          className="w-full min-h-48 resize-y rounded-lg border border-input bg-transparent px-3 py-2.5 text-sm text-right leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
+          dir="rtl"
+        />
       </div>
 
       {/* === SIMULATION === */}

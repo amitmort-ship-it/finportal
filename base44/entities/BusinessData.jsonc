@@ -49,6 +49,11 @@
       "type": "string",
       "description": "Manual active case count override",
       "default": ""
+    },
+    "freeNotes": {
+      "type": "string",
+      "description": "Free-form notes and lists",
+      "default": ""
     }
   },
   "required": [
