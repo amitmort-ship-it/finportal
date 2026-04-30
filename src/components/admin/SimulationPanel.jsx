@@ -67,35 +67,41 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
   const isPositive = afterExpenses >= 0;
 
   const hasResults = Number.isFinite(totalGross) && totalGross > 0;
+  const hasFixedExpenses = activeFixedExpenses.length > 0;
+  const hasVariableExpenses = activeVariableExpenses.length > 0;
+  const hasAnyExpenses = hasFixedExpenses || hasVariableExpenses;
 
   const renderResults = () => {
     try {
       return (
-        <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-2 text-sm">
+        <div
+          className={`rounded-xl border border-border p-4 space-y-2 text-sm transition-all ${
+            hasResults ? 'bg-muted/30 opacity-100' : 'bg-muted/10 opacity-70'
+          }`}
+        >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-0.5">
               <p className="text-xs text-muted-foreground">סה"כ גולמי</p>
-              <p className="font-bold text-lg text-foreground">{fmt(totalGross)}</p>
+              <p className="font-bold text-lg text-foreground">{hasResults ? fmt(totalGross) : '—'}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-xs text-muted-foreground">מיסים (26%)</p>
-              <p className="font-bold text-lg text-red-600">-{fmt(tax)}</p>
+              <p className="font-bold text-lg text-red-600">{hasResults ? `-${fmt(tax)}` : '—'}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-xs text-muted-foreground">נטו אחרי מיסים</p>
-              <p className="font-bold text-lg text-blue-600">{fmt(net)}</p>
+              <p className="font-bold text-lg text-blue-600">{hasResults ? fmt(net) : '—'}</p>
             </div>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">אחרי הוצאות ({fmt(totalExpenses)})</p>
+              <p className="text-xs text-muted-foreground">אחרי הוצאות ({hasResults ? fmt(totalExpenses) : '—'})</p>
               <p className={`font-bold text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
-                {isPositive ? '' : '-'}{fmt(Math.abs(afterExpenses))}
+                {hasResults ? `${isPositive ? '' : '-'}${fmt(Math.abs(afterExpenses))}` : '—'}
               </p>
             </div>
           </div>
 
-          {(activeFixedExpenses.length > 0 || activeVariableExpenses.length > 0) && (
-            <div className="pt-3 border-t border-border space-y-2">
-              {activeFixedExpenses.length > 0 && (
+          <div className={`pt-3 border-t border-border space-y-2 ${hasAnyExpenses && hasResults ? '' : 'hidden'}`}>
+              {hasFixedExpenses && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">הוצאות קבועות פעילות:</p>
                   <div className="flex flex-wrap gap-2">
@@ -107,7 +113,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                   </div>
                 </div>
               )}
-              {activeVariableExpenses.length > 0 && (
+              {hasVariableExpenses && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">הוצאות משתנות פעילות:</p>
                   <div className="flex flex-wrap gap-2">
@@ -119,13 +125,14 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                   </div>
                 </div>
               )}
-            </div>
-          )}
+          </div>
 
           <div className={`mt-2 rounded-lg px-4 py-3 text-sm font-semibold ${isPositive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/25 dark:text-red-300'}`}>
-            {isPositive
-              ? `נשאר ${fmt(afterExpenses)} — אפשר לשים ${fmt(afterExpenses)} במאגר / חיסכון`
-              : `גירעון של ${fmt(Math.abs(afterExpenses))} — ההוצאות עולות על ההכנסה נטו`}
+            {hasResults
+              ? (isPositive
+                  ? `נשאר ${fmt(afterExpenses)} — אפשר לשים ${fmt(afterExpenses)} במאגר / חיסכון`
+                  : `גירעון של ${fmt(Math.abs(afterExpenses))} — ההוצאות עולות על ההכנסה נטו`)
+              : 'הזן סכומים כדי לראות את תוצאות הסימולציה'}
           </div>
         </div>
       );
@@ -179,7 +186,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
           </div>
 
           {/* Results */}
-          {hasResults && renderResults()}
+          {renderResults()}
         </div>
       )}
     </div>
