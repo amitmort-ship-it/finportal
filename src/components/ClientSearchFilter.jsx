@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
 
-export default function ClientSearchFilter({ onSelect }) {
+export default function ClientSearchFilter({ onSelect, placeholder }) {
   const [search, setSearch] = useState('');
   const [clients, setClients] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -34,8 +34,8 @@ export default function ClientSearchFilter({ onSelect }) {
     }
   }, [search, clients]);
 
-  const handleSelect = (email) => {
-    onSelect(email);
+  const handleSelect = (client) => {
+    onSelect(client.email, client.full_name || client.email);
     setSearch('');
     setOpen(false);
   };
@@ -43,7 +43,7 @@ export default function ClientSearchFilter({ onSelect }) {
   return (
     <div className="relative">
       <Input
-        placeholder="הקלד שם או אימייל..."
+        placeholder={placeholder || "הקלד שם או אימייל..."}
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
@@ -53,7 +53,7 @@ export default function ClientSearchFilter({ onSelect }) {
             {filtered.map(client => (
               <button
                 key={client.id}
-                onClick={() => handleSelect(client.email)}
+                onClick={() => handleSelect(client)}
                 className="w-full text-right px-4 py-2 hover:bg-muted transition-colors text-sm"
               >
                 <div className="font-medium">{client.full_name}</div>
