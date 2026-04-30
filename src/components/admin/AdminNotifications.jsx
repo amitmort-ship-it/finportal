@@ -116,11 +116,9 @@ export default function AdminNotifications({ selectedClient }) {
 
   const load = async () => {
     try {
-      const [updates, fileRequests, profiles] = await Promise.all([
-        base44.entities.ClientUpdate.filter({}, '-created_date'),
-        base44.entities.FileRequest.filter({}, '-created_date'),
-        base44.entities.ClientProfile.filter({}),
-      ]);
+      const updates = await base44.entities.ClientUpdate.filter({}, '-created_date');
+      const fileRequests = await base44.entities.FileRequest.filter({}, '-created_date');
+      const profiles = await base44.entities.ClientProfile.filter({});
 
       const profileMap = Object.fromEntries(
         (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),

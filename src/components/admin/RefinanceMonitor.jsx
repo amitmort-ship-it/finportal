@@ -47,11 +47,9 @@ export default function RefinanceMonitor() {
 
   useEffect(() => {
     const load = async () => {
-      const [mortgages, marketRates, profiles] = await Promise.all([
-        base44.entities.FinalMortgage.filter({}),
-        base44.entities.MarketRate.filter({}),
-        base44.entities.ClientProfile.filter({}),
-      ]);
+      const mortgages = await base44.entities.FinalMortgage.filter({});
+      const marketRates = await base44.entities.MarketRate.filter({});
+      const profiles = await base44.entities.ClientProfile.filter({});
 
       const profileMap = Object.fromEntries(profiles.map(p => [p.email, p.full_name || p.email]));
 
