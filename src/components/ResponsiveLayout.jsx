@@ -135,10 +135,10 @@ export default function ResponsiveLayout() {
           <div className="px-4 pb-3 space-y-1">
             <p className="text-xs text-muted-foreground font-medium mb-2">כלים חיצוניים</p>
             {[
-              { label: 'ביטוח ישיר', url: 'https://www.bituchyashar.co.il' },
-              { label: 'Notion', url: 'https://www.notion.so' },
-              { label: 'SmartNPV', url: 'https://www.smartnpv.co.il' },
-              { label: 'Paperless', url: 'https://www.paperless.co.il' },
+              { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618' },
+              { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
+              { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
+              { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
             ].map(({ label, url }) => (
               <a
                 key={label}
