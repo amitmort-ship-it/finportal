@@ -74,25 +74,26 @@ export default function AdminPanel() {
           })}
         </TabsList>
 
+        <div className="flex flex-wrap gap-2 md:hidden mt-3">
+          {[
+            { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618' },
+            { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
+            { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
+            { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
+          ].map(({ label, url }) => (
+            <a
+              key={label}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-center px-3 py-2 rounded-lg text-sm font-medium bg-card border border-border text-foreground hover:bg-accent transition-all"
+            >
+              {label}
+            </a>
+          ))}
+        </div>
+
         <TabsContent value="dashboard" className="space-y-6">
-          <div className="flex flex-wrap gap-2 md:hidden">
-            {[
-              { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618' },
-              { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
-              { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
-              { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
-            ].map(({ label, url }) => (
-              <a
-                key={label}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-center px-3 py-2 rounded-lg text-sm font-medium bg-card border border-border text-foreground hover:bg-accent transition-all"
-              >
-                {label}
-              </a>
-            ))}
-          </div>
           <AdminNotifications />
           <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={setSelectedClient} />
