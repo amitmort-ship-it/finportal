@@ -83,6 +83,8 @@ export default function AdminPanel() {
         </div>
       </div>
 
+      <DailyQuoteCard />
+
       {/* Global client filter */}
       <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-3" dir="rtl">
         <div className="flex-1">
@@ -138,7 +140,6 @@ export default function AdminPanel() {
         </div>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <DailyQuoteCard />
           <AdminNotifications />
           <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); setActiveTab('updates'); }} />
