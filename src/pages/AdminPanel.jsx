@@ -15,6 +15,7 @@ import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColor
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
 import AdminNotifications from '@/components/admin/AdminNotifications';
+import DailyQuoteCard from '@/components/admin/DailyQuoteCard';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import {
@@ -137,6 +138,7 @@ export default function AdminPanel() {
         </div>
 
         <TabsContent value="dashboard" className="space-y-6">
+          <DailyQuoteCard />
           <AdminNotifications />
           <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); setActiveTab('updates'); }} />
