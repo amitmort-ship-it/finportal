@@ -8,6 +8,7 @@ import { LogOut, MessageCircle, Package, Calculator } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
@@ -46,6 +47,7 @@ export default function ResponsiveLayout() {
                 <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
               </div>
             </div>
+            <ThemeToggle className="shrink-0" />
           </div>
           <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
         </div>
@@ -160,7 +162,7 @@ export default function ResponsiveLayout() {
               <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
             </div>
           </div>
-
+          <ThemeToggle className="shrink-0" />
         </div>
       </header>
 
