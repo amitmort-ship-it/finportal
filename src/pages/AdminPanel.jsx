@@ -53,10 +53,10 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">לוח הניהול</h1>
-          <p className="text-muted-foreground mt-1">ניהול לקוחות ומעקב תהליכים</p>
+          <h1 className="text-2xl md:text-3xl font-bold">לוח הניהול</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-0.5">ניהול לקוחות ומעקב תהליכים</p>
         </div>
         <AdminColorPicker />
       </div>
@@ -74,19 +74,19 @@ export default function AdminPanel() {
           })}
         </TabsList>
 
-        <div className="flex flex-wrap gap-2 md:hidden mt-3">
+        <div className="grid grid-cols-2 gap-3 md:hidden mt-4 px-1">
           {[
-            { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618' },
-            { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
-            { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
-            { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
-          ].map(({ label, url }) => (
+            { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618', bg: 'bg-red-600', text: 'text-white' },
+            { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc', bg: 'bg-gray-900', text: 'text-white' },
+            { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients', bg: 'bg-green-600', text: 'text-white' },
+            { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', bg: 'bg-blue-600', text: 'text-white' },
+          ].map(({ label, url, bg, text }) => (
             <a
               key={label}
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 text-center px-3 py-2 rounded-lg text-sm font-medium bg-card border border-border text-foreground hover:bg-accent transition-all"
+              className={`flex items-center justify-center text-center px-4 py-3.5 rounded-2xl text-sm font-semibold shadow-md active:scale-95 transition-all min-h-[52px] ${bg} ${text}`}
             >
               {label}
             </a>
