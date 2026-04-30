@@ -35,10 +35,13 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
 
   useEffect(() => {
     if (search.trim()) {
-      const results = clients.filter(c =>
-        c.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-        c.email?.toLowerCase().includes(search.toLowerCase())
-      );
+      const normalizedSearch = search.toLowerCase();
+      const results = clients.filter((client) => {
+        const fullName = String(client?.full_name || '').toLowerCase();
+        const email = String(client?.email || '').toLowerCase();
+
+        return fullName.includes(normalizedSearch) || email.includes(normalizedSearch);
+      });
       setFiltered(results);
       setOpen(true);
     } else {
@@ -70,8 +73,8 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
                   onClick={() => handleSelect(client)}
                   className="w-full text-right px-4 py-2 hover:bg-muted transition-colors text-sm"
                 >
-                  <div className="font-medium">{client.full_name}</div>
-                  <div className="text-xs text-muted-foreground">{client.email}</div>
+                  <div className="font-medium">{client.full_name || client.email || 'ללא שם'}</div>
+                  <div className="text-xs text-muted-foreground">{client.email || 'ללא אימייל'}</div>
                 </button>
               ))}
             </div>
@@ -92,7 +95,7 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
         <SelectContent>
           {clients.map((client) => (
             <SelectItem key={client.id} value={client.email}>
-              {client.full_name || client.email}
+              {client.full_name || client.email || 'ללא שם'}
             </SelectItem>
           ))}
         </SelectContent>
