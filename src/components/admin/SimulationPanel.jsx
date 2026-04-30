@@ -7,10 +7,10 @@ const TAX_BUFFER_RATE = 0.26;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 
 const CATEGORY_STYLES = {
-  'משכנתאות': 'bg-blue-50 border-blue-200',
-  'כ.ד':       'bg-emerald-50 border-emerald-200',
-  'הייטק':    'bg-violet-50 border-violet-200',
-  'אחר':       'bg-slate-50 border-slate-200',
+  'משכנתאות': 'bg-blue-50 border-blue-200 dark:bg-blue-950/25 dark:border-blue-900/50',
+  'כ.ד':       'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50',
+  'הייטק':    'bg-violet-50 border-violet-200 dark:bg-violet-950/25 dark:border-violet-900/50',
+  'אחר':       'bg-slate-50 border-slate-200 dark:bg-slate-950/70 dark:border-slate-800',
 };
 
 function fmt(n) {
@@ -35,7 +35,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
   const isPositive = afterExpenses >= 0;
 
   return (
-    <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+    <div className="bg-card rounded-xl border border-border shadow-sm p-5">
       {/* Header — toggle */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
@@ -54,14 +54,14 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {INCOME_CATEGORIES.map((cat) => (
               <div key={cat} className={`rounded-xl border p-3 space-y-2 ${CATEGORY_STYLES[cat]}`}>
-                <Label className="text-sm font-semibold">{cat}</Label>
+                <Label className="text-sm font-semibold text-foreground">{cat}</Label>
                 <Input
                   type="number"
                   value={catInputs[cat]}
                   onChange={(e) => setCatInputs((prev) => ({ ...prev, [cat]: e.target.value }))}
                   placeholder="₪ גולמי"
                   dir="ltr"
-                  className="bg-white/80"
+                  className="bg-background/80"
                 />
                 {Number(catInputs[cat]) > 0 && (
                   <p className="text-xs text-muted-foreground">
@@ -104,7 +104,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                       <p className="text-xs text-muted-foreground mb-1.5">הוצאות קבועות פעילות:</p>
                       <div className="flex flex-wrap gap-2">
                         {fixedExpenses.filter(e => e.enabled !== false).map((e) => (
-                          <span key={e.id} className="text-xs bg-red-50 border border-red-200 text-red-700 px-2 py-0.5 rounded-full">
+                          <span key={e.id} className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-300">
                             {e.name}: {fmt(e.amount)}
                           </span>
                         ))}
@@ -116,7 +116,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                       <p className="text-xs text-muted-foreground mb-1.5">הוצאות משתנות פעילות:</p>
                       <div className="flex flex-wrap gap-2">
                         {variableExpenses.filter(e => e.paidInstallments < e.installments).map((e) => (
-                          <span key={e.id} className="text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-0.5 rounded-full">
+                          <span key={e.id} className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/25 dark:text-orange-300">
                             {e.name}: {fmt(e.installmentAmount)}
                           </span>
                         ))}
@@ -126,7 +126,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                 </div>
               )}
 
-              <div className={`mt-2 rounded-lg px-4 py-3 text-sm font-semibold ${isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              <div className={`mt-2 rounded-lg px-4 py-3 text-sm font-semibold ${isPositive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/25 dark:text-red-300'}`}>
                 {isPositive
                   ? `נשאר ${fmt(afterExpenses)} — אפשר לשים ${fmt(afterExpenses)} במאגר / חיסכון`
                   : `גירעון של ${fmt(Math.abs(afterExpenses))} — ההוצאות עולות על ההכנסה נטו`}
