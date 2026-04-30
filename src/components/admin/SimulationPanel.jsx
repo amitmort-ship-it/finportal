@@ -17,20 +17,45 @@ function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
 }
 
+function asNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, variableExpenses, activeVariableMonthly }) {
   const [open, setOpen] = useState(true);
   const [catInputs, setCatInputs] = useState(
     Object.fromEntries(INCOME_CATEGORIES.map((c) => [c, '']))
   );
 
+  const safeFixedExpenses = useMemo(
+    () => (Array.isArray(fixedExpenses) ? fixedExpenses.filter(Boolean) : []),
+    [fixedExpenses]
+  );
+
+  const safeVariableExpenses = useMemo(
+    () => (Array.isArray(variableExpenses) ? variableExpenses.filter(Boolean) : []),
+    [variableExpenses]
+  );
+
+  const activeFixedExpenses = useMemo(
+    () => safeFixedExpenses.filter((expense) => expense.enabled !== false),
+    [safeFixedExpenses]
+  );
+
+  const activeVariableExpenses = useMemo(
+    () => safeVariableExpenses.filter((expense) => asNumber(expense.paidInstallments) < asNumber(expense.installments)),
+    [safeVariableExpenses]
+  );
+
   const totalGross = useMemo(() =>
-    INCOME_CATEGORIES.reduce((s, c) => s + (Number(catInputs[c]) || 0), 0),
+    INCOME_CATEGORIES.reduce((s, c) => s + asNumber(catInputs[c]), 0),
     [catInputs]
   );
 
   const tax   = totalGross * TAX_BUFFER_RATE;
   const net   = totalGross - tax;
-  const totalExpenses = monthlyFixedTotal + (activeVariableMonthly || 0);
+  const totalExpenses = asNumber(monthlyFixedTotal) + asNumber(activeVariableMonthly);
   const afterExpenses = net - totalExpenses;
   const isPositive = afterExpenses >= 0;
 
@@ -63,9 +88,9 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                   dir="ltr"
                   className="bg-background/80"
                 />
-                {Number(catInputs[cat]) > 0 && (
+                {asNumber(catInputs[cat]) > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    נטו: {fmt(Number(catInputs[cat]) * (1 - TAX_BUFFER_RATE))}
+                    נטו: {fmt(asNumber(catInputs[cat]) * (1 - TAX_BUFFER_RATE))}
                   </p>
                 )}
               </div>
@@ -97,27 +122,27 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
               </div>
 
               {/* Expenses breakdown */}
-              {(fixedExpenses?.length > 0 || variableExpenses?.some(e => e.paidInstallments < e.installments)) && (
+              {(activeFixedExpenses.length > 0 || activeVariableExpenses.length > 0) && (
                 <div className="pt-3 border-t border-border space-y-2">
-                  {fixedExpenses?.filter(e => e.enabled !== false).length > 0 && (
+                  {activeFixedExpenses.length > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1.5">הוצאות קבועות פעילות:</p>
                       <div className="flex flex-wrap gap-2">
-                        {fixedExpenses.filter(e => e.enabled !== false).map((e) => (
-                          <span key={e.id} className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-300">
-                            {e.name}: {fmt(e.amount)}
+                        {activeFixedExpenses.map((expense) => (
+                          <span key={expense.id || `${expense.name || 'expense'}-${expense.amount || 0}`} className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-300">
+                            {expense.name || 'הוצאה'}: {fmt(asNumber(expense.amount))}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
-                  {variableExpenses?.filter(e => e.paidInstallments < e.installments).length > 0 && (
+                  {activeVariableExpenses.length > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1.5">הוצאות משתנות פעילות:</p>
                       <div className="flex flex-wrap gap-2">
-                        {variableExpenses.filter(e => e.paidInstallments < e.installments).map((e) => (
-                          <span key={e.id} className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/25 dark:text-orange-300">
-                            {e.name}: {fmt(e.installmentAmount)}
+                        {activeVariableExpenses.map((expense) => (
+                          <span key={expense.id || `${expense.name || 'variable'}-${expense.installmentAmount || 0}`} className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700 dark:border-orange-900/50 dark:bg-orange-950/25 dark:text-orange-300">
+                            {expense.name || 'הוצאה'}: {fmt(asNumber(expense.installmentAmount))}
                           </span>
                         ))}
                       </div>
