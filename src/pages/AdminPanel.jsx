@@ -89,6 +89,7 @@ export default function AdminPanel() {
           <ClientSearchFilter
             onSelect={(email, name) => handleSelectClient(email, name)}
             placeholder="חפש לקוח לסינון כל הטאבים..."
+            selectedValue={globalClient}
           />
         </div>
         {globalClient && (
