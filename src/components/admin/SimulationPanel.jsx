@@ -37,17 +37,16 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
   return (
     <div className="bg-white rounded-xl border border-border shadow-sm p-5">
       {/* Header — toggle */}
-      <button
-        className="flex items-center justify-between w-full"
-        onClick={() => setOpen((o) => !o)}
-      >
+      <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
           <Calculator className="w-4 h-4 text-primary" />
           <h3 className="font-bold text-foreground">סימולציית חודש</h3>
           <span className="text-xs text-muted-foreground">כמה ישאר לי אחרי מיסים, הוצאות קבועות ומשתנות?</span>
         </div>
-        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-      </button>
+        <button onClick={() => setOpen((o) => !o)} className="p-1 hover:bg-muted rounded">
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </button>
+      </div>
 
       {open && (
         <div className="mt-5 space-y-5">
