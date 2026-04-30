@@ -63,17 +63,31 @@ export default function FilesPage() {
     setUploading((prev) => ({ ...prev, [requestId]: true }));
 
     try {
+      const request = requests.find((item) => item.id === requestId);
+
       const uploadedFiles = await Promise.all(
         Array.from(files).map(async (file) => {
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+          // sync to Google Drive in the background (don't block on errors)
+          base44.functions.invoke('uploadToDrive', {
+            file_url,
+            file_name: file.name,
+            client_email: user.email,
+            category: request?.category || request?.title || 'כללי',
+            viewer_email: null,
+          }).catch((err) => console.error('Drive sync error:', err));
+
           return {
             file_url,
             file_name: file.name,
+            uploaded_by_email: user.email,
+            uploaded_by_name: user.full_name || user.email,
+            uploaded_at: new Date().toISOString(),
           };
         }),
       );
 
-      const request = requests.find((item) => item.id === requestId);
       const currentFiles = request?.uploaded_files || [];
       const allFiles = [...currentFiles, ...uploadedFiles];
 
