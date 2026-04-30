@@ -1,15 +1,13 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Moon, Package, Sun, Calculator } from 'lucide-react';
+import { LogOut, MessageCircle, Package, Calculator } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
-import { useTheme } from 'next-themes';
-
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
@@ -27,38 +25,9 @@ export default function ResponsiveLayout() {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = resolvedTheme === 'dark';
-
-  const ThemeToggleButton = ({ mobile = false }) => (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className={`inline-flex items-center justify-center rounded-xl border border-border bg-card text-foreground transition-all hover:bg-accent ${
-        mobile ? 'h-11 w-11 shrink-0' : 'h-10 w-10'
-      }`}
-      aria-label={isDark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה'}
-      title={isDark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה'}
-    >
-      {!mounted ? (
-        <div className="h-5 w-5 rounded-full bg-muted" />
-      ) : isDark ? (
-        <Sun className="w-5 h-5" />
-      ) : (
-        <Moon className="w-5 h-5" />
-      )}
-    </button>
-  );
 
   return (
     <div dir="rtl" className="min-h-screen bg-background">
@@ -77,7 +46,6 @@ export default function ResponsiveLayout() {
                 <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
               </div>
             </div>
-            <ThemeToggleButton />
           </div>
           <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
         </div>
@@ -192,7 +160,7 @@ export default function ResponsiveLayout() {
               <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
             </div>
           </div>
-          <ThemeToggleButton mobile />
+
         </div>
       </header>
 

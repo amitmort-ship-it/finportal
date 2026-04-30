@@ -69,8 +69,8 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <Router>
