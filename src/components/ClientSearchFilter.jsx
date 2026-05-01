@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
 import {
@@ -9,11 +9,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+function getClientLabel(client) {
+  const name = client?.full_name || client?.email || 'ללא שם';
+  const email = client?.email || '';
+  return email && name !== email ? `${name} — ${email}` : name;
+}
+
 export default function ClientSearchFilter({ onSelect, placeholder, selectedValue = '' }) {
   const [search, setSearch] = useState('');
   const [clients, setClients] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const loadClients = async () => {
@@ -31,60 +35,73 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
         console.error('Error loading clients:', error);
       }
     };
+
     loadClients();
   }, []);
 
-  useEffect(() => {
-    if (search.trim()) {
-      const normalizedSearch = search.toLowerCase();
-      const results = clients.filter((client) => {
-        const fullName = String(client?.full_name || '').toLowerCase();
-        const email = String(client?.email || '').toLowerCase();
+  const searchOptions = useMemo(() => {
+    if (!search.trim()) return clients;
 
-        return fullName.includes(normalizedSearch) || email.includes(normalizedSearch);
-      });
-      setFiltered(results);
-      setOpen(true);
-    } else {
-      setFiltered([]);
-      setOpen(false);
-    }
+    const normalizedSearch = search.toLowerCase();
+    return clients.filter((client) => {
+      const fullName = String(client?.full_name || '').toLowerCase();
+      const email = String(client?.email || '').toLowerCase();
+      const label = getClientLabel(client).toLowerCase();
+
+      return (
+        fullName.includes(normalizedSearch) ||
+        email.includes(normalizedSearch) ||
+        label.includes(normalizedSearch)
+      );
+    });
   }, [search, clients]);
 
   const handleSelect = (client) => {
+    if (!client?.email) return;
     onSelect(client.email, client.full_name || client.email);
     setSearch('');
-    setOpen(false);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+
+    const normalizedValue = String(value || '').trim().toLowerCase();
+    if (!normalizedValue) return;
+
+    const matchedClient = clients.find((client) => {
+      const fullName = String(client?.full_name || '').toLowerCase();
+      const email = String(client?.email || '').toLowerCase();
+      const label = getClientLabel(client).toLowerCase();
+
+      return (
+        fullName === normalizedValue ||
+        email === normalizedValue ||
+        label === normalizedValue
+      );
+    });
+
+    if (matchedClient) {
+      handleSelect(matchedClient);
+    }
   };
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        <Input
-          placeholder={placeholder || 'הקלד שם או אימייל...'}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <div
-          className={`absolute top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg z-50 ${
-            open && filtered.length > 0 ? 'block' : 'hidden'
-          }`}
-        >
-          <div className="max-h-64 overflow-y-auto">
-            {filtered.map(client => (
-              <button
-                type="button"
-                key={client.id || client.email}
-                onClick={() => handleSelect(client)}
-                className="w-full text-right px-4 py-2 hover:bg-muted transition-colors text-sm"
-              >
-                <div className="font-medium">{client.full_name || client.email || 'ללא שם'}</div>
-                <div className="text-xs text-muted-foreground">{client.email || 'ללא אימייל'}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <Input
+        list="client-search-options"
+        placeholder={placeholder || 'הקלד שם או אימייל...'}
+        value={search}
+        onChange={(e) => handleSearchChange(e.target.value)}
+      />
+
+      <datalist id="client-search-options">
+        {searchOptions.map((client) => (
+          <option
+            key={client.id || client.email}
+            value={getClientLabel(client)}
+          />
+        ))}
+      </datalist>
 
       <Select
         value={selectedValue || undefined}
