@@ -14,24 +14,26 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
   const [clients, setClients] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [open, setOpen] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const profiles = await base44.entities.ClientProfile.filter({}, '-created_date');
-        const sortedProfiles = [...profiles].sort((a, b) =>
-          String(a.full_name || a.email || '').localeCompare(
-            String(b.full_name || b.email || ''),
-            'he',
-          )
-        );
-        setClients(sortedProfiles);
-      } catch (error) {
-        console.error('Error loading clients:', error);
-      }
-    };
-    loadClients();
-  }, []);
+  const loadClients = async () => {
+    if (isLoaded) return;
+
+    try {
+      const response = await base44.functions.invoke('getAllClients', {});
+      const profiles = response?.data?.profiles || response?.profiles || [];
+      const sortedProfiles = [...profiles].sort((a, b) =>
+        String(a.full_name || a.email || '').localeCompare(
+          String(b.full_name || b.email || ''),
+          'he',
+        )
+      );
+      setClients(sortedProfiles);
+      setIsLoaded(true);
+    } catch (error) {
+      console.error('Error loading clients:', error);
+    }
+  };
 
   useEffect(() => {
     if (search.trim()) {
@@ -62,28 +64,37 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
         <Input
           placeholder={placeholder || 'הקלד שם או אימייל...'}
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onFocus={loadClients}
+          onChange={(e) => {
+            if (!isLoaded) loadClients();
+            setSearch(e.target.value);
+          }}
         />
-        {open && filtered.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg z-50">
-            <div className="max-h-64 overflow-y-auto">
-              {filtered.map(client => (
-                <button
-                  key={client.id}
-                  onClick={() => handleSelect(client)}
-                  className="w-full text-right px-4 py-2 hover:bg-muted transition-colors text-sm"
-                >
-                  <div className="font-medium">{client.full_name || client.email || 'ללא שם'}</div>
-                  <div className="text-xs text-muted-foreground">{client.email || 'ללא אימייל'}</div>
-                </button>
-              ))}
-            </div>
+        <div
+          className={`absolute top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg z-50 ${
+            open && filtered.length > 0 ? 'block' : 'hidden'
+          }`}
+        >
+          <div className="max-h-64 overflow-y-auto">
+            {filtered.map(client => (
+              <button
+                key={client.id || client.email}
+                onClick={() => handleSelect(client)}
+                className="w-full text-right px-4 py-2 hover:bg-muted transition-colors text-sm"
+              >
+                <div className="font-medium">{client.full_name || client.email || 'ללא שם'}</div>
+                <div className="text-xs text-muted-foreground">{client.email || 'ללא אימייל'}</div>
+              </button>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
       <Select
         value={selectedValue || undefined}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) loadClients();
+        }}
         onValueChange={(email) => {
           const client = clients.find((item) => item.email === email);
           if (client) handleSelect(client);
@@ -94,7 +105,7 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
         </SelectTrigger>
         <SelectContent>
           {clients.map((client) => (
-            <SelectItem key={client.id} value={client.email}>
+            <SelectItem key={client.id || client.email} value={client.email}>
               {client.full_name || client.email || 'ללא שם'}
             </SelectItem>
           ))}
