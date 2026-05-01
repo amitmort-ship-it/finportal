@@ -92,7 +92,7 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
       </div>
 
       <Select
-        value={selectedValue || undefined}
+        value={selectedValue || ''}
         onOpenChange={(nextOpen) => {
           if (nextOpen) loadClients();
         }}
