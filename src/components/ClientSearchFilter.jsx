@@ -79,7 +79,7 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
             {filtered.map(client => (
               <button
                 key={client.id || client.email}
-                onClick={() => handleSelect(client)}
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(client); }}
                 className="w-full text-right px-4 py-2 hover:bg-muted transition-colors text-sm"
               >
                 <div className="font-medium">{client.full_name || client.email || 'ללא שם'}</div>
