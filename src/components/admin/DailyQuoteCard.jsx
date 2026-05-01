@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 
 const OPENINGS = [
@@ -49,16 +50,46 @@ const DAILY_QUOTES = OPENINGS.flatMap((opening) =>
   )
 );
 
+const DAILY_QUOTE_TIMEZONE = 'Asia/Jerusalem';
+
+function getDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: DAILY_QUOTE_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function hashString(value) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
 function getDailyQuote(date = new Date()) {
-  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const seed = Math.floor(localDate.getTime() / 86400000);
-  const index = Math.abs(seed) % DAILY_QUOTES.length;
+  const dateKey = getDateKey(date);
+  const index = hashString(dateKey) % DAILY_QUOTES.length;
 
   return DAILY_QUOTES[index];
 }
 
 export default function DailyQuoteCard() {
-  const text = getDailyQuote();
+  const [text, setText] = useState(() => getDailyQuote());
+
+  useEffect(() => {
+    setText(getDailyQuote());
+
+    const intervalId = window.setInterval(() => {
+      setText(getDailyQuote());
+    }, 60 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   return (
     <div className="rounded-xl border border-primary/15 bg-gradient-to-l from-primary/10 via-card to-amber-50/70 p-6 shadow-sm dark:from-primary/10 dark:via-card dark:to-amber-950/20">
