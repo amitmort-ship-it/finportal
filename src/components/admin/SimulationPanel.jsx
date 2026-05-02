@@ -4,6 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 
 const TAX_BUFFER_RATE = 0.26;
+const HITECH_TAX_RATE = 0.12;
+const TARGET_NET_AFTER_EXPENSES = 25000;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 
 const CATEGORY_STYLES = {
@@ -31,6 +33,10 @@ function asNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getTaxRateForCategory(category) {
+  return category === 'הייטק' ? HITECH_TAX_RATE : TAX_BUFFER_RATE;
+}
+
 export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, variableExpenses, activeVariableMonthly }) {
   const [open, setOpen] = useState(true);
   const [catInputs, setCatInputs] = useState(INITIAL_CATEGORY_INPUTS);
@@ -55,16 +61,40 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
     [safeVariableExpenses]
   );
 
-  const totalGross = useMemo(() =>
-    INCOME_CATEGORIES.reduce((s, c) => s + asNumber(catInputs[c]), 0),
-    [catInputs]
+  const categoryBreakdown = useMemo(() => (
+    INCOME_CATEGORIES.reduce((accumulator, category) => {
+      const gross = asNumber(catInputs[category]);
+      const taxRate = getTaxRateForCategory(category);
+      const tax = gross * taxRate;
+      const net = gross - tax;
+
+      accumulator[category] = { gross, taxRate, tax, net };
+      return accumulator;
+    }, {})
+  ), [catInputs]);
+
+  const totalGross = useMemo(
+    () => INCOME_CATEGORIES.reduce((sum, category) => sum + (categoryBreakdown[category]?.gross || 0), 0),
+    [categoryBreakdown]
   );
 
-  const tax   = totalGross * TAX_BUFFER_RATE;
-  const net   = totalGross - tax;
+  const tax = useMemo(
+    () => INCOME_CATEGORIES.reduce((sum, category) => sum + (categoryBreakdown[category]?.tax || 0), 0),
+    [categoryBreakdown]
+  );
+
+  const net = useMemo(
+    () => INCOME_CATEGORIES.reduce((sum, category) => sum + (categoryBreakdown[category]?.net || 0), 0),
+    [categoryBreakdown]
+  );
   const totalExpenses = asNumber(monthlyFixedTotal) + asNumber(activeVariableMonthly);
   const afterExpenses = net - totalExpenses;
   const isPositive = afterExpenses >= 0;
+  const otherCategoriesNet = (categoryBreakdown['כ.ד']?.net || 0) + (categoryBreakdown['הייטק']?.net || 0) + (categoryBreakdown['אחר']?.net || 0);
+  const requiredMortgageNet = Math.max(0, TARGET_NET_AFTER_EXPENSES + totalExpenses - otherCategoriesNet);
+  const requiredMortgageGross = requiredMortgageNet / (1 - TAX_BUFFER_RATE);
+  const currentMortgageGross = categoryBreakdown['משכנתאות']?.gross || 0;
+  const mortgageGapGross = requiredMortgageGross - currentMortgageGross;
 
   const hasResults = Number.isFinite(totalGross) && totalGross > 0;
   const hasFixedExpenses = activeFixedExpenses.length > 0;
@@ -85,7 +115,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
               <p className="font-bold text-lg text-foreground">{hasResults ? fmt(totalGross) : '—'}</p>
             </div>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">מיסים (26%)</p>
+              <p className="text-xs text-muted-foreground">מיסים משוקללים</p>
               <p className="font-bold text-lg text-red-600">{hasResults ? `-${fmt(tax)}` : '—'}</p>
             </div>
             <div className="space-y-0.5">
@@ -93,9 +123,30 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
               <p className="font-bold text-lg text-blue-600">{hasResults ? fmt(net) : '—'}</p>
             </div>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">אחרי הוצאות ({hasResults ? fmt(totalExpenses) : '—'})</p>
+              <p className="text-xs text-muted-foreground">נטו אחרי הוצאות ({hasResults ? fmt(totalExpenses) : '—'})</p>
               <p className={`font-bold text-lg ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
                 {hasResults ? `${isPositive ? '' : '-'}${fmt(Math.abs(afterExpenses))}` : '—'}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-xs text-muted-foreground">כדי להישאר עם {fmt(TARGET_NET_AFTER_EXPENSES)} נטו אחרי הוצאות</p>
+              <p className="mt-1 text-lg font-bold text-primary">{hasResults ? fmt(requiredMortgageGross) : '—'}</p>
+              <p className="text-xs text-muted-foreground mt-1">ברוטו נדרש בקטגוריית משכנתאות</p>
+            </div>
+            <div className={`rounded-lg border px-4 py-3 ${mortgageGapGross <= 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/25 dark:text-emerald-300' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-300'}`}>
+              <p className="text-xs opacity-80">מול ההזנה הנוכחית במשכנתאות</p>
+              <p className="mt-1 text-lg font-bold">
+                {hasResults
+                  ? (mortgageGapGross <= 0
+                      ? `עודף של ${fmt(Math.abs(mortgageGapGross))}`
+                      : `חסר של ${fmt(mortgageGapGross)}`)
+                  : '—'}
+              </p>
+              <p className="text-xs opacity-80 mt-1">
+                {mortgageGapGross <= 0 ? 'ההכנסה שהוזנה במשכנתאות מספיקה כדי לעבור את היעד.' : 'זה הסכום הנוסף שצריך לייצר במשכנתאות.'}
               </p>
             </div>
           </div>
@@ -130,7 +181,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
           <div className={`mt-2 rounded-lg px-4 py-3 text-sm font-semibold ${isPositive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/25 dark:text-red-300'}`}>
             {hasResults
               ? (isPositive
-                  ? `נשאר ${fmt(afterExpenses)} — אפשר לשים ${fmt(afterExpenses)} במאגר / חיסכון`
+                  ? `נשאר ${fmt(afterExpenses)} נטו אחרי הוצאות. ${afterExpenses >= TARGET_NET_AFTER_EXPENSES ? 'היעד הושג.' : `עדיין חסרים ${fmt(TARGET_NET_AFTER_EXPENSES - afterExpenses)} ליעד.`}`
                   : `גירעון של ${fmt(Math.abs(afterExpenses))} — ההוצאות עולות על ההכנסה נטו`)
               : 'הזן סכומים כדי לראות את תוצאות הסימולציה'}
           </div>
@@ -153,7 +204,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
         <div className="flex items-center gap-2">
           <Calculator className="w-4 h-4 text-primary" />
           <h3 className="font-bold text-foreground">סימולציית חודש</h3>
-          <span className="text-xs text-muted-foreground">כמה ישאר לי אחרי מיסים, הוצאות קבועות ומשתנות?</span>
+          <span className="text-xs text-muted-foreground">כמה צריך לייצר במשכנתאות כדי להגיע ל-{fmt(TARGET_NET_AFTER_EXPENSES)} נטו אחרי הוצאות ומיסים?</span>
         </div>
         <button onClick={() => setOpen((o) => !o)} className="p-1 hover:bg-muted rounded">
           {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -178,7 +229,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
                 />
                 {asNumber(catInputs[cat]) > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    נטו: {fmt(asNumber(catInputs[cat]) * (1 - TAX_BUFFER_RATE))}
+                    נטו: {fmt(categoryBreakdown[cat]?.net || 0)}
                   </p>
                 )}
               </div>
