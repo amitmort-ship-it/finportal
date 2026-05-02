@@ -32,6 +32,7 @@ import {
 
 const SALARY_TARGET = 25000;
 const TAX_BUFFER_RATE = 0.26;
+const HITECH_TAX_RATE = 0.12;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
@@ -40,6 +41,10 @@ const DB_KEY = 'main';
 
 function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
+}
+
+function getTaxRateForCategory(category) {
+  return category === 'הייטק' ? HITECH_TAX_RATE : TAX_BUFFER_RATE;
 }
 
 function GaugeBar({ value, max, color, label, sublabel }) {
@@ -161,8 +166,9 @@ export default function AdminBusiness() {
   const handleAddIncome = () => {
     const amount = Number(String(newIncome).replace(/,/g, ''));
     if (!amount || amount <= 0) return;
-    const net = amount * (1 - TAX_BUFFER_RATE);
-    const tax = amount * TAX_BUFFER_RATE;
+    const taxRate = getTaxRateForCategory(newIncomeCategory);
+    const net = amount * (1 - taxRate);
+    const tax = amount * taxRate;
     const entry = {
       id: Date.now(),
       gross: amount,
@@ -388,7 +394,7 @@ export default function AdminBusiness() {
         {/* Add Income */}
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
-          <p className="text-xs text-muted-foreground">26% יועברו לקופת מיסים, היתרה למאגר</p>
+          <p className="text-xs text-muted-foreground">ברירת מחדל: 26% מס. בקטגוריית הייטק מחושב מס של 12% בלבד.</p>
           <Label>סכום גולמי (₪)</Label>
           <Input type="number" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} placeholder="למשל: 15000" dir="ltr" />
           <Label>ממי / שם הלקוח</Label>
