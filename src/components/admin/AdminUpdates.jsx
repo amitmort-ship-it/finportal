@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -105,10 +105,12 @@ export default function AdminUpdates({ selectedClient }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [client, setClient] = useState(selectedClient === '_all' ? 'all' : selectedClient || '');
+  const normalizedSelectedClient = String(selectedClient || '').trim().toLowerCase();
+  const [client, setClient] = useState(normalizedSelectedClient === '_all' ? 'all' : normalizedSelectedClient || '');
   const [sending, setSending] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
       const [data, fileRequests, profiles] = await Promise.all([
         base44.entities.ClientUpdate.filter({}, '-created_date'),
@@ -119,17 +121,22 @@ export default function AdminUpdates({ selectedClient }) {
       const profileMap = Object.fromEntries(
         (profiles || []).map((profile) => [String(profile.email || '').toLowerCase(), profile.full_name || profile.email]),
       );
+      const normalizedClient = String(client || '').trim().toLowerCase();
 
-      const clientFacingUpdates = data.filter((item) => item.client_email !== ADMIN_NOTIFICATIONS_EMAIL);
+      const clientFacingUpdates = (data || []).filter((item) => String(item?.client_email || '').toLowerCase() !== ADMIN_NOTIFICATIONS_EMAIL);
       const adminEvents = buildLoginNotificationsFromProfiles(profiles);
       const fileUploadEvents = buildFileUploadNotifications(fileRequests);
 
-      const filteredUpdates = (client === 'all' || !client)
+      const filteredUpdates = (normalizedClient === 'all' || !normalizedClient)
         ? clientFacingUpdates
-        : clientFacingUpdates.filter((u) => u.client_email === client);
+        : clientFacingUpdates.filter((u) => String(u?.client_email || '').toLowerCase() === normalizedClient);
 
       const filteredAdminEvents = [...adminEvents, ...fileUploadEvents]
-        .filter((event) => (client === 'all' || !client ? true : event.relatedClientEmail === client))
+        .filter((event) => (
+          normalizedClient === 'all' || !normalizedClient
+            ? true
+            : String(event?.relatedClientEmail || '').toLowerCase() === normalizedClient
+        ))
         .sort((a, b) => {
           const aDate = new Date(a.createdAt || 0).getTime();
           const bDate = new Date(b.createdAt || 0).getTime();
@@ -139,23 +146,27 @@ export default function AdminUpdates({ selectedClient }) {
       setUpdates(filteredUpdates);
       setAdminNotifications(filteredAdminEvents);
       setClientNames(profileMap);
-      setUsers(profiles);
+      setUsers(Array.isArray(profiles) ? profiles : []);
     } catch (err) {
       console.error('Failed to load data:', err);
       toast.error('שגיאה בטעינת הנתונים');
+      setUpdates([]);
+      setAdminNotifications([]);
+      setClientNames({});
+      setUsers([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [client]);
 
   useEffect(() => {
-    const val = selectedClient ? selectedClient : 'all';
+    const val = normalizedSelectedClient ? normalizedSelectedClient : 'all';
     setClient(val);
-  }, [selectedClient]);
+  }, [normalizedSelectedClient]);
 
   useEffect(() => {
     load();
-  }, [load, client]);
+  }, [load]);
 
   const syncUpdateToNotion = async (update, userMap = {}) => {
     const response = await base44.functions.invoke('syncClientUpdateToNotion', {
@@ -198,7 +209,7 @@ export default function AdminUpdates({ selectedClient }) {
       if (typeof unsubscribeFiles === 'function') unsubscribeFiles();
       if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
     };
-  }, [client]);
+  }, [load]);
 
   const handleSend = async () => {
     if (!message.trim()) return;
@@ -208,12 +219,15 @@ export default function AdminUpdates({ selectedClient }) {
       const userMap = Object.fromEntries(
         users.map((u) => [String(u.email || '').toLowerCase(), u.full_name || u.email]),
       );
+      const normalizedClient = String(client || '').trim().toLowerCase();
 
-      if (client === 'all') {
+      if (normalizedClient === 'all') {
         const results = await Promise.allSettled(
-          users.map(async (u) => {
+          users
+            .filter((u) => String(u?.email || '').trim())
+            .map(async (u) => {
             const update = await base44.entities.ClientUpdate.create({
-              client_email: u.email,
+              client_email: String(u.email).trim().toLowerCase(),
               message: message.trim(),
             });
 
@@ -232,13 +246,12 @@ export default function AdminUpdates({ selectedClient }) {
 
         toast.success('עדכון נשלח לכל הלקוחות וגם סונכרן לנושן');
       } else {
-        if (!client) {
-          setSending(false);
+        if (!normalizedClient) {
           return;
         }
 
         const update = await base44.entities.ClientUpdate.create({
-          client_email: client,
+          client_email: normalizedClient,
           message: message.trim(),
         });
 
@@ -252,7 +265,7 @@ export default function AdminUpdates({ selectedClient }) {
       }
 
       setMessage('');
-      load();
+      await load();
     } catch (err) {
       console.error('Notion sync full error:', err);
       toast.error(String(err?.message || err || 'שגיאה לא ידועה'));
@@ -270,7 +283,7 @@ export default function AdminUpdates({ selectedClient }) {
     try {
       await base44.entities.ClientUpdate.delete(item.id);
       toast.success('העדכון נמחק');
-      load();
+      await load();
     } catch (err) {
       toast.error('מחיקה נכשלה');
     }
@@ -294,8 +307,10 @@ export default function AdminUpdates({ selectedClient }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">📢 כל הלקוחות</SelectItem>
-            {users.map((u) => (
-              <SelectItem key={u.id} value={u.email}>
+            {users
+              .filter((u) => String(u?.email || '').trim())
+              .map((u) => (
+              <SelectItem key={u.id || u.email} value={String(u.email).trim().toLowerCase()}>
                 {u.full_name || u.email}
               </SelectItem>
             ))}
@@ -315,7 +330,7 @@ export default function AdminUpdates({ selectedClient }) {
             placeholder="כתוב עדכון עבור הלקוח..."
             className="mb-3 min-h-24"
           />
-          <Button onClick={handleSend} disabled={!message.trim() || sending} className="gap-2">
+          <Button type="button" onClick={handleSend} disabled={!message.trim() || sending} className="gap-2">
             <Send className="w-4 h-4" />
             {sending ? 'שולח...' : 'שלח עדכון'}
           </Button>
@@ -354,6 +369,7 @@ export default function AdminUpdates({ selectedClient }) {
                       <Button
                         size="icon"
                         variant="ghost"
+                        type="button"
                         onClick={() => handleDelete(item)}
                         className="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 shrink-0"
                         disabled={item.source !== 'client_update'}
@@ -387,6 +403,7 @@ export default function AdminUpdates({ selectedClient }) {
                       <Button
                         size="icon"
                         variant="ghost"
+                        type="button"
                         onClick={() => handleDelete({ ...u, source: 'client_update' })}
                         className="text-destructive hover:bg-destructive/10 shrink-0"
                       >
