@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MessageSquare, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -11,6 +10,7 @@ import { he } from 'date-fns/locale';
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
 const CLIENT_REGEX = /\[\[client:([^\]]+)\]\]/i;
+const nativeSelectClassName = 'mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50';
 
 function parseAdminNotification(update) {
   const message = String(update?.message || '');
@@ -301,21 +301,20 @@ export default function AdminUpdates({ selectedClient }) {
     <div>
       <div className="mb-6">
         <label className="text-sm font-medium">בחר לקוח</label>
-        <Select value={client} onValueChange={setClient}>
-          <SelectTrigger className="mt-2">
-            <SelectValue placeholder="בחר לקוח" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">📢 כל הלקוחות</SelectItem>
-            {users
-              .filter((u) => String(u?.email || '').trim())
-              .map((u) => (
-              <SelectItem key={u.id || u.email} value={String(u.email).trim().toLowerCase()}>
+        <select
+          value={client}
+          onChange={(e) => setClient(e.target.value)}
+          className={nativeSelectClassName}
+        >
+          <option value="all">📢 כל הלקוחות</option>
+          {users
+            .filter((u) => String(u?.email || '').trim())
+            .map((u) => (
+              <option key={u.id || u.email} value={String(u.email).trim().toLowerCase()}>
                 {u.full_name || u.email}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
+        </select>
       </div>
 
       {client && (
