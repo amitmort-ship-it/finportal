@@ -6,6 +6,7 @@ import { Building2 } from 'lucide-react';
 import ApprovalsComparisonTable from '../components/ApprovalsComparisonTable';
 import ApprovalsInsightsPanel from '../components/ApprovalsInsightsPanel';
 import { getSharedApprovalInsights } from '@/lib/approvalInsights';
+import { BANK_LOGOS } from '../components/BankApprovalCard';
 
 export default function ApprovalsPage() {
   const { caseEmail } = useAuth();
@@ -50,8 +51,14 @@ export default function ApprovalsPage() {
           <div className="space-y-8">
             {Object.keys(grouped).map((bankName) => (
               <div key={bankName}>
-                <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                  <Building2 className="w-5 h-5 text-primary" />
+                <div className="flex items-center gap-3 mb-4 border-b pb-2">
+                  {BANK_LOGOS[bankName] ? (
+                    <div className="w-16 h-8 bg-white border border-border rounded-md overflow-hidden flex items-center justify-center shrink-0">
+                      <img src={BANK_LOGOS[bankName]} alt={bankName} className="w-full h-full object-contain p-0.5" />
+                    </div>
+                  ) : (
+                    <Building2 className="w-5 h-5 text-primary" />
+                  )}
                   <h2 className="text-lg font-bold">{bankName}</h2>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

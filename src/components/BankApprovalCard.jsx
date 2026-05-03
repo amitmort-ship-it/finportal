@@ -1,9 +1,9 @@
 import { Building2, Download } from 'lucide-react';
 
-const BANK_LOGOS = {
-  'בנק הפועלים': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/f7803ff58_2.png',
+export const BANK_LOGOS = {
+  'בנק הפועלים': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9ee113e07_--PNG.png',
   'בנק לאומי': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/b7343d309_.png',
-  'בנק דיסקונט': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9ee113e07_--PNG.png',
+  'בנק דיסקונט': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/f7803ff58_2.png',
   'בנק מזרחי טפחות': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/39b2c22ec____-svg.png',
   'מזרחי טפחות': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/39b2c22ec____-svg.png',
   'בנק טפחות': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/39b2c22ec____-svg.png',
