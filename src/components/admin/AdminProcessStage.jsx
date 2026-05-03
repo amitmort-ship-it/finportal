@@ -23,40 +23,84 @@ export default function AdminProcessStage({ selectedClient }) {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const normalizedClientEmail = String(selectedClient || '').trim().toLowerCase();
 
   useEffect(() => {
-    if (!selectedClient || selectedClient === '_all') { setRecord(null); return; }
+    if (!normalizedClientEmail || normalizedClientEmail === '_all') {
+      setRecord(null);
+      setStage('איסוף מסמכים');
+      setNotes('');
+      return;
+    }
+
+    let isActive = true;
+
     const load = async () => {
       setLoading(true);
-      const list = await base44.entities.ProcessStage.filter({ client_email: selectedClient });
-      if (list.length > 0) {
-        setRecord(list[0]);
-        setStage(list[0].current_stage);
-        setNotes(list[0].notes || '');
-      } else {
+      try {
+        const list = await base44.entities.ProcessStage.filter({ client_email: normalizedClientEmail });
+        if (!isActive) return;
+
+        const nextRecord = Array.isArray(list) && list.length > 0 ? list[0] : null;
+        const nextStage = STAGES.includes(nextRecord?.current_stage) ? nextRecord.current_stage : 'איסוף מסמכים';
+        const nextNotes = typeof nextRecord?.notes === 'string' ? nextRecord.notes : '';
+
+        setRecord(nextRecord);
+        setStage(nextStage);
+        setNotes(nextNotes);
+      } catch (error) {
+        if (!isActive) return;
+        console.error('Failed to load process stage', error);
         setRecord(null);
         setStage('איסוף מסמכים');
         setNotes('');
+        toast.error('לא הצלחנו לטעון את שלב התהליך ללקוח הזה');
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
+
     load();
-  }, [selectedClient]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [normalizedClientEmail]);
 
   const handleSave = async () => {
-    if (!selectedClient) { toast.error('בחר לקוח'); return; }
-    setSaving(true);
-    if (record) {
-      await base44.entities.ProcessStage.update(record.id, { current_stage: stage, notes });
-    } else {
-      const created = await base44.entities.ProcessStage.create({ client_email: selectedClient, current_stage: stage, notes });
-      setRecord(created);
+    if (!normalizedClientEmail || normalizedClientEmail === '_all') {
+      toast.error('בחר לקוח');
+      return;
     }
-    toast.success('שלב התהליך עודכן');
-    setSaving(false);
+
+    setSaving(true);
+
+    try {
+      const payload = { current_stage: stage, notes: String(notes || '') };
+
+      if (record?.id) {
+        const updated = await base44.entities.ProcessStage.update(record.id, payload);
+        setRecord(updated || { ...record, ...payload });
+      } else {
+        const created = await base44.entities.ProcessStage.create({
+          client_email: normalizedClientEmail,
+          ...payload,
+        });
+        setRecord(created);
+      }
+
+      toast.success('שלב התהליך עודכן');
+    } catch (error) {
+      console.error('Failed to save process stage', error);
+      toast.error('לא הצלחנו לשמור את שינוי השלב');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!selectedClient) {
+  if (!normalizedClientEmail || normalizedClientEmail === '_all') {
     return (
       <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
         בחר לקוח כדי לנהל את שלב התהליך
@@ -97,7 +141,7 @@ export default function AdminProcessStage({ selectedClient }) {
                 rows={3}
               />
             </div>
-            <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+            <Button type="button" onClick={handleSave} disabled={saving || loading} className="w-full gap-2">
               <Save className="w-4 h-4" />
               {saving ? 'שומר...' : 'שמור שלב'}
             </Button>
