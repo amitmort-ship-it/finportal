@@ -40,6 +40,7 @@ const HIGH_WORKLOAD_THRESHOLD = 5;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
+const DEAL_LOG_STORAGE_KEY = 'admin_business_deal_log_v1';
 
 function getCurrentMonthKey() {
   const now = new Date();
@@ -92,14 +93,15 @@ function getTaxRateForCategory(category) {
   return category === 'הייטק' ? HITECH_TAX_RATE : TAX_BUFFER_RATE;
 }
 
-function GaugeBar({ value, max, color, label, sublabel }) {
+function GaugeBar({ value, max, color, label, sublabel, valueLabel }) {
   const pct = Math.min(100, Math.max(0, ((value || 0) / (max || 1)) * 100));
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-foreground">{label}</span>
-        <span className="text-muted-foreground text-xs">{sublabel}</span>
+        <span className="text-foreground text-sm font-semibold">{valueLabel || fmt(value)}</span>
       </div>
+      <div className="text-xs text-muted-foreground">{sublabel}</div>
       <div className="h-3 bg-muted rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
       </div>
@@ -178,7 +180,8 @@ export default function AdminBusiness() {
           const r = records[0];
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
-          setDealLog(r.dealLog || []);
+          const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
+          setDealLog((Array.isArray(r.dealLog) && r.dealLog.length > 0) ? r.dealLog : (Array.isArray(localDealLog) ? localDealLog : []));
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
           setAvgDealSize(r.avgDealSize ?? 8000);
@@ -186,9 +189,18 @@ export default function AdminBusiness() {
           setAssetsValue(r.assetsValue ?? 0);
           setManualActiveCount(r.manualActiveCount ?? '');
           setFreeNotes(r.freeNotes ?? '');
+        } else {
+          const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
+          setDealLog(Array.isArray(localDealLog) ? localDealLog : []);
         }
       } catch (err) {
         console.error(err);
+        try {
+          const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
+          setDealLog(Array.isArray(localDealLog) ? localDealLog : []);
+        } catch (_localErr) {
+          setDealLog([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -214,6 +226,7 @@ export default function AdminBusiness() {
     saveTimer.current = setTimeout(async () => {
       setSaving(true);
       try {
+        localStorage.setItem(DEAL_LOG_STORAGE_KEY, JSON.stringify(data.dealLog || []));
         if (recordId) {
           await base44.entities.BusinessData.update(recordId, data);
         } else {
@@ -709,9 +722,30 @@ export default function AdminBusiness() {
           <Info className="w-4 h-4 text-primary" />
           מדדי חוסן
         </h3>
-        <GaugeBar value={totalNet} max={SALARY_TARGET} color="bg-blue-500" label="התקדמות ליעד החודש" sublabel={`יעד: ${fmt(SALARY_TARGET)}`} />
-        <GaugeBar value={pipelineForecast} max={SALARY_TARGET * 3} color="bg-violet-500" label="צנרת צפויה" sublabel={`יעד חודשי: ${fmt(SALARY_TARGET)}`} />
-        <GaugeBar value={Number(assetsValue) || 0} max={500000} color="bg-emerald-500" label="שווי נכסים מניבים" sublabel="הזנה ידנית" />
+        <GaugeBar
+          value={totalNet}
+          max={SALARY_TARGET}
+          color="bg-blue-500"
+          label="התקדמות ליעד החודש"
+          valueLabel={fmt(totalNet)}
+          sublabel={`יעד: ${fmt(SALARY_TARGET)}`}
+        />
+        <GaugeBar
+          value={pipelineForecast}
+          max={SALARY_TARGET * 3}
+          color="bg-violet-500"
+          label="צנרת צפויה"
+          valueLabel={fmt(pipelineForecast)}
+          sublabel={`יעד חודשי: ${fmt(SALARY_TARGET)}`}
+        />
+        <GaugeBar
+          value={Number(assetsValue) || 0}
+          max={500000}
+          color="bg-emerald-500"
+          label="שווי נכסים מניבים"
+          valueLabel={fmt(Number(assetsValue) || 0)}
+          sublabel="הזנה ידנית"
+        />
       </div>
 
       {/* === INPUT ROW === */}
