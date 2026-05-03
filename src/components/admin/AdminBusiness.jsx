@@ -197,7 +197,13 @@ export default function AdminBusiness() {
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
-          setDealLog((Array.isArray(r.dealLog) && r.dealLog.length > 0) ? r.dealLog : (Array.isArray(localDealLog) ? localDealLog : []));
+          const dbDealLog = Array.isArray(r.dealLog) ? r.dealLog : [];
+          const merged = dbDealLog.length > 0 ? dbDealLog : (Array.isArray(localDealLog) ? localDealLog : []);
+          setDealLog(merged);
+          // Sync local storage to DB if DB was empty but local has data
+          if (dbDealLog.length === 0 && merged.length > 0) {
+            setTimeout(() => persist({ dealLog: merged }), 500);
+          }
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
           setAvgDealSize(r.avgDealSize ?? 8000);
