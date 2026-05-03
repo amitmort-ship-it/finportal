@@ -39,6 +39,49 @@ const HIGH_WORKLOAD_THRESHOLD = 5;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 const DB_KEY = 'main';
 
+function getCurrentMonthKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function getMonthLabelFromDate(date) {
+  return date.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+}
+
+function getEntryMonthKey(entry) {
+  if (entry?.monthKey) {
+    return entry.monthKey;
+  }
+
+  if (entry?.createdAt) {
+    const parsed = new Date(entry.createdAt);
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      return `${year}-${month}`;
+    }
+  }
+
+  return null;
+}
+
+function getEntryMonthLabel(entry) {
+  if (entry?.month) {
+    return entry.month;
+  }
+
+  if (entry?.createdAt) {
+    const parsed = new Date(entry.createdAt);
+    if (!Number.isNaN(parsed.getTime())) {
+      return getMonthLabelFromDate(parsed);
+    }
+  }
+
+  return 'חודש לא ידוע';
+}
+
 function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
 }
@@ -169,6 +212,7 @@ export default function AdminBusiness() {
     const taxRate = getTaxRateForCategory(newIncomeCategory);
     const net = amount * (1 - taxRate);
     const tax = amount * taxRate;
+    const now = new Date();
     const entry = {
       id: Date.now(),
       gross: amount,
@@ -176,8 +220,10 @@ export default function AdminBusiness() {
       tax,
       source: newIncomeSource.trim() || 'לא צוין',
       category: newIncomeCategory,
-      date: new Date().toLocaleDateString('he-IL'),
-      month: new Date().toLocaleString('he-IL', { month: 'long', year: 'numeric' }),
+      date: now.toLocaleDateString('he-IL'),
+      month: getMonthLabelFromDate(now),
+      monthKey: getCurrentMonthKey(),
+      createdAt: now.toISOString(),
     };
     const next = [...incomeLog, entry];
     setIncomeLog(next);
@@ -255,9 +301,22 @@ export default function AdminBusiness() {
   };
 
   // === Derived metrics ===
-  const totalGross = useMemo(() => incomeLog.reduce((s, e) => s + e.gross, 0), [incomeLog]);
-  const totalNet = useMemo(() => incomeLog.reduce((s, e) => s + e.net, 0), [incomeLog]);
-  const totalTax = useMemo(() => incomeLog.reduce((s, e) => s + e.tax, 0), [incomeLog]);
+  const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
+  const currentMonthLabel = useMemo(() => getMonthLabelFromDate(new Date()), []);
+
+  const currentMonthIncomeLog = useMemo(
+    () => incomeLog.filter((entry) => getEntryMonthKey(entry) === currentMonthKey || entry?.month === currentMonthLabel),
+    [incomeLog, currentMonthKey, currentMonthLabel]
+  );
+
+  const historicalIncomeLog = useMemo(
+    () => incomeLog.filter((entry) => !(getEntryMonthKey(entry) === currentMonthKey || entry?.month === currentMonthLabel)),
+    [incomeLog, currentMonthKey, currentMonthLabel]
+  );
+
+  const totalGross = useMemo(() => currentMonthIncomeLog.reduce((s, e) => s + e.gross, 0), [currentMonthIncomeLog]);
+  const totalNet = useMemo(() => currentMonthIncomeLog.reduce((s, e) => s + e.net, 0), [currentMonthIncomeLog]);
+  const totalTax = useMemo(() => currentMonthIncomeLog.reduce((s, e) => s + e.tax, 0), [currentMonthIncomeLog]);
 
   const monthlyFixedTotal = useMemo(() =>
     fixedExpenses.filter((e) => e.enabled !== false).reduce((s, e) => s + e.amount, 0),
@@ -268,8 +327,8 @@ export default function AdminBusiness() {
     [variableExpenses]
   );
   const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
-  const reservoirMonths = totalNet > 0 ? Math.floor(totalNet / SALARY_TARGET) : 0;
-  const reservoirRemainder = totalNet % SALARY_TARGET;
+  const monthlyTargetGap = Math.max(0, SALARY_TARGET - totalNet);
+  const monthlyTargetOver = Math.max(0, totalNet - SALARY_TARGET);
 
   const activeCount = useMemo(() => {
     if (manualActiveCount !== '' && Number(manualActiveCount) >= 0) return Number(manualActiveCount);
@@ -290,15 +349,42 @@ export default function AdminBusiness() {
   const categoryTotals = useMemo(() => {
     const map = {};
     INCOME_CATEGORIES.forEach((c) => { map[c] = 0; });
-    incomeLog.forEach((e) => { map[e.category || 'אחר'] = (map[e.category || 'אחר'] || 0) + e.net; });
+    currentMonthIncomeLog.forEach((e) => { map[e.category || 'אחר'] = (map[e.category || 'אחר'] || 0) + e.net; });
     return map;
-  }, [incomeLog]);
+  }, [currentMonthIncomeLog]);
 
   const monthlyChart = useMemo(() => {
     const map = {};
-    incomeLog.forEach((e) => { map[e.month] = (map[e.month] || 0) + e.net; });
+    incomeLog.forEach((e) => {
+      const label = getEntryMonthLabel(e);
+      map[label] = (map[label] || 0) + e.net;
+    });
     return Object.entries(map).map(([month, net]) => ({ month, net }));
   }, [incomeLog]);
+
+  const historicalMonths = useMemo(() => {
+    const grouped = historicalIncomeLog.reduce((acc, entry) => {
+      const key = getEntryMonthKey(entry) || getEntryMonthLabel(entry);
+      if (!acc[key]) {
+        acc[key] = {
+          key,
+          month: getEntryMonthLabel(entry),
+          gross: 0,
+          net: 0,
+          tax: 0,
+          deals: 0,
+        };
+      }
+
+      acc[key].gross += entry.gross || 0;
+      acc[key].net += entry.net || 0;
+      acc[key].tax += entry.tax || 0;
+      acc[key].deals += 1;
+      return acc;
+    }, {});
+
+    return Object.values(grouped).sort((a, b) => String(b.key).localeCompare(String(a.key), 'he'));
+  }, [historicalIncomeLog]);
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
 
@@ -331,19 +417,21 @@ export default function AdminBusiness() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Droplets className="w-4 h-4 text-blue-500" />
-            <span>דלק במאגר</span>
+            <span>יעד נטו חודשי</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{reservoirMonths} חודשים</p>
-          <p className="text-xs text-muted-foreground">+ {fmt(reservoirRemainder)} עודף</p>
+          <p className="text-2xl font-bold text-foreground">{fmt(totalNet)}</p>
+          <p className="text-xs text-muted-foreground">
+            {monthlyTargetGap > 0 ? `חסר ליעד: ${fmt(monthlyTargetGap)}` : `מעל היעד: ${fmt(monthlyTargetOver)}`}
+          </p>
         </div>
 
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Wallet className="w-4 h-4 text-emerald-500" />
-            <span>מאגר נטו</span>
+            <span>נטו החודש</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{fmt(totalNet)}</p>
-          <p className="text-xs text-muted-foreground">קופת מיסים: {fmt(totalTax)}</p>
+          <p className="text-xs text-muted-foreground">מיסים החודש: {fmt(totalTax)}</p>
         </div>
 
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
@@ -384,7 +472,7 @@ export default function AdminBusiness() {
           <Info className="w-4 h-4 text-primary" />
           מדדי חוסן
         </h3>
-        <GaugeBar value={totalNet} max={SALARY_TARGET * 6} color="bg-blue-500" label="מאגר משכורות" sublabel={`יעד: 6 חודשים × ${fmt(SALARY_TARGET)}`} />
+        <GaugeBar value={totalNet} max={SALARY_TARGET} color="bg-blue-500" label="התקדמות ליעד החודש" sublabel={`יעד: ${fmt(SALARY_TARGET)}`} />
         <GaugeBar value={pipelineForecast} max={SALARY_TARGET * 3} color="bg-violet-500" label="צנרת צפויה" sublabel={`יעד חודשי: ${fmt(SALARY_TARGET)}`} />
         <GaugeBar value={Number(assetsValue) || 0} max={500000} color="bg-emerald-500" label="שווי נכסים מניבים" sublabel="הזנה ידנית" />
       </div>
@@ -394,7 +482,7 @@ export default function AdminBusiness() {
         {/* Add Income */}
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
-          <p className="text-xs text-muted-foreground">ברירת מחדל: 26% מס. בקטגוריית הייטק מחושב מס של 12% בלבד.</p>
+          <p className="text-xs text-muted-foreground">הכנסות כאן נספרות לחודש הנוכחי בלבד. הייטק מחושב ב־12% מס, שאר הקטגוריות ב־26%.</p>
           <Label>סכום גולמי (₪)</Label>
           <Input type="number" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} placeholder="למשל: 15000" dir="ltr" />
           <Label>ממי / שם הלקוח</Label>
@@ -434,22 +522,22 @@ export default function AdminBusiness() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">מה לעשות עכשיו?</h3>
           <div className="space-y-2 text-sm">
-            {reservoirMonths < 2 && (
+            {totalNet < SALARY_TARGET * 0.5 && (
               <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-red-700 dark:bg-red-950/25 dark:text-red-300">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>המאגר נמוך מ-2 חודשים — יש לתעדף סגירת עסקאות.</span>
+                <span>החודש עדיין רחוק מהיעד — יש לתעדף סגירת עסקאות.</span>
               </div>
             )}
-            {reservoirMonths >= 2 && reservoirMonths < 4 && (
+            {totalNet >= SALARY_TARGET * 0.5 && totalNet < SALARY_TARGET && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-700 dark:bg-amber-950/25 dark:text-amber-300">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>מאגר בינוני — להמשיך לעבוד על הצנרת.</span>
+                <span>אתה מתקרב ליעד החודשי — להמשיך לעבוד על הצנרת.</span>
               </div>
             )}
-            {reservoirMonths >= 4 && (
+            {totalNet >= SALARY_TARGET && (
               <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300">
                 <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>מאגר חזק — אפשר להתמקד בצמיחה.</span>
+                <span>יעד החודש הושג — אפשר להתמקד בצמיחה.</span>
               </div>
             )}
             {isHighWorkload && (
@@ -494,7 +582,7 @@ export default function AdminBusiness() {
       {/* === CATEGORY BREAKDOWN === */}
       {incomeLog.length > 0 && (
         <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-          <h3 className="font-bold text-foreground mb-4">פילוח הכנסות לפי קטגוריה (נטו)</h3>
+          <h3 className="font-bold text-foreground mb-4">פילוח הכנסות לפי קטגוריה (נטו, חודש נוכחי)</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {INCOME_CATEGORIES.map((cat) => {
               const val = categoryTotals[cat] || 0;
@@ -645,14 +733,14 @@ export default function AdminBusiness() {
       <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} />
 
       {/* === INCOME LOG === */}
-      {incomeLog.length > 0 && (
+      {currentMonthIncomeLog.length > 0 && (
         <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-foreground">יומן הכנסות</h3>
-            <span className="text-xs text-muted-foreground">סה״כ גולמי: {fmt(totalGross)}</span>
+            <h3 className="font-bold text-foreground">עסקאות החודש</h3>
+            <span className="text-xs text-muted-foreground">{currentMonthLabel} · סה״כ גולמי: {fmt(totalGross)}</span>
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {[...incomeLog].reverse().map((entry) => (
+            {[...currentMonthIncomeLog].reverse().map((entry) => (
               <div key={entry.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm">
                 <div>
                   <span className="font-semibold text-foreground">{fmt(entry.gross)}</span>
@@ -672,6 +760,39 @@ export default function AdminBusiness() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {historicalMonths.length > 0 && (
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-foreground">היסטוריית חודשים</h3>
+            <span className="text-xs text-muted-foreground">עסקאות שנסגרו לפני {currentMonthLabel}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="py-2 text-right font-medium">חודש</th>
+                  <th className="py-2 text-right font-medium">עסקאות</th>
+                  <th className="py-2 text-right font-medium">גולמי</th>
+                  <th className="py-2 text-right font-medium">מיסים</th>
+                  <th className="py-2 text-right font-medium">נטו</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historicalMonths.map((month) => (
+                  <tr key={month.key} className="border-b border-border last:border-b-0">
+                    <td className="py-3 font-medium text-foreground">{month.month}</td>
+                    <td className="py-3 text-muted-foreground">{month.deals}</td>
+                    <td className="py-3 text-foreground">{fmt(month.gross)}</td>
+                    <td className="py-3 text-red-600">{fmt(month.tax)}</td>
+                    <td className="py-3 text-emerald-600 font-semibold">{fmt(month.net)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
