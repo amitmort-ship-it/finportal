@@ -45,18 +45,11 @@ export default function BankApprovalCard({ approval }) {
     border: 'border-slate-200 dark:border-slate-800',
     icon: 'text-slate-600 dark:text-slate-300',
   };
-  const logoUrl = BANK_LOGOS[approval.bank_name];
   const displayNotes = cleanApprovalNotes(approval.notes);
   return (
     <div className={`rounded-xl border p-5 hover:shadow-md transition-all duration-300 ${colors.bg} ${colors.border}`}>
       <div className="flex items-start gap-4">
-        <div className="w-16 h-10 rounded-lg flex items-center justify-center shrink-0 bg-white border border-border overflow-hidden">
-          {logoUrl ? (
-            <img src={logoUrl} alt={approval.bank_name} className="w-full h-full object-contain p-1" />
-          ) : (
-            <Building2 className={`w-5 h-5 ${colors.icon}`} />
-          )}
-        </div>
+        <Building2 className={`w-5 h-5 mt-0.5 shrink-0 ${colors.icon}`} />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground">{approval.bank_name}</h3>
           {approval.approval_title && (
