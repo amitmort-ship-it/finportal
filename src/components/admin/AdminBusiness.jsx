@@ -138,6 +138,7 @@ export default function AdminBusiness() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [recordId, setRecordId] = useState(null);
+  const [dealLogHydrated, setDealLogHydrated] = useState(false);
 
   // Data state
   const [incomeLog, setIncomeLog] = useState([]);
@@ -217,6 +218,7 @@ export default function AdminBusiness() {
           setDealLog([]);
         }
       } finally {
+        setDealLogHydrated(true);
         setLoading(false);
       }
     };
@@ -224,12 +226,16 @@ export default function AdminBusiness() {
   }, []);
 
   useEffect(() => {
+    if (!dealLogHydrated) {
+      return;
+    }
+
     try {
       localStorage.setItem(DEAL_LOG_STORAGE_KEY, JSON.stringify(dealLog || []));
     } catch (error) {
       console.error('Failed to persist deal log locally:', error);
     }
-  }, [dealLog]);
+  }, [dealLog, dealLogHydrated]);
 
   const persist = async (patch) => {
     const data = {
