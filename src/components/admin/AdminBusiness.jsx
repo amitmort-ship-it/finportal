@@ -136,6 +136,10 @@ export default function AdminBusiness() {
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
+  const [editingIncomeId, setEditingIncomeId] = useState(null);
+  const [editIncomeValue, setEditIncomeValue] = useState('');
+  const [editIncomeSource, setEditIncomeSource] = useState('');
+  const [editIncomeCategory, setEditIncomeCategory] = useState('משכנתאות');
   const [newFixedName, setNewFixedName] = useState('');
   const [newFixedAmount, setNewFixedAmount] = useState('');
   const [newVarName, setNewVarName] = useState('');
@@ -238,6 +242,47 @@ export default function AdminBusiness() {
     const next = incomeLog.filter((e) => e.id !== id);
     setIncomeLog(next);
     persist({ incomeLog: next });
+  };
+
+  const handleStartEditIncome = (entry) => {
+    setEditingIncomeId(entry.id);
+    setEditIncomeValue(String(entry.gross || ''));
+    setEditIncomeSource(entry.source === 'לא צוין' ? '' : (entry.source || ''));
+    setEditIncomeCategory(entry.category || 'משכנתאות');
+  };
+
+  const handleCancelEditIncome = () => {
+    setEditingIncomeId(null);
+    setEditIncomeValue('');
+    setEditIncomeSource('');
+    setEditIncomeCategory('משכנתאות');
+  };
+
+  const handleSaveIncomeEdit = (id) => {
+    const amount = Number(String(editIncomeValue).replace(/,/g, ''));
+    if (!amount || amount <= 0) return;
+
+    const taxRate = getTaxRateForCategory(editIncomeCategory);
+    const net = amount * (1 - taxRate);
+    const tax = amount * taxRate;
+
+    const next = incomeLog.map((entry) => (
+      entry.id === id
+        ? {
+            ...entry,
+            gross: amount,
+            net,
+            tax,
+            source: editIncomeSource.trim() || 'לא צוין',
+            category: editIncomeCategory,
+          }
+        : entry
+    ));
+
+    setIncomeLog(next);
+    persist({ incomeLog: next });
+    handleCancelEditIncome();
+    toast.success('העסקה עודכנה');
   };
 
   const handleToggleFixed = (id) => {
@@ -741,23 +786,42 @@ export default function AdminBusiness() {
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {[...currentMonthIncomeLog].reverse().map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm">
-                <div>
-                  <span className="font-semibold text-foreground">{fmt(entry.gross)}</span>
-                  <span className="text-muted-foreground mr-2 text-xs">גולמי</span>
-                  {entry.source && entry.source !== 'לא צוין' && (
-                    <span className="text-xs text-primary font-medium mr-1">· {entry.source}</span>
-                  )}
-                  {entry.category && (
-                    <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded mr-1">{entry.category}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="text-emerald-600 font-medium">נטו {fmt(entry.net)}</span>
-                  <span className="text-red-500">מיסים {fmt(entry.tax)}</span>
-                  <span>{entry.date}</span>
-                  <button onClick={() => handleRemoveIncome(entry.id)} className="text-destructive hover:underline">הסר</button>
-                </div>
+              <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
+                {editingIncomeId === entry.id ? (
+                  <div className="space-y-3">
+                    <div className="grid md:grid-cols-3 gap-2">
+                      <Input type="number" value={editIncomeValue} onChange={(e) => setEditIncomeValue(e.target.value)} placeholder="סכום גולמי" dir="ltr" />
+                      <Input value={editIncomeSource} onChange={(e) => setEditIncomeSource(e.target.value)} placeholder="ממי / שם הלקוח" />
+                      <select value={editIncomeCategory} onChange={(e) => setEditIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                        {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <Button size="sm" onClick={() => handleSaveIncomeEdit(entry.id)}>שמור</Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEditIncome}>ביטול</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <span className="font-semibold text-foreground">{fmt(entry.gross)}</span>
+                      <span className="text-muted-foreground mr-2 text-xs">גולמי</span>
+                      {entry.source && entry.source !== 'לא צוין' && (
+                        <span className="text-xs text-primary font-medium mr-1">· {entry.source}</span>
+                      )}
+                      {entry.category && (
+                        <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded mr-1">{entry.category}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="text-emerald-600 font-medium">נטו {fmt(entry.net)}</span>
+                      <span className="text-red-500">מיסים {fmt(entry.tax)}</span>
+                      <span>{entry.date}</span>
+                      <button type="button" onClick={() => handleStartEditIncome(entry)} className="text-primary hover:underline">ערוך</button>
+                      <button type="button" onClick={() => handleRemoveIncome(entry.id)} className="text-destructive hover:underline">הסר</button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
