@@ -18,6 +18,7 @@ import {
   Repeat,
   CreditCard,
   Power,
+  Pencil,
 } from 'lucide-react';
 import {
   BarChart,
@@ -37,6 +38,7 @@ const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחו
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
+const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
 
 function getCurrentMonthKey() {
@@ -108,6 +110,7 @@ function GaugeBar({ value, max, color, label, sublabel }) {
 
 const DEFAULT_DATA = {
   incomeLog: [],
+  dealLog: [],
   fixedExpenses: [],
   variableExpenses: [],
   avgDealSize: 8000,
@@ -124,6 +127,7 @@ export default function AdminBusiness() {
 
   // Data state
   const [incomeLog, setIncomeLog] = useState([]);
+  const [dealLog, setDealLog] = useState([]);
   const [fixedExpenses, setFixedExpenses] = useState([]);
   const [variableExpenses, setVariableExpenses] = useState([]);
   const [avgDealSize, setAvgDealSize] = useState(8000);
@@ -136,6 +140,7 @@ export default function AdminBusiness() {
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
+  const [selectedDealId, setSelectedDealId] = useState('');
   const [editingIncomeId, setEditingIncomeId] = useState(null);
   const [editIncomeValue, setEditIncomeValue] = useState('');
   const [editIncomeSource, setEditIncomeSource] = useState('');
@@ -145,6 +150,15 @@ export default function AdminBusiness() {
   const [newVarName, setNewVarName] = useState('');
   const [newVarAmount, setNewVarAmount] = useState('');
   const [newVarInstallments, setNewVarInstallments] = useState('1');
+  const [newDealClient, setNewDealClient] = useState('');
+  const [newDealTotal, setNewDealTotal] = useState('');
+  const [newDealBucket, setNewDealBucket] = useState(DEAL_BUCKETS[0]);
+  const [dealBucketFilter, setDealBucketFilter] = useState('all');
+  const [editingDealId, setEditingDealId] = useState(null);
+  const [editDealClient, setEditDealClient] = useState('');
+  const [editDealTotal, setEditDealTotal] = useState('');
+  const [editDealPaid, setEditDealPaid] = useState('');
+  const [editDealBucket, setEditDealBucket] = useState(DEAL_BUCKETS[0]);
 
   // Debounce save
   const saveTimer = useRef(null);
@@ -162,6 +176,7 @@ export default function AdminBusiness() {
           const r = records[0];
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
+          setDealLog(r.dealLog || []);
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
           setAvgDealSize(r.avgDealSize ?? 8000);
@@ -182,6 +197,7 @@ export default function AdminBusiness() {
   const persist = async (patch) => {
     const data = {
       incomeLog,
+      dealLog,
       fixedExpenses,
       variableExpenses,
       avgDealSize,
@@ -216,32 +232,81 @@ export default function AdminBusiness() {
     const taxRate = getTaxRateForCategory(newIncomeCategory);
     const net = amount * (1 - taxRate);
     const tax = amount * taxRate;
+    const linkedDeal = selectedDealId ? dealLog.find((deal) => String(deal.id) === String(selectedDealId)) : null;
     const now = new Date();
     const entry = {
       id: Date.now(),
       gross: amount,
       net,
       tax,
-      source: newIncomeSource.trim() || 'לא צוין',
+      source: linkedDeal?.clientName || newIncomeSource.trim() || 'לא צוין',
       category: newIncomeCategory,
       date: now.toLocaleDateString('he-IL'),
       month: getMonthLabelFromDate(now),
       monthKey: getCurrentMonthKey(),
       createdAt: now.toISOString(),
+      dealId: linkedDeal?.id || null,
     };
     const next = [...incomeLog, entry];
+    let nextDeals = dealLog;
+
+    if (linkedDeal) {
+      nextDeals = dealLog.map((deal) => {
+        if (deal.id !== linkedDeal.id) {
+          return deal;
+        }
+
+        const totalAmount = Number(deal.totalAmount || 0);
+        const paidAmount = Number(deal.paidAmount || 0);
+        const updatedPaidAmount = Math.min(totalAmount, paidAmount + amount);
+        const remaining = Math.max(0, totalAmount - updatedPaidAmount);
+
+        return {
+          ...deal,
+          paidAmount: updatedPaidAmount,
+          bucket: remaining === 0 ? 'שולם מלא' : updatedPaidAmount > 0 ? 'שולם חלקית' : deal.bucket,
+          updatedAt: now.toISOString(),
+        };
+      });
+    }
+
     setIncomeLog(next);
-    persist({ incomeLog: next });
+    if (linkedDeal) {
+      setDealLog(nextDeals);
+    }
+    persist({ incomeLog: next, dealLog: nextDeals });
     setNewIncome('');
     setNewIncomeSource('');
     setNewIncomeCategory('משכנתאות');
+    setSelectedDealId('');
     toast.success(`הכנסה של ${fmt(amount)} נרשמה. נטו למאגר: ${fmt(net)}`);
   };
 
   const handleRemoveIncome = (id) => {
+    const currentEntry = incomeLog.find((entry) => entry.id === id);
     const next = incomeLog.filter((e) => e.id !== id);
+    let nextDeals = dealLog;
+
+    if (currentEntry?.dealId) {
+      nextDeals = dealLog.map((deal) => {
+        if (deal.id !== currentEntry.dealId) {
+          return deal;
+        }
+
+        const nextPaidAmount = Math.max(0, Number(deal.paidAmount || 0) - Number(currentEntry.gross || 0));
+        return {
+          ...deal,
+          paidAmount: nextPaidAmount,
+          bucket: nextPaidAmount === 0 ? deal.bucket === 'שולם מלא' || deal.bucket === 'שולם חלקית' ? 'ממתין לתשלום' : deal.bucket : 'שולם חלקית',
+          updatedAt: new Date().toISOString(),
+        };
+      });
+
+      setDealLog(nextDeals);
+    }
+
     setIncomeLog(next);
-    persist({ incomeLog: next });
+    persist({ incomeLog: next, dealLog: nextDeals });
   };
 
   const handleStartEditIncome = (entry) => {
@@ -261,6 +326,7 @@ export default function AdminBusiness() {
   const handleSaveIncomeEdit = (id) => {
     const amount = Number(String(editIncomeValue).replace(/,/g, ''));
     if (!amount || amount <= 0) return;
+    const currentEntry = incomeLog.find((entry) => entry.id === id);
 
     const taxRate = getTaxRateForCategory(editIncomeCategory);
     const net = amount * (1 - taxRate);
@@ -279,9 +345,105 @@ export default function AdminBusiness() {
         : entry
     ));
 
+    let nextDeals = dealLog;
+    if (currentEntry?.dealId) {
+      const delta = amount - Number(currentEntry.gross || 0);
+      nextDeals = dealLog.map((deal) => {
+        if (deal.id !== currentEntry.dealId) {
+          return deal;
+        }
+
+        const totalAmount = Number(deal.totalAmount || 0);
+        const paidAmount = Number(deal.paidAmount || 0);
+        const nextPaidAmount = Math.min(totalAmount, Math.max(0, paidAmount + delta));
+        const remaining = Math.max(0, totalAmount - nextPaidAmount);
+
+        return {
+          ...deal,
+          paidAmount: nextPaidAmount,
+          bucket: remaining === 0 ? 'שולם מלא' : nextPaidAmount > 0 ? 'שולם חלקית' : 'ממתין לתשלום',
+          updatedAt: new Date().toISOString(),
+        };
+      });
+
+      setDealLog(nextDeals);
+    }
+
     setIncomeLog(next);
-    persist({ incomeLog: next });
+    persist({ incomeLog: next, dealLog: nextDeals });
     handleCancelEditIncome();
+    toast.success('העסקה עודכנה');
+  };
+
+  const handleAddDeal = () => {
+    const totalAmount = Number(String(newDealTotal).replace(/,/g, ''));
+    if (!newDealClient.trim() || !totalAmount) return;
+
+    const next = [
+      ...dealLog,
+      {
+        id: Date.now(),
+        clientName: newDealClient.trim(),
+        totalAmount,
+        paidAmount: 0,
+        bucket: newDealBucket,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    setDealLog(next);
+    persist({ dealLog: next });
+    setNewDealClient('');
+    setNewDealTotal('');
+    setNewDealBucket(DEAL_BUCKETS[0]);
+    toast.success('העסקה נוספה');
+  };
+
+  const handleRemoveDeal = (id) => {
+    const next = dealLog.filter((deal) => deal.id !== id);
+    setDealLog(next);
+    persist({ dealLog: next });
+  };
+
+  const handleStartEditDeal = (deal) => {
+    setEditingDealId(deal.id);
+    setEditDealClient(deal.clientName || '');
+    setEditDealTotal(String(deal.totalAmount || ''));
+    setEditDealPaid(String(deal.paidAmount || ''));
+    setEditDealBucket(deal.bucket || DEAL_BUCKETS[0]);
+  };
+
+  const handleCancelEditDeal = () => {
+    setEditingDealId(null);
+    setEditDealClient('');
+    setEditDealTotal('');
+    setEditDealPaid('');
+    setEditDealBucket(DEAL_BUCKETS[0]);
+  };
+
+  const handleSaveDealEdit = (id) => {
+    const totalAmount = Number(String(editDealTotal).replace(/,/g, ''));
+    const paidAmount = Number(String(editDealPaid).replace(/,/g, ''));
+    if (!editDealClient.trim() || !totalAmount || paidAmount < 0) return;
+
+    const clampedPaidAmount = Math.min(totalAmount, paidAmount);
+    const remaining = Math.max(0, totalAmount - clampedPaidAmount);
+    const next = dealLog.map((deal) => (
+      deal.id === id
+        ? {
+            ...deal,
+            clientName: editDealClient.trim(),
+            totalAmount,
+            paidAmount: clampedPaidAmount,
+            bucket: remaining === 0 ? 'שולם מלא' : clampedPaidAmount > 0 ? 'שולם חלקית' : editDealBucket,
+            updatedAt: new Date().toISOString(),
+          }
+        : deal
+    ));
+
+    setDealLog(next);
+    persist({ dealLog: next });
+    handleCancelEditDeal();
     toast.success('העסקה עודכנה');
   };
 
@@ -374,6 +536,21 @@ export default function AdminBusiness() {
   const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
   const monthlyTargetGap = Math.max(0, SALARY_TARGET - totalNet);
   const monthlyTargetOver = Math.max(0, totalNet - SALARY_TARGET);
+  const openDeals = useMemo(
+    () => dealLog.filter((deal) => Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0) > 0),
+    [dealLog]
+  );
+  const openDealsOptions = useMemo(
+    () => openDeals.map((deal) => ({
+      id: deal.id,
+      label: `${deal.clientName} · יתרה ${fmt(Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0))}`,
+    })),
+    [openDeals]
+  );
+  const openDealsTotal = useMemo(
+    () => openDeals.reduce((sum, deal) => sum + Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0)), 0),
+    [openDeals]
+  );
 
   const activeCount = useMemo(() => {
     if (manualActiveCount !== '' && Number(manualActiveCount) >= 0) return Number(manualActiveCount);
@@ -388,7 +565,7 @@ export default function AdminBusiness() {
     [stages]
   );
 
-  const autoPipelineForecast = pipelineCount * (avgDealSize || 8000);
+  const autoPipelineForecast = dealLog.length > 0 ? openDealsTotal : pipelineCount * (avgDealSize || 8000);
   const pipelineForecast = Number(manualPipeline) > 0 ? Number(manualPipeline) : autoPipelineForecast;
 
   const categoryTotals = useMemo(() => {
@@ -430,6 +607,14 @@ export default function AdminBusiness() {
 
     return Object.values(grouped).sort((a, b) => String(b.key).localeCompare(String(a.key), 'he'));
   }, [historicalIncomeLog]);
+
+  const filteredDeals = useMemo(() => {
+    if (dealBucketFilter === 'all') {
+      return dealLog;
+    }
+
+    return dealLog.filter((deal) => deal.bucket === dealBucketFilter);
+  }, [dealBucketFilter, dealLog]);
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
 
@@ -486,7 +671,7 @@ export default function AdminBusiness() {
           </div>
           <p className="text-2xl font-bold text-foreground">{fmt(pipelineForecast)}</p>
           <p className="text-xs text-muted-foreground">
-            {Number(manualPipeline) > 0 ? 'הזנה ידנית' : `${pipelineCount} תיקים אוטומטי`}
+            {Number(manualPipeline) > 0 ? 'הזנה ידנית' : dealLog.length > 0 ? `${openDeals.length} עסקאות פתוחות` : `${pipelineCount} תיקים אוטומטי`}
           </p>
         </div>
 
@@ -532,6 +717,11 @@ export default function AdminBusiness() {
           <Input type="number" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} placeholder="למשל: 15000" dir="ltr" />
           <Label>ממי / שם הלקוח</Label>
           <Input value={newIncomeSource} onChange={(e) => setNewIncomeSource(e.target.value)} placeholder="למשל: ישראל ישראלי" />
+          <Label>שייך לעסקה קיימת</Label>
+          <select value={selectedDealId} onChange={(e) => setSelectedDealId(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+            <option value="">ללא קישור לעסקה</option>
+            {openDealsOptions.map((deal) => <option key={deal.id} value={deal.id}>{deal.label}</option>)}
+          </select>
           <Label>קטגוריה</Label>
           <select value={newIncomeCategory} onChange={(e) => setNewIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
             {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -604,6 +794,121 @@ export default function AdminBusiness() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* === DEAL MANAGEMENT === */}
+      <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="font-bold text-foreground">ניהול עסקאות</h3>
+            <p className="text-xs text-muted-foreground mt-1">כאן מנהלים סכום כולל, כמה כבר נגבה, כמה נשאר, ולאיזה באקט כל עסקה שייכת.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">סינון באקט</span>
+            <select value={dealBucketFilter} onChange={(e) => setDealBucketFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+              <option value="all">כל הבאקטים</option>
+              {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-4 gap-2">
+          <Input value={newDealClient} onChange={(e) => setNewDealClient(e.target.value)} placeholder="שם הלקוח" />
+          <Input type="number" value={newDealTotal} onChange={(e) => setNewDealTotal(e.target.value)} placeholder="סכום עסקה ₪" dir="ltr" />
+          <select value={newDealBucket} onChange={(e) => setNewDealBucket(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+            {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
+          </select>
+          <Button onClick={handleAddDeal} disabled={!newDealClient || !newDealTotal} className="gap-2">
+            <Plus className="w-4 h-4" />
+            הוסף עסקה
+          </Button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="py-2 text-right font-medium">לקוח</th>
+                <th className="py-2 text-right font-medium">באקט</th>
+                <th className="py-2 text-right font-medium">סה"כ עסקה</th>
+                <th className="py-2 text-right font-medium">נגבה</th>
+                <th className="py-2 text-right font-medium">יתרה</th>
+                <th className="py-2 text-right font-medium">סטטוס</th>
+                <th className="py-2 text-right font-medium">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDeals.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
+                </tr>
+              )}
+              {filteredDeals.map((deal) => {
+                const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
+                const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+
+                return (
+                  <tr key={deal.id} className="border-b border-border last:border-b-0">
+                    <td className="py-3 text-foreground">
+                      {editingDealId === deal.id ? (
+                        <Input value={editDealClient} onChange={(e) => setEditDealClient(e.target.value)} />
+                      ) : (
+                        deal.clientName
+                      )}
+                    </td>
+                    <td className="py-3">
+                      {editingDealId === deal.id ? (
+                        <select value={editDealBucket} onChange={(e) => setEditDealBucket(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                          {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
+                        </select>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{deal.bucket}</span>
+                      )}
+                    </td>
+                    <td className="py-3">
+                      {editingDealId === deal.id ? (
+                        <Input type="number" value={editDealTotal} onChange={(e) => setEditDealTotal(e.target.value)} dir="ltr" />
+                      ) : (
+                        fmt(deal.totalAmount)
+                      )}
+                    </td>
+                    <td className="py-3">
+                      {editingDealId === deal.id ? (
+                        <Input type="number" value={editDealPaid} onChange={(e) => setEditDealPaid(e.target.value)} dir="ltr" />
+                      ) : (
+                        fmt(deal.paidAmount)
+                      )}
+                    </td>
+                    <td className="py-3 font-medium text-foreground">{fmt(remaining)}</td>
+                    <td className="py-3">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${remaining === 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-300' : Number(deal.paidAmount || 0) > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/25 dark:text-blue-300'}`}>
+                        {status}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        {editingDealId === deal.id ? (
+                          <>
+                            <Button size="sm" onClick={() => handleSaveDealEdit(deal.id)}>שמור</Button>
+                            <Button size="sm" variant="outline" onClick={handleCancelEditDeal}>ביטול</Button>
+                          </>
+                        ) : (
+                          <>
+                            <button type="button" onClick={() => handleStartEditDeal(deal)} className="text-primary hover:underline inline-flex items-center gap-1">
+                              <Pencil className="w-3.5 h-3.5" />
+                              ערוך
+                            </button>
+                            <button type="button" onClick={() => handleRemoveDeal(deal.id)} className="text-destructive hover:underline">הסר</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
