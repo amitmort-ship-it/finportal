@@ -109,6 +109,7 @@ export default function ResponsiveLayout() {
               { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
               { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
               { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
+              { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09' },
             ].map(({ label, url }) => (
               <a
                 key={label}
