@@ -21,6 +21,8 @@ import {
   Power,
   Pencil,
   ChevronDown,
+  Download,
+  Upload,
 } from 'lucide-react';
 import {
   BarChart,
@@ -122,6 +124,47 @@ function ColumnFilterButton({ label, active = false }) {
   );
 }
 
+function escapeCsvValue(value) {
+  const stringValue = String(value ?? '');
+  if (/[",\n]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+function parseCsvLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      current += '"';
+      i += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+  return values.map((value) => value.trim());
+}
+
 const DEFAULT_DATA = {
   incomeLog: [],
   dealLog: [],
@@ -179,6 +222,7 @@ export default function AdminBusiness() {
   const [editDealPaid, setEditDealPaid] = useState('');
   const [editDealCategory, setEditDealCategory] = useState('משכנתאות');
   const [editDealBucket, setEditDealBucket] = useState(DEAL_BUCKETS[0]);
+  const [importingDeals, setImportingDeals] = useState(false);
 
   // Debounce save
   const saveTimer = useRef(null);
@@ -197,13 +241,7 @@ export default function AdminBusiness() {
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
-          const dbDealLog = Array.isArray(r.dealLog) ? r.dealLog : [];
-          const merged = dbDealLog.length > 0 ? dbDealLog : (Array.isArray(localDealLog) ? localDealLog : []);
-          setDealLog(merged);
-          // Sync local storage to DB if DB was empty but local has data
-          if (dbDealLog.length === 0 && merged.length > 0) {
-            setTimeout(() => persist({ dealLog: merged }), 500);
-          }
+          setDealLog((Array.isArray(r.dealLog) && r.dealLog.length > 0) ? r.dealLog : (Array.isArray(localDealLog) ? localDealLog : []));
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
           setAvgDealSize(r.avgDealSize ?? 8000);
@@ -500,6 +538,113 @@ export default function AdminBusiness() {
     persist({ dealLog: next });
     handleCancelEditDeal();
     toast.success('העסקה עודכנה');
+  };
+
+  const downloadCsvFile = (rows, filename) => {
+    const csvContent = rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportDeals = () => {
+    const rows = [
+      ['clientName', 'category', 'bucket', 'totalAmount', 'paidAmount'],
+      ...dealLog.map((deal) => [
+        deal.clientName || '',
+        deal.category || 'משכנתאות',
+        deal.bucket || 'חדש',
+        Number(deal.totalAmount || 0),
+        Number(deal.paidAmount || 0),
+      ]),
+    ];
+
+    downloadCsvFile(rows, 'deals-export.csv');
+    toast.success('קובץ העסקאות יוצא לאקסל/CSV');
+  };
+
+  const handleDownloadDealsTemplate = () => {
+    const rows = [
+      ['clientName', 'category', 'bucket', 'totalAmount', 'paidAmount'],
+      ['ישראל ישראלי', 'משכנתאות', 'חדש', '12000', '0'],
+    ];
+
+    downloadCsvFile(rows, 'deals-template.csv');
+    toast.success('טמפלט העסקאות ירד');
+  };
+
+  const handleImportDeals = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportingDeals(true);
+
+    try {
+      const text = await file.text();
+      const normalizedText = text.replace(/^\uFEFF/, '').trim();
+      if (!normalizedText) {
+        throw new Error('הקובץ ריק');
+      }
+
+      const lines = normalizedText.split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) {
+        throw new Error('לא נמצאו שורות לייבוא');
+      }
+
+      const headers = parseCsvLine(lines[0]);
+      const headerMap = Object.fromEntries(headers.map((header, index) => [header, index]));
+
+      if (headerMap.clientName === undefined || headerMap.totalAmount === undefined) {
+        throw new Error('הקובץ חייב לכלול לפחות עמודות clientName ו-totalAmount');
+      }
+
+      const importedDeals = lines.slice(1).map((line, index) => {
+        const cols = parseCsvLine(line);
+        const clientName = cols[headerMap.clientName] || '';
+        const totalAmount = Number(String(cols[headerMap.totalAmount] || '').replace(/,/g, ''));
+        const paidAmount = Number(String(cols[headerMap.paidAmount] || '0').replace(/,/g, '')) || 0;
+        const category = cols[headerMap.category] || 'משכנתאות';
+        const bucket = cols[headerMap.bucket] || 'חדש';
+
+        if (!clientName.trim() || !totalAmount) {
+          return null;
+        }
+
+        const safePaidAmount = Math.min(totalAmount, Math.max(0, paidAmount));
+        const remaining = Math.max(0, totalAmount - safePaidAmount);
+
+        return {
+          id: Date.now() + index,
+          clientName: clientName.trim(),
+          totalAmount,
+          paidAmount: safePaidAmount,
+          category: INCOME_CATEGORIES.includes(category) ? category : 'משכנתאות',
+          bucket: remaining === 0 ? 'שולם מלא' : safePaidAmount > 0 ? 'שולם חלקית' : (DEAL_BUCKETS.includes(bucket) ? bucket : 'חדש'),
+          createdAt: new Date().toISOString(),
+        };
+      }).filter(Boolean);
+
+      if (!importedDeals.length) {
+        throw new Error('לא נמצאו עסקאות תקינות לייבוא');
+      }
+
+      const next = [...dealLog, ...importedDeals];
+      setDealLog(next);
+      persist({ dealLog: next });
+      toast.success(`יובאו ${importedDeals.length} עסקאות`);
+    } catch (error) {
+      console.error('Deal import failed:', error);
+      toast.error(String(error?.message || error || 'שגיאה בייבוא העסקאות'));
+    } finally {
+      event.target.value = '';
+      setImportingDeals(false);
+    }
   };
 
   const handleToggleFixed = (id) => {
@@ -885,6 +1030,21 @@ export default function AdminBusiness() {
             <h3 className="font-bold text-foreground">ניהול עסקאות</h3>
             <p className="text-xs text-muted-foreground mt-1">כאן מנהלים סכום כולל, כמה כבר נגבה, כמה נשאר, ולאיזה באקט כל עסקה שייכת.</p>
           </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleDownloadDealsTemplate}>
+              <Download className="w-4 h-4" />
+              טמפלט אקסל
+            </Button>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm hover:bg-accent hover:text-accent-foreground">
+              <Upload className="w-4 h-4" />
+              {importingDeals ? 'מייבא...' : 'ייבוא אקסל/CSV'}
+              <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportDeals} disabled={importingDeals} />
+            </label>
+            <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleExportDeals} disabled={dealLog.length === 0}>
+              <Download className="w-4 h-4" />
+              ייצוא אקסל
+            </Button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-2">
@@ -902,92 +1062,7 @@ export default function AdminBusiness() {
           </Button>
         </div>
 
-        {/* Mobile search filter */}
-        <div className="flex gap-2 md:hidden">
-          <Input
-            value={dealSearch}
-            onChange={(e) => setDealSearch(e.target.value)}
-            placeholder="חיפוש לקוח..."
-            className="flex-1"
-          />
-          <select value={dealStatusFilter} onChange={(e) => setDealStatusFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-            <option value="all">כל הסטטוסים</option>
-            <option value="ממתין לתשלום">ממתין</option>
-            <option value="שולם חלקית">חלקי</option>
-            <option value="שולם מלא">שולם</option>
-          </select>
-        </div>
-
-        {/* Mobile card view */}
-        <div className="md:hidden space-y-3">
-          {filteredDeals.length === 0 && (
-            <div className="py-6 text-center text-muted-foreground text-sm">אין עסקאות להצגה</div>
-          )}
-          {filteredDeals.map((deal) => {
-            const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
-            const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
-            return (
-              <div key={deal.id} className="rounded-lg border border-border p-4 space-y-3 bg-background">
-                {editingDealId === deal.id ? (
-                  <div className="space-y-2">
-                    <Input value={editDealClient} onChange={(e) => setEditDealClient(e.target.value)} placeholder="שם לקוח" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input type="number" value={editDealTotal} onChange={(e) => setEditDealTotal(e.target.value)} placeholder="סכום כולל" dir="ltr" />
-                      <Input type="number" value={editDealPaid} onChange={(e) => setEditDealPaid(e.target.value)} placeholder="נגבה" dir="ltr" />
-                    </div>
-                    <select value={editDealCategory} onChange={(e) => setEditDealCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-                      {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-                    </select>
-                    <select value={editDealBucket} onChange={(e) => setEditDealBucket(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-                      {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
-                    </select>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleSaveDealEdit(deal.id)}>שמור</Button>
-                      <Button size="sm" variant="outline" onClick={handleCancelEditDeal}>ביטול</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="font-semibold text-foreground">{deal.clientName}</span>
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs shrink-0 ${remaining === 0 ? 'bg-emerald-50 text-emerald-600' : Number(deal.paidAmount || 0) > 0 ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
-                        {status}
-                      </span>
-                    </div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{deal.category || 'משכנתאות'}</span>
-                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{deal.bucket}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <div className="text-xs text-muted-foreground">סה"כ</div>
-                        <div className="font-semibold">{fmt(deal.totalAmount)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">נגבה</div>
-                        <div className="font-semibold text-emerald-600">{fmt(deal.paidAmount)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">יתרה</div>
-                        <div className="font-semibold text-foreground">{fmt(remaining)}</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-xs">
-                      <button type="button" onClick={() => handleStartEditDeal(deal)} className="text-primary hover:underline inline-flex items-center gap-1">
-                        <Pencil className="w-3.5 h-3.5" />
-                        ערוך
-                      </button>
-                      <button type="button" onClick={() => handleRemoveDeal(deal.id)} className="text-destructive hover:underline">הסר</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Desktop table view */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border text-muted-foreground">
