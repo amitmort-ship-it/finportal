@@ -212,6 +212,14 @@ export default function AdminBusiness() {
     load();
   }, []);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(DEAL_LOG_STORAGE_KEY, JSON.stringify(dealLog || []));
+    } catch (error) {
+      console.error('Failed to persist deal log locally:', error);
+    }
+  }, [dealLog]);
+
   const persist = async (patch) => {
     const data = {
       incomeLog,
