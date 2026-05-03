@@ -124,6 +124,15 @@ function ColumnFilterButton({ label, active = false }) {
   );
 }
 
+function SortButton({ active = false, direction = 'asc' }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${active ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}>
+      <span>א-ב</span>
+      <span>{direction === 'asc' ? '↑' : '↓'}</span>
+    </span>
+  );
+}
+
 function escapeCsvValue(value) {
   const stringValue = String(value ?? '');
   if (/[",\n]/.test(stringValue)) {
@@ -216,6 +225,8 @@ export default function AdminBusiness() {
   const [dealCategoryFilter, setDealCategoryFilter] = useState('all');
   const [dealStatusFilter, setDealStatusFilter] = useState('all');
   const [dealSearch, setDealSearch] = useState('');
+  const [dealSortBy, setDealSortBy] = useState('default');
+  const [dealSortDirection, setDealSortDirection] = useState('asc');
   const [editingDealId, setEditingDealId] = useState(null);
   const [editDealClient, setEditDealClient] = useState('');
   const [editDealTotal, setEditDealTotal] = useState('');
@@ -809,7 +820,7 @@ export default function AdminBusiness() {
   }, [historicalIncomeLog]);
 
   const filteredDeals = useMemo(() => {
-    return dealLog.filter((deal) => {
+    const filtered = dealLog.filter((deal) => {
       const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
       const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
       const matchesBucket = dealBucketFilter === 'all' || deal.bucket === dealBucketFilter;
@@ -819,7 +830,37 @@ export default function AdminBusiness() {
 
       return matchesBucket && matchesCategory && matchesStatus && matchesSearch;
     });
-  }, [dealBucketFilter, dealCategoryFilter, dealStatusFilter, dealSearch, dealLog]);
+
+    if (dealSortBy === 'default') {
+      return filtered;
+    }
+
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+
+      if (dealSortBy === 'clientName') {
+        aValue = String(a.clientName || '');
+        bValue = String(b.clientName || '');
+      } else if (dealSortBy === 'category') {
+        aValue = String(a.category || 'משכנתאות');
+        bValue = String(b.category || 'משכנתאות');
+      } else if (dealSortBy === 'bucket') {
+        aValue = String(a.bucket || '');
+        bValue = String(b.bucket || '');
+      } else if (dealSortBy === 'status') {
+        const aRemaining = Math.max(0, Number(a.totalAmount || 0) - Number(a.paidAmount || 0));
+        const bRemaining = Math.max(0, Number(b.totalAmount || 0) - Number(b.paidAmount || 0));
+        aValue = aRemaining === 0 ? 'שולם מלא' : Number(a.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+        bValue = bRemaining === 0 ? 'שולם מלא' : Number(b.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+      }
+
+      const comparison = aValue.localeCompare(bValue, 'he');
+      return dealSortDirection === 'asc' ? comparison : comparison * -1;
+    });
+
+    return sorted;
+  }, [dealBucketFilter, dealCategoryFilter, dealStatusFilter, dealSearch, dealLog, dealSortBy, dealSortDirection]);
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
 
@@ -1082,6 +1123,14 @@ export default function AdminBusiness() {
                         onChange={(e) => setDealSearch(e.target.value)}
                         placeholder="הקלד שם לקוח..."
                       />
+                      <div className="flex items-center gap-2">
+                        <Button type="button" size="sm" variant={dealSortBy === 'clientName' ? 'default' : 'outline'} onClick={() => { setDealSortBy('clientName'); setDealSortDirection('asc'); }}>
+                          א-ב
+                        </Button>
+                        <Button type="button" size="sm" variant={dealSortBy === 'clientName' && dealSortDirection === 'desc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('clientName'); setDealSortDirection('desc'); }}>
+                          ב-א
+                        </Button>
+                      </div>
                       <Button type="button" size="sm" variant="outline" onClick={() => setDealSearch('')} disabled={!dealSearch.trim()}>
                         נקה
                       </Button>
@@ -1101,6 +1150,14 @@ export default function AdminBusiness() {
                         <option value="all">כל הקטגוריות</option>
                         {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
                       </select>
+                      <div className="flex items-center gap-2">
+                        <Button type="button" size="sm" variant={dealSortBy === 'category' && dealSortDirection === 'asc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('category'); setDealSortDirection('asc'); }}>
+                          א-ב
+                        </Button>
+                        <Button type="button" size="sm" variant={dealSortBy === 'category' && dealSortDirection === 'desc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('category'); setDealSortDirection('desc'); }}>
+                          ב-א
+                        </Button>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </th>
@@ -1117,6 +1174,14 @@ export default function AdminBusiness() {
                         <option value="all">כל הבאקטים</option>
                         {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
                       </select>
+                      <div className="flex items-center gap-2">
+                        <Button type="button" size="sm" variant={dealSortBy === 'bucket' && dealSortDirection === 'asc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('bucket'); setDealSortDirection('asc'); }}>
+                          א-ב
+                        </Button>
+                        <Button type="button" size="sm" variant={dealSortBy === 'bucket' && dealSortDirection === 'desc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('bucket'); setDealSortDirection('desc'); }}>
+                          ב-א
+                        </Button>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </th>
@@ -1138,6 +1203,14 @@ export default function AdminBusiness() {
                         <option value="שולם חלקית">שולם חלקית</option>
                         <option value="שולם מלא">שולם מלא</option>
                       </select>
+                      <div className="flex items-center gap-2">
+                        <Button type="button" size="sm" variant={dealSortBy === 'status' && dealSortDirection === 'asc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('status'); setDealSortDirection('asc'); }}>
+                          א-ב
+                        </Button>
+                        <Button type="button" size="sm" variant={dealSortBy === 'status' && dealSortDirection === 'desc' ? 'default' : 'outline'} onClick={() => { setDealSortBy('status'); setDealSortDirection('desc'); }}>
+                          ב-א
+                        </Button>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </th>
