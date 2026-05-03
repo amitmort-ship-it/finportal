@@ -100,13 +100,17 @@ export default function AdminViewDocuments({ selectedClient }) {
       ]);
 
       const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
-      const withFiles = filtered.filter((r) => r.uploaded_files && r.uploaded_files.length > 0);
+      const normalizedRequests = filtered.map((request) => ({
+        ...request,
+        uploaded_files: Array.isArray(request?.uploaded_files) ? request.uploaded_files : [],
+        status: request?.status || 'pending',
+      }));
       const driveFolder = Array.isArray(driveFolders) ? driveFolders[0] : null;
 
-      setRequests(withFiles);
+      setRequests(normalizedRequests);
       setReviewNotes(
         Object.fromEntries(
-          withFiles.map((request) => [request.id, splitDescriptionAndReviewNotes(request).reviewNotes]),
+          normalizedRequests.map((request) => [request.id, splitDescriptionAndReviewNotes(request).reviewNotes]),
         ),
       );
       setUsers(clientRes.data?.profiles || []);
@@ -273,7 +277,7 @@ export default function AdminViewDocuments({ selectedClient }) {
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">המסמכים שהועלו</h2>
+          <h2 className="text-lg font-bold">בקשות ומסמכים</h2>
         </div>
 
         <div className="flex items-center gap-2">
@@ -299,7 +303,14 @@ export default function AdminViewDocuments({ selectedClient }) {
               <DialogHeader>
                 <DialogTitle>בקשת מסמכים</DialogTitle>
               </DialogHeader>
-              <AdminDocumentRequest selectedClient={selectedClient} onClientChange={() => {}} />
+              <AdminDocumentRequest
+                selectedClient={selectedClient}
+                onClientChange={() => {}}
+                onSent={async () => {
+                  setRequestDocsOpen(false);
+                  await load();
+                }}
+              />
             </DialogContent>
           </Dialog>
 
