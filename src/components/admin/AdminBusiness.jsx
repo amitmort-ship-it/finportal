@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import {
   Droplets,
@@ -19,6 +20,7 @@ import {
   CreditCard,
   Power,
   Pencil,
+  ChevronDown,
 } from 'lucide-react';
 import {
   BarChart,
@@ -108,6 +110,15 @@ function GaugeBar({ value, max, color, label, sublabel, valueLabel }) {
       </div>
       <div className="text-xs text-muted-foreground text-left">{Math.round(pct)}%</div>
     </div>
+  );
+}
+
+function ColumnFilterButton({ label, active = false }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 transition-colors ${active ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}>
+      <span>{label}</span>
+      <ChevronDown className="w-3.5 h-3.5" />
+    </span>
   );
 }
 
@@ -862,28 +873,6 @@ export default function AdminBusiness() {
             <h3 className="font-bold text-foreground">ניהול עסקאות</h3>
             <p className="text-xs text-muted-foreground mt-1">כאן מנהלים סכום כולל, כמה כבר נגבה, כמה נשאר, ולאיזה באקט כל עסקה שייכת.</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Input
-              value={dealSearch}
-              onChange={(e) => setDealSearch(e.target.value)}
-              placeholder="חיפוש לקוח..."
-              className="w-44"
-            />
-            <select value={dealCategoryFilter} onChange={(e) => setDealCategoryFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              <option value="all">כל הקטגוריות</option>
-              {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-            </select>
-            <select value={dealBucketFilter} onChange={(e) => setDealBucketFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              <option value="all">כל הבאקטים</option>
-              {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
-            </select>
-            <select value={dealStatusFilter} onChange={(e) => setDealStatusFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-              <option value="all">כל הסטטוסים</option>
-              <option value="ממתין לתשלום">ממתין לתשלום</option>
-              <option value="שולם חלקית">שולם חלקית</option>
-              <option value="שולם מלא">שולם מלא</option>
-            </select>
-          </div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-2">
@@ -906,12 +895,79 @@ export default function AdminBusiness() {
             <thead>
               <tr className="border-b border-border text-muted-foreground">
                 <th className="py-2 text-right font-medium">לקוח</th>
-                <th className="py-2 text-right font-medium">קטגוריה</th>
-                <th className="py-2 text-right font-medium">באקט</th>
+                <th className="py-2 text-right font-medium">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button">
+                        <ColumnFilterButton label="לקוח" active={!!dealSearch.trim()} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 space-y-2" align="start">
+                      <Label>חיפוש לקוח</Label>
+                      <Input
+                        value={dealSearch}
+                        onChange={(e) => setDealSearch(e.target.value)}
+                        placeholder="הקלד שם לקוח..."
+                      />
+                      <Button type="button" size="sm" variant="outline" onClick={() => setDealSearch('')} disabled={!dealSearch.trim()}>
+                        נקה
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+                </th>
+                <th className="py-2 text-right font-medium">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button">
+                        <ColumnFilterButton label="קטגוריה" active={dealCategoryFilter !== 'all'} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 space-y-2" align="start">
+                      <Label>סינון קטגוריה</Label>
+                      <select value={dealCategoryFilter} onChange={(e) => setDealCategoryFilter(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                        <option value="all">כל הקטגוריות</option>
+                        {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                      </select>
+                    </PopoverContent>
+                  </Popover>
+                </th>
+                <th className="py-2 text-right font-medium">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button">
+                        <ColumnFilterButton label="באקט" active={dealBucketFilter !== 'all'} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 space-y-2" align="start">
+                      <Label>סינון באקט</Label>
+                      <select value={dealBucketFilter} onChange={(e) => setDealBucketFilter(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                        <option value="all">כל הבאקטים</option>
+                        {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
+                      </select>
+                    </PopoverContent>
+                  </Popover>
+                </th>
                 <th className="py-2 text-right font-medium">סה"כ עסקה</th>
                 <th className="py-2 text-right font-medium">נגבה</th>
                 <th className="py-2 text-right font-medium">יתרה</th>
-                <th className="py-2 text-right font-medium">סטטוס</th>
+                <th className="py-2 text-right font-medium">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button">
+                        <ColumnFilterButton label="סטטוס" active={dealStatusFilter !== 'all'} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 space-y-2" align="start">
+                      <Label>סינון סטטוס</Label>
+                      <select value={dealStatusFilter} onChange={(e) => setDealStatusFilter(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                        <option value="all">כל הסטטוסים</option>
+                        <option value="ממתין לתשלום">ממתין לתשלום</option>
+                        <option value="שולם חלקית">שולם חלקית</option>
+                        <option value="שולם מלא">שולם מלא</option>
+                      </select>
+                    </PopoverContent>
+                  </Popover>
+                </th>
                 <th className="py-2 text-right font-medium">פעולות</th>
               </tr>
             </thead>
