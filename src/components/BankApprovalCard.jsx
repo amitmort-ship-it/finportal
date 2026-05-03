@@ -1,4 +1,17 @@
-import { Building2, FileText, Download } from 'lucide-react';
+import { Building2, Download } from 'lucide-react';
+
+const BANK_LOGOS = {
+  'בנק הפועלים': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/f7803ff58_2.png',
+  'בנק לאומי': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/b7343d309_.png',
+  'בנק דיסקונט': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9ee113e07_--PNG.png',
+  'בנק מזרחי טפחות': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/39b2c22ec____-svg.png',
+  'מזרחי טפחות': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/39b2c22ec____-svg.png',
+  'בנק טפחות': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/39b2c22ec____-svg.png',
+  'הבנק הבינלאומי': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/09271c1de_2.jpg',
+  'בנק בינלאומי': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/09271c1de_2.jpg',
+  'בנק ירושלים': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/7b97adc2f_.png',
+  'בנק יהב': 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/06d35288d__svg.png',
+};
 
 const EXPIRY_MARKER_REGEX = /\[\[expiry:[^\]]+\]\]/gi;
 const TOTAL_REPAYMENT_MARKER_REGEX = /\[\[total_repayment:[^\]]+\]\]/gi;
@@ -32,12 +45,17 @@ export default function BankApprovalCard({ approval }) {
     border: 'border-slate-200 dark:border-slate-800',
     icon: 'text-slate-600 dark:text-slate-300',
   };
+  const logoUrl = BANK_LOGOS[approval.bank_name];
   const displayNotes = cleanApprovalNotes(approval.notes);
   return (
     <div className={`rounded-xl border p-5 hover:shadow-md transition-all duration-300 ${colors.bg} ${colors.border}`}>
       <div className="flex items-start gap-4">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
-          <Building2 className={`w-5 h-5 ${colors.icon}`} />
+        <div className="w-16 h-10 rounded-lg flex items-center justify-center shrink-0 bg-white border border-border overflow-hidden">
+          {logoUrl ? (
+            <img src={logoUrl} alt={approval.bank_name} className="w-full h-full object-contain p-1" />
+          ) : (
+            <Building2 className={`w-5 h-5 ${colors.icon}`} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground">{approval.bank_name}</h3>
