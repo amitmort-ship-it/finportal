@@ -241,7 +241,9 @@ export default function AdminBusiness() {
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
-          setDealLog((Array.isArray(r.dealLog) && r.dealLog.length > 0) ? r.dealLog : (Array.isArray(localDealLog) ? localDealLog : []));
+          const dbDealLog = Array.isArray(r.dealLog) ? r.dealLog : [];
+          const resolvedDealLog = dbDealLog.length > 0 ? dbDealLog : (Array.isArray(localDealLog) ? localDealLog : []);
+          setDealLog(resolvedDealLog);
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
           setAvgDealSize(r.avgDealSize ?? 8000);
@@ -1062,7 +1064,71 @@ export default function AdminBusiness() {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="md:hidden space-y-3">
+          <div className="flex gap-2">
+            <Input value={dealSearch} onChange={(e) => setDealSearch(e.target.value)} placeholder="חיפוש לקוח..." className="flex-1" />
+            <select value={dealStatusFilter} onChange={(e) => setDealStatusFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+              <option value="all">כל הסטטוסים</option>
+              <option value="ממתין לתשלום">ממתין</option>
+              <option value="שולם חלקית">חלקי</option>
+              <option value="שולם מלא">שולם</option>
+            </select>
+          </div>
+          {filteredDeals.length === 0 && (
+            <div className="py-6 text-center text-muted-foreground text-sm">אין עסקאות להצגה</div>
+          )}
+          {filteredDeals.map((deal) => {
+            const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
+            const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+            return (
+              <div key={deal.id} className="rounded-lg border border-border p-4 space-y-3 bg-background">
+                {editingDealId === deal.id ? (
+                  <div className="space-y-2">
+                    <Input value={editDealClient} onChange={(e) => setEditDealClient(e.target.value)} placeholder="שם לקוח" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input type="number" value={editDealTotal} onChange={(e) => setEditDealTotal(e.target.value)} placeholder="סכום כולל" dir="ltr" />
+                      <Input type="number" value={editDealPaid} onChange={(e) => setEditDealPaid(e.target.value)} placeholder="נגבה" dir="ltr" />
+                    </div>
+                    <select value={editDealCategory} onChange={(e) => setEditDealCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                      {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <select value={editDealBucket} onChange={(e) => setEditDealBucket(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                      {DEAL_BUCKETS.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleSaveDealEdit(deal.id)}>שמור</Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEditDeal}>ביטול</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-foreground">{deal.clientName}</span>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs shrink-0 ${remaining === 0 ? 'bg-emerald-50 text-emerald-600' : Number(deal.paidAmount || 0) > 0 ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>{status}</span>
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{deal.category || 'משכנתאות'}</span>
+                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{deal.bucket}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div><div className="text-xs text-muted-foreground">סה"כ</div><div className="font-semibold">{fmt(deal.totalAmount)}</div></div>
+                      <div><div className="text-xs text-muted-foreground">נגבה</div><div className="font-semibold text-emerald-600">{fmt(deal.paidAmount)}</div></div>
+                      <div><div className="text-xs text-muted-foreground">יתרה</div><div className="font-semibold">{fmt(remaining)}</div></div>
+                    </div>
+                    <div className="flex gap-3 text-xs">
+                      <button type="button" onClick={() => handleStartEditDeal(deal)} className="text-primary hover:underline inline-flex items-center gap-1"><Pencil className="w-3.5 h-3.5" />ערוך</button>
+                      <button type="button" onClick={() => handleRemoveDeal(deal.id)} className="text-destructive hover:underline">הסר</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border text-muted-foreground">
