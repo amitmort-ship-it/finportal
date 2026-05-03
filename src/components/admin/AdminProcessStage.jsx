@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ListChecks, Save } from 'lucide-react';
@@ -16,6 +15,8 @@ const STAGES = [
   'בטחונות וחתימות',
   'המתנה לביצוע',
 ];
+
+const nativeSelectClassName = 'mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50';
 
 export default function AdminProcessStage({ selectedClient }) {
   const [record, setRecord] = useState(null);
@@ -123,14 +124,17 @@ export default function AdminProcessStage({ selectedClient }) {
           <>
             <div>
               <Label className="mb-1 block">שלב נוכחי</Label>
-              <Select value={stage} onValueChange={setStage}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <select
+                value={stage}
+                onChange={(e) => setStage(e.target.value)}
+                className={nativeSelectClassName}
+              >
+                {STAGES.map((currentStage) => (
+                  <option key={currentStage} value={currentStage}>
+                    {currentStage}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <Label className="mb-1 block">הערה (אופציונלי)</Label>
