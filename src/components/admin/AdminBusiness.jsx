@@ -32,6 +32,7 @@ import {
 } from 'recharts';
 
 const SALARY_TARGET = 25000;
+const MONTHLY_GROSS_TARGET = 51500;
 const TAX_BUFFER_RATE = 0.26;
 const HITECH_TAX_RATE = 0.12;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
@@ -157,6 +158,9 @@ export default function AdminBusiness() {
   const [newDealCategory, setNewDealCategory] = useState('משכנתאות');
   const [newDealBucket, setNewDealBucket] = useState(DEAL_BUCKETS[0]);
   const [dealBucketFilter, setDealBucketFilter] = useState('all');
+  const [dealCategoryFilter, setDealCategoryFilter] = useState('all');
+  const [dealStatusFilter, setDealStatusFilter] = useState('all');
+  const [dealSearch, setDealSearch] = useState('');
   const [editingDealId, setEditingDealId] = useState(null);
   const [editDealClient, setEditDealClient] = useState('');
   const [editDealTotal, setEditDealTotal] = useState('');
@@ -554,8 +558,8 @@ export default function AdminBusiness() {
     [variableExpenses]
   );
   const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
-  const monthlyTargetGap = Math.max(0, SALARY_TARGET - totalNet);
-  const monthlyTargetOver = Math.max(0, totalNet - SALARY_TARGET);
+  const monthlyGrossTargetGap = Math.max(0, MONTHLY_GROSS_TARGET - totalGross);
+  const monthlyGrossTargetOver = Math.max(0, totalGross - MONTHLY_GROSS_TARGET);
   const openDeals = useMemo(
     () => dealLog.filter((deal) => Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0) > 0),
     [dealLog]
@@ -629,12 +633,17 @@ export default function AdminBusiness() {
   }, [historicalIncomeLog]);
 
   const filteredDeals = useMemo(() => {
-    if (dealBucketFilter === 'all') {
-      return dealLog;
-    }
+    return dealLog.filter((deal) => {
+      const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
+      const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+      const matchesBucket = dealBucketFilter === 'all' || deal.bucket === dealBucketFilter;
+      const matchesCategory = dealCategoryFilter === 'all' || (deal.category || 'משכנתאות') === dealCategoryFilter;
+      const matchesStatus = dealStatusFilter === 'all' || status === dealStatusFilter;
+      const matchesSearch = !dealSearch.trim() || String(deal.clientName || '').toLowerCase().includes(dealSearch.trim().toLowerCase());
 
-    return dealLog.filter((deal) => deal.bucket === dealBucketFilter);
-  }, [dealBucketFilter, dealLog]);
+      return matchesBucket && matchesCategory && matchesStatus && matchesSearch;
+    });
+  }, [dealBucketFilter, dealCategoryFilter, dealStatusFilter, dealSearch, dealLog]);
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
 
@@ -667,11 +676,11 @@ export default function AdminBusiness() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Droplets className="w-4 h-4 text-blue-500" />
-            <span>יעד נטו חודשי</span>
+            <span>יעד ברוטו חודשי</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{fmt(totalNet)}</p>
+          <p className="text-2xl font-bold text-foreground">{fmt(totalGross)}</p>
           <p className="text-xs text-muted-foreground">
-            {monthlyTargetGap > 0 ? `חסר ליעד: ${fmt(monthlyTargetGap)}` : `מעל היעד: ${fmt(monthlyTargetOver)}`}
+            {monthlyGrossTargetGap > 0 ? `חסר ליעד: ${fmt(monthlyGrossTargetGap)}` : `מעל היעד: ${fmt(monthlyGrossTargetOver)}`}
           </p>
         </div>
 
@@ -723,12 +732,12 @@ export default function AdminBusiness() {
           מדדי חוסן
         </h3>
         <GaugeBar
-          value={totalNet}
-          max={SALARY_TARGET}
+          value={totalGross}
+          max={MONTHLY_GROSS_TARGET}
           color="bg-blue-500"
-          label="התקדמות ליעד החודש"
-          valueLabel={fmt(totalNet)}
-          sublabel={`יעד: ${fmt(SALARY_TARGET)}`}
+          label="התקדמות ליעד הברוטו"
+          valueLabel={fmt(totalGross)}
+          sublabel={`יעד: ${fmt(MONTHLY_GROSS_TARGET)}`}
         />
         <GaugeBar
           value={pipelineForecast}
@@ -798,22 +807,22 @@ export default function AdminBusiness() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">מה לעשות עכשיו?</h3>
           <div className="space-y-2 text-sm">
-            {totalNet < SALARY_TARGET * 0.5 && (
+            {totalGross < MONTHLY_GROSS_TARGET * 0.5 && (
               <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-red-700 dark:bg-red-950/25 dark:text-red-300">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>החודש עדיין רחוק מהיעד — יש לתעדף סגירת עסקאות.</span>
+                <span>החודש עדיין רחוק מיעד הברוטו — יש לתעדף סגירת עסקאות.</span>
               </div>
             )}
-            {totalNet >= SALARY_TARGET * 0.5 && totalNet < SALARY_TARGET && (
+            {totalGross >= MONTHLY_GROSS_TARGET * 0.5 && totalGross < MONTHLY_GROSS_TARGET && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-700 dark:bg-amber-950/25 dark:text-amber-300">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>אתה מתקרב ליעד החודשי — להמשיך לעבוד על הצנרת.</span>
+                <span>אתה מתקרב ליעד הברוטו החודשי — להמשיך לעבוד על הצנרת.</span>
               </div>
             )}
-            {totalNet >= SALARY_TARGET && (
+            {totalGross >= MONTHLY_GROSS_TARGET && (
               <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300">
                 <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>יעד החודש הושג — אפשר להתמקד בצמיחה.</span>
+                <span>יעד הברוטו החודשי הושג — אפשר להתמקד בצמיחה.</span>
               </div>
             )}
             {isHighWorkload && (
@@ -845,11 +854,26 @@ export default function AdminBusiness() {
             <h3 className="font-bold text-foreground">ניהול עסקאות</h3>
             <p className="text-xs text-muted-foreground mt-1">כאן מנהלים סכום כולל, כמה כבר נגבה, כמה נשאר, ולאיזה באקט כל עסקה שייכת.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">סינון באקט</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Input
+              value={dealSearch}
+              onChange={(e) => setDealSearch(e.target.value)}
+              placeholder="חיפוש לקוח..."
+              className="w-44"
+            />
+            <select value={dealCategoryFilter} onChange={(e) => setDealCategoryFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+              <option value="all">כל הקטגוריות</option>
+              {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
             <select value={dealBucketFilter} onChange={(e) => setDealBucketFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
               <option value="all">כל הבאקטים</option>
               {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
+            </select>
+            <select value={dealStatusFilter} onChange={(e) => setDealStatusFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+              <option value="all">כל הסטטוסים</option>
+              <option value="ממתין לתשלום">ממתין לתשלום</option>
+              <option value="שולם חלקית">שולם חלקית</option>
+              <option value="שולם מלא">שולם מלא</option>
             </select>
           </div>
         </div>
