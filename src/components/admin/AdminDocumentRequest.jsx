@@ -39,7 +39,7 @@ const CATEGORY_COLORS = {
   'משותף': 'bg-emerald-50 border-emerald-200 text-emerald-700',
 };
 
-export default function AdminDocumentRequest({ selectedClient, onClientChange }) {
+export default function AdminDocumentRequest({ selectedClient, onClientChange, onSent }) {
   const [selectedDocs, setSelectedDocs] = useState({});
   const [customDocs, setCustomDocs] = useState({ 'לווה 1': '', 'לווה 2': '', 'משותף': '' });
   const [loading, setLoading] = useState(false);
@@ -66,17 +66,52 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
       toast.error('בחר לקוח ולפחות מסמכים');
       return;
     }
+
     setLoading(true);
-    const toCreate = Object.entries(selectedDocs)
-      .filter(([, checked]) => checked)
-      .map(([key]) => {
-        const [category, title] = key.split('::');
-        return { client_email: selectedUser, title, category };
+
+    try {
+      const toCreate = Object.entries(selectedDocs)
+        .filter(([, checked]) => checked)
+        .map(([key]) => {
+          const [category, title] = key.split('::');
+          return {
+            client_email: selectedUser,
+            title,
+            category,
+            status: 'pending',
+          };
+        });
+
+      await Promise.all(toCreate.map((doc) => base44.entities.FileRequest.create(doc)));
+
+      const updateMessage = [
+        'נשלחה אליך בקשה חדשה להעלאת מסמכים.',
+        'המסמכים שהתבקשו:',
+        ...toCreate.map((doc) => `• ${doc.title} (${doc.category})`),
+        '',
+        'אפשר להיכנס לאזור האישי ולהעלות את המסמכים ישירות שם.',
+      ].join('\n');
+
+      const update = await base44.entities.ClientUpdate.create({
+        client_email: selectedUser,
+        message: updateMessage,
       });
-    await Promise.all(toCreate.map((doc) => base44.entities.FileRequest.create(doc)));
-    toast.success(`נשלחו ${toCreate.length} בקשות מסמכים`);
-    setSelectedDocs({});
-    setLoading(false);
+
+      await base44.functions.invoke('sendUpdateEmail', {
+        data: { ...update, app_url: window.location.origin },
+      });
+
+      toast.success(`נשלחו ${toCreate.length} בקשות מסמכים`);
+      setSelectedDocs({});
+      if (typeof onSent === 'function') {
+        onSent();
+      }
+    } catch (error) {
+      console.error('Document request send failed:', error);
+      toast.error(String(error?.message || error || 'שגיאה בשליחת בקשת המסמכים'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -140,7 +175,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
                   placeholder="הוסף מסמך נוסף..."
                   className="text-sm h-8 bg-white/70"
                 />
-                <Button size="sm" variant="outline" onClick={() => addCustomDoc(category)} className="h-8 px-2 bg-white/70">
+                <Button type="button" size="sm" variant="outline" onClick={() => addCustomDoc(category)} className="h-8 px-2 bg-white/70">
                   <Plus className="w-3 h-3" />
                 </Button>
               </div>
@@ -150,7 +185,7 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange })
       )}
 
       {selectedUser && (
-        <Button onClick={handleSend} disabled={loading || totalSelected === 0} className="w-full gap-2 mt-6">
+        <Button type="button" onClick={handleSend} disabled={loading || totalSelected === 0} className="w-full gap-2 mt-6">
           <Send className="w-4 h-4" />
           {loading ? 'שולח...' : `שלח ${totalSelected > 0 ? `(${totalSelected})` : ''} בקשות`}
         </Button>
