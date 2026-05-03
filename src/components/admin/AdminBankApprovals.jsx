@@ -68,6 +68,7 @@ const buildNotesWithMetadata = (notes, values = {}, fallbackAiData = null) => {
 export default function AdminBankApprovals({ selectedClient }) {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [users, setUsers] = useState([]);
@@ -87,19 +88,50 @@ export default function AdminBankApprovals({ selectedClient }) {
   const [savingInsights, setSavingInsights] = useState(false);
   const [showFinalMortgage, setShowFinalMortgage] = useState(false);
 
-  const load = async () => {
-    const [data, clientRes] = await Promise.all([
-      base44.entities.BankApproval.filter({}, '-created_date'),
-      base44.functions.invoke('getAllClients', {}),
-    ]);
-    const userList = clientRes.data?.profiles || [];
-    const filtered = selectedClient ? data.filter(a => a.client_email === selectedClient) : data;
-    setApprovals(filtered);
-    setUsers(userList);
-    setLoading(false);
+  const load = async (isActive = () => true) => {
+    setLoadError('');
+    setLoading(true);
+
+    try {
+      const [data, clientRes] = await Promise.all([
+        base44.entities.BankApproval.filter({}, '-created_date'),
+        base44.functions.invoke('getAllClients', {}),
+      ]);
+
+      if (!isActive()) {
+        return;
+      }
+
+      const approvalsList = Array.isArray(data) ? data : [];
+      const userList = clientRes?.data?.profiles || clientRes?.profiles || [];
+      const filtered = selectedClient
+        ? approvalsList.filter((approval) => approval?.client_email === selectedClient)
+        : approvalsList;
+
+      setApprovals(filtered);
+      setUsers(Array.isArray(userList) ? userList : []);
+    } catch (error) {
+      if (!isActive()) {
+        return;
+      }
+
+      console.error('Error loading bank approvals:', error);
+      setApprovals([]);
+      setLoadError(getErrorMessage(error, 'שגיאה בטעינת האישורים'));
+    } finally {
+      if (isActive()) {
+        setLoading(false);
+      }
+    }
   };
 
-  useEffect(() => { load(); }, [selectedClient]);
+  useEffect(() => {
+    let active = true;
+    load(() => active);
+    return () => {
+      active = false;
+    };
+  }, [selectedClient]);
   useEffect(() => { if (selectedClient) setForm(f => ({ ...f, client_email: selectedClient })); }, [selectedClient]);
   useEffect(() => {
     const sharedInsights = getSharedApprovalInsights(approvals);
@@ -380,6 +412,12 @@ export default function AdminBankApprovals({ selectedClient }) {
           </div>
         )}
       </div>
+
+      {loadError ? (
+        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {loadError}
+        </div>
+      ) : null}
 
       {approvals.length > 0 && (
         <div className="mb-6">
