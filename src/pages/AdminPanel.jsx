@@ -43,9 +43,6 @@ const TAB_CONFIG = [
   { id: 'process', label: 'שלבים', icon: ListChecks },
 ];
 
-// Tabs that use the global client filter
-const CLIENT_TABS = ['updates', 'approvals', 'documents', 'packages', 'collaterals', 'process'];
-
 export default function AdminPanel() {
   const { user } = useAuth();
   const [globalClient, setGlobalClient] = useState('');
@@ -126,6 +123,7 @@ export default function AdminPanel() {
             { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc', bg: 'bg-gray-900', text: 'text-white' },
             { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients', bg: 'bg-green-600', text: 'text-white' },
             { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', bg: 'bg-blue-600', text: 'text-white' },
+            { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09', bg: 'bg-amber-600', text: 'text-white' },
           ].map(({ label, url, bg, text }) => (
             <a
               key={label}
