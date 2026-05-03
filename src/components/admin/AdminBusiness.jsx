@@ -152,12 +152,14 @@ export default function AdminBusiness() {
   const [newVarInstallments, setNewVarInstallments] = useState('1');
   const [newDealClient, setNewDealClient] = useState('');
   const [newDealTotal, setNewDealTotal] = useState('');
+  const [newDealCategory, setNewDealCategory] = useState('משכנתאות');
   const [newDealBucket, setNewDealBucket] = useState(DEAL_BUCKETS[0]);
   const [dealBucketFilter, setDealBucketFilter] = useState('all');
   const [editingDealId, setEditingDealId] = useState(null);
   const [editDealClient, setEditDealClient] = useState('');
   const [editDealTotal, setEditDealTotal] = useState('');
   const [editDealPaid, setEditDealPaid] = useState('');
+  const [editDealCategory, setEditDealCategory] = useState('משכנתאות');
   const [editDealBucket, setEditDealBucket] = useState(DEAL_BUCKETS[0]);
 
   // Debounce save
@@ -240,7 +242,7 @@ export default function AdminBusiness() {
       net,
       tax,
       source: linkedDeal?.clientName || newIncomeSource.trim() || 'לא צוין',
-      category: newIncomeCategory,
+      category: linkedDeal?.category || newIncomeCategory,
       date: now.toLocaleDateString('he-IL'),
       month: getMonthLabelFromDate(now),
       monthKey: getCurrentMonthKey(),
@@ -386,6 +388,7 @@ export default function AdminBusiness() {
         clientName: newDealClient.trim(),
         totalAmount,
         paidAmount: 0,
+        category: newDealCategory,
         bucket: newDealBucket,
         createdAt: new Date().toISOString(),
       },
@@ -395,6 +398,7 @@ export default function AdminBusiness() {
     persist({ dealLog: next });
     setNewDealClient('');
     setNewDealTotal('');
+    setNewDealCategory('משכנתאות');
     setNewDealBucket(DEAL_BUCKETS[0]);
     toast.success('העסקה נוספה');
   };
@@ -410,6 +414,7 @@ export default function AdminBusiness() {
     setEditDealClient(deal.clientName || '');
     setEditDealTotal(String(deal.totalAmount || ''));
     setEditDealPaid(String(deal.paidAmount || ''));
+    setEditDealCategory(deal.category || 'משכנתאות');
     setEditDealBucket(deal.bucket || DEAL_BUCKETS[0]);
   };
 
@@ -418,6 +423,7 @@ export default function AdminBusiness() {
     setEditDealClient('');
     setEditDealTotal('');
     setEditDealPaid('');
+    setEditDealCategory('משכנתאות');
     setEditDealBucket(DEAL_BUCKETS[0]);
   };
 
@@ -435,6 +441,7 @@ export default function AdminBusiness() {
             clientName: editDealClient.trim(),
             totalAmount,
             paidAmount: clampedPaidAmount,
+            category: editDealCategory,
             bucket: remaining === 0 ? 'שולם מלא' : clampedPaidAmount > 0 ? 'שולם חלקית' : editDealBucket,
             updatedAt: new Date().toISOString(),
           }
@@ -816,10 +823,13 @@ export default function AdminBusiness() {
         <div className="grid md:grid-cols-4 gap-2">
           <Input value={newDealClient} onChange={(e) => setNewDealClient(e.target.value)} placeholder="שם הלקוח" />
           <Input type="number" value={newDealTotal} onChange={(e) => setNewDealTotal(e.target.value)} placeholder="סכום עסקה ₪" dir="ltr" />
+          <select value={newDealCategory} onChange={(e) => setNewDealCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+            {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
           <select value={newDealBucket} onChange={(e) => setNewDealBucket(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
             {DEAL_BUCKETS.map((bucket) => <option key={bucket} value={bucket}>{bucket}</option>)}
           </select>
-          <Button onClick={handleAddDeal} disabled={!newDealClient || !newDealTotal} className="gap-2">
+          <Button onClick={handleAddDeal} disabled={!newDealClient || !newDealTotal} className="gap-2 md:col-span-4">
             <Plus className="w-4 h-4" />
             הוסף עסקה
           </Button>
@@ -830,6 +840,7 @@ export default function AdminBusiness() {
             <thead>
               <tr className="border-b border-border text-muted-foreground">
                 <th className="py-2 text-right font-medium">לקוח</th>
+                <th className="py-2 text-right font-medium">קטגוריה</th>
                 <th className="py-2 text-right font-medium">באקט</th>
                 <th className="py-2 text-right font-medium">סה"כ עסקה</th>
                 <th className="py-2 text-right font-medium">נגבה</th>
@@ -841,7 +852,7 @@ export default function AdminBusiness() {
             <tbody>
               {filteredDeals.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
+                  <td colSpan="8" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
                 </tr>
               )}
               {filteredDeals.map((deal) => {
@@ -855,6 +866,15 @@ export default function AdminBusiness() {
                         <Input value={editDealClient} onChange={(e) => setEditDealClient(e.target.value)} />
                       ) : (
                         deal.clientName
+                      )}
+                    </td>
+                    <td className="py-3">
+                      {editingDealId === deal.id ? (
+                        <select value={editDealCategory} onChange={(e) => setEditDealCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                          {INCOME_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                        </select>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{deal.category || 'משכנתאות'}</span>
                       )}
                     </td>
                     <td className="py-3">
