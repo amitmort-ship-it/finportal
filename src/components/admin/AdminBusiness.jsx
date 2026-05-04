@@ -42,6 +42,7 @@ const HITECH_TAX_RATE = 0.12;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
+const MAX_VISIBLE_DEALS = 5;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
@@ -871,6 +872,11 @@ export default function AdminBusiness() {
     return Object.values(grouped).sort((a, b) => String(b.key).localeCompare(String(a.key), 'he'));
   }, [historicalIncomeLog]);
 
+  const visibleCurrentMonthIncomeLog = useMemo(
+    () => [...currentMonthIncomeLog].reverse().slice(0, MAX_VISIBLE_DEALS),
+    [currentMonthIncomeLog]
+  );
+
   const filteredDeals = useMemo(() => {
     const filtered = dealLog.filter((deal) => {
       const status = getDealStatus(deal);
@@ -1571,7 +1577,7 @@ export default function AdminBusiness() {
             <span className="text-xs text-muted-foreground">{currentMonthLabel} · סה״כ גולמי: {fmt(totalGross)}</span>
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {[...currentMonthIncomeLog].reverse().map((entry) => (
+            {visibleCurrentMonthIncomeLog.map((entry) => (
               <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                 {editingIncomeId === entry.id ? (
                   <div className="space-y-3">
@@ -1615,6 +1621,11 @@ export default function AdminBusiness() {
               </div>
             ))}
           </div>
+          {currentMonthIncomeLog.length > MAX_VISIBLE_DEALS && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              מוצגות 5 העסקאות האחרונות מתוך {currentMonthIncomeLog.length}.
+            </p>
+          )}
         </div>
       )}
 
