@@ -917,6 +917,11 @@ export default function AdminBusiness() {
     return sorted;
   }, [dealBucketFilter, dealCategoryFilter, dealStatusFilter, dealSearch, dealLog, dealSortBy, dealSortDirection]);
 
+  const visibleDeals = useMemo(
+    () => filteredDeals.slice(0, MAX_VISIBLE_DEALS),
+    [filteredDeals]
+  );
+
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
 
   if (loading) {
@@ -1182,7 +1187,6 @@ export default function AdminBusiness() {
             <thead className="bg-muted/40">
               <tr className="border-b border-border text-muted-foreground">
                 <th className="py-2 text-right font-medium">#</th>
-                <th className="py-2 text-right font-medium">לקוח</th>
                 <th className="py-2 text-right font-medium">
                   <Popover>
                     <PopoverTrigger asChild>
@@ -1298,7 +1302,7 @@ export default function AdminBusiness() {
                   <td colSpan="9" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
                 </tr>
               )}
-              {filteredDeals.map((deal, index) => {
+              {visibleDeals.map((deal, index) => {
                 const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
                 const status = getDealStatus(deal);
 
@@ -1397,6 +1401,11 @@ export default function AdminBusiness() {
             </tbody>
           </table>
         </div>
+        {filteredDeals.length > MAX_VISIBLE_DEALS && (
+          <p className="text-xs text-muted-foreground">
+            מוצגות 5 העסקאות הראשונות מתוך {filteredDeals.length}.
+          </p>
+        )}
       </div>
 
       {/* === INCOME CHART === */}
