@@ -40,7 +40,7 @@ function formatYears(value) {
     return '-';
   }
 
-  return `${years.toLocaleString('he-IL')} שנים`;
+  return years.toLocaleString('he-IL');
 }
 
 function getBestValue(approvals, selector, direction = 'min') {
