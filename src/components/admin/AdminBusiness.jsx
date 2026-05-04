@@ -98,6 +98,15 @@ function getTaxRateForCategory(category) {
   return category === 'הייטק' ? HITECH_TAX_RATE : TAX_BUFFER_RATE;
 }
 
+function getDealStatus(deal) {
+  if (deal?.isFrozen) {
+    return 'מוקפאת';
+  }
+
+  const remaining = Math.max(0, Number(deal?.totalAmount || 0) - Number(deal?.paidAmount || 0));
+  return remaining === 0 ? 'שולם מלא' : Number(deal?.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+}
+
 function GaugeBar({ value, max, color, label, sublabel, valueLabel }) {
   const pct = Math.min(100, Math.max(0, ((value || 0) / (max || 1)) * 100));
   return (
@@ -363,7 +372,7 @@ export default function AdminBusiness() {
         return {
           ...deal,
           paidAmount: updatedPaidAmount,
-          bucket: remaining === 0 ? 'שולם מלא' : updatedPaidAmount > 0 ? 'שולם חלקית' : deal.bucket,
+          bucket: deal.isFrozen ? deal.bucket : remaining === 0 ? 'שולם מלא' : updatedPaidAmount > 0 ? 'שולם חלקית' : deal.bucket,
           updatedAt: now.toISOString(),
         };
       });
@@ -396,7 +405,7 @@ export default function AdminBusiness() {
         return {
           ...deal,
           paidAmount: nextPaidAmount,
-          bucket: nextPaidAmount === 0 ? deal.bucket === 'שולם מלא' || deal.bucket === 'שולם חלקית' ? 'ממתין לתשלום' : deal.bucket : 'שולם חלקית',
+          bucket: deal.isFrozen ? deal.bucket : nextPaidAmount === 0 ? deal.bucket === 'שולם מלא' || deal.bucket === 'שולם חלקית' ? 'ממתין לתשלום' : deal.bucket : 'שולם חלקית',
           updatedAt: new Date().toISOString(),
         };
       });
@@ -460,7 +469,7 @@ export default function AdminBusiness() {
         return {
           ...deal,
           paidAmount: nextPaidAmount,
-          bucket: remaining === 0 ? 'שולם מלא' : nextPaidAmount > 0 ? 'שולם חלקית' : 'ממתין לתשלום',
+          bucket: deal.isFrozen ? deal.bucket : remaining === 0 ? 'שולם מלא' : nextPaidAmount > 0 ? 'שולם חלקית' : 'ממתין לתשלום',
           updatedAt: new Date().toISOString(),
         };
       });
@@ -487,6 +496,7 @@ export default function AdminBusiness() {
         paidAmount: 0,
         category: newDealCategory,
         bucket: newDealBucket,
+        isFrozen: false,
         createdAt: new Date().toISOString(),
       },
     ];
@@ -539,7 +549,7 @@ export default function AdminBusiness() {
             totalAmount,
             paidAmount: clampedPaidAmount,
             category: editDealCategory,
-            bucket: remaining === 0 ? 'שולם מלא' : clampedPaidAmount > 0 ? 'שולם חלקית' : editDealBucket,
+            bucket: deal.isFrozen ? editDealBucket : remaining === 0 ? 'שולם מלא' : clampedPaidAmount > 0 ? 'שולם חלקית' : editDealBucket,
             updatedAt: new Date().toISOString(),
           }
         : deal
@@ -549,6 +559,22 @@ export default function AdminBusiness() {
     persist({ dealLog: next });
     handleCancelEditDeal();
     toast.success('העסקה עודכנה');
+  };
+
+  const handleToggleDealFrozen = (id) => {
+    const next = dealLog.map((deal) => (
+      deal.id === id
+        ? {
+            ...deal,
+            isFrozen: !deal.isFrozen,
+            updatedAt: new Date().toISOString(),
+          }
+        : deal
+    ));
+
+    setDealLog(next);
+    persist({ dealLog: next });
+    toast.success('סטטוס ההקפאה של העסקה עודכן');
   };
 
   const downloadCsvFile = (rows, filename) => {
@@ -566,13 +592,14 @@ export default function AdminBusiness() {
 
   const handleExportDeals = () => {
     const rows = [
-      ['clientName', 'category', 'bucket', 'totalAmount', 'paidAmount'],
+      ['clientName', 'category', 'bucket', 'totalAmount', 'paidAmount', 'isFrozen'],
       ...dealLog.map((deal) => [
         deal.clientName || '',
         deal.category || 'משכנתאות',
         deal.bucket || 'חדש',
         Number(deal.totalAmount || 0),
         Number(deal.paidAmount || 0),
+        deal.isFrozen ? 'true' : 'false',
       ]),
     ];
 
@@ -582,8 +609,8 @@ export default function AdminBusiness() {
 
   const handleDownloadDealsTemplate = () => {
     const rows = [
-      ['clientName', 'category', 'bucket', 'totalAmount', 'paidAmount'],
-      ['ישראל ישראלי', 'משכנתאות', 'חדש', '12000', '0'],
+      ['clientName', 'category', 'bucket', 'totalAmount', 'paidAmount', 'isFrozen'],
+      ['ישראל ישראלי', 'משכנתאות', 'חדש', '12000', '0', 'false'],
     ];
 
     downloadCsvFile(rows, 'deals-template.csv');
@@ -622,6 +649,7 @@ export default function AdminBusiness() {
         const paidAmount = Number(String(cols[headerMap.paidAmount] || '0').replace(/,/g, '')) || 0;
         const category = cols[headerMap.category] || 'משכנתאות';
         const bucket = cols[headerMap.bucket] || 'חדש';
+        const isFrozen = ['true', '1', 'yes', 'כן'].includes(String(cols[headerMap.isFrozen] || '').trim().toLowerCase());
 
         if (!clientName.trim() || !totalAmount) {
           return null;
@@ -637,6 +665,7 @@ export default function AdminBusiness() {
           paidAmount: safePaidAmount,
           category: INCOME_CATEGORIES.includes(category) ? category : 'משכנתאות',
           bucket: remaining === 0 ? 'שולם מלא' : safePaidAmount > 0 ? 'שולם חלקית' : (DEAL_BUCKETS.includes(bucket) ? bucket : 'חדש'),
+          isFrozen,
           createdAt: new Date().toISOString(),
         };
       }).filter(Boolean);
@@ -748,7 +777,7 @@ export default function AdminBusiness() {
   const monthlyGrossTargetGap = Math.max(0, MONTHLY_GROSS_TARGET - totalGross);
   const monthlyGrossTargetOver = Math.max(0, totalGross - MONTHLY_GROSS_TARGET);
   const openDeals = useMemo(
-    () => dealLog.filter((deal) => Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0) > 0),
+    () => dealLog.filter((deal) => !deal.isFrozen && Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0) > 0),
     [dealLog]
   );
   const openDealsOptions = useMemo(
@@ -821,8 +850,7 @@ export default function AdminBusiness() {
 
   const filteredDeals = useMemo(() => {
     const filtered = dealLog.filter((deal) => {
-      const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
-      const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+      const status = getDealStatus(deal);
       const matchesBucket = dealBucketFilter === 'all' || deal.bucket === dealBucketFilter;
       const matchesCategory = dealCategoryFilter === 'all' || (deal.category || 'משכנתאות') === dealCategoryFilter;
       const matchesStatus = dealStatusFilter === 'all' || status === dealStatusFilter;
@@ -849,10 +877,8 @@ export default function AdminBusiness() {
         aValue = String(a.bucket || '');
         bValue = String(b.bucket || '');
       } else if (dealSortBy === 'status') {
-        const aRemaining = Math.max(0, Number(a.totalAmount || 0) - Number(a.paidAmount || 0));
-        const bRemaining = Math.max(0, Number(b.totalAmount || 0) - Number(b.paidAmount || 0));
-        aValue = aRemaining === 0 ? 'שולם מלא' : Number(a.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
-        bValue = bRemaining === 0 ? 'שולם מלא' : Number(b.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+        aValue = getDealStatus(a);
+        bValue = getDealStatus(b);
       }
 
       const comparison = aValue.localeCompare(bValue, 'he');
@@ -1199,6 +1225,7 @@ export default function AdminBusiness() {
                       <Label>סינון סטטוס</Label>
                       <select value={dealStatusFilter} onChange={(e) => setDealStatusFilter(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
                         <option value="all">כל הסטטוסים</option>
+                        <option value="מוקפאת">מוקפאת</option>
                         <option value="ממתין לתשלום">ממתין לתשלום</option>
                         <option value="שולם חלקית">שולם חלקית</option>
                         <option value="שולם מלא">שולם מלא</option>
@@ -1225,7 +1252,7 @@ export default function AdminBusiness() {
               )}
               {filteredDeals.map((deal, index) => {
                 const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
-                const status = remaining === 0 ? 'שולם מלא' : Number(deal.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
+                const status = getDealStatus(deal);
 
                 return (
                   <tr key={deal.id} className="border-b border-border last:border-b-0">
@@ -1271,7 +1298,7 @@ export default function AdminBusiness() {
                     </td>
                     <td className="py-3 font-medium text-foreground">{fmt(remaining)}</td>
                     <td className="py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${remaining === 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-300' : Number(deal.paidAmount || 0) > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/25 dark:text-blue-300'}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${deal.isFrozen ? 'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300' : remaining === 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-300' : Number(deal.paidAmount || 0) > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/25 dark:text-blue-300'}`}>
                         {status}
                       </span>
                     </td>
@@ -1284,6 +1311,13 @@ export default function AdminBusiness() {
                           </>
                         ) : (
                           <>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleDealFrozen(deal.id)}
+                              className={deal.isFrozen ? 'text-amber-600 hover:underline' : 'text-muted-foreground hover:underline'}
+                            >
+                              {deal.isFrozen ? 'הפעל' : 'הקפא'}
+                            </button>
                             <button type="button" onClick={() => handleStartEditDeal(deal)} className="text-primary hover:underline inline-flex items-center gap-1">
                               <Pencil className="w-3.5 h-3.5" />
                               ערוך
