@@ -30,6 +30,19 @@ function formatDate(value) {
   return date.toLocaleDateString('he-IL');
 }
 
+function formatYears(value) {
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
+
+  const years = Number(value);
+  if (Number.isNaN(years) || years <= 0) {
+    return '-';
+  }
+
+  return `${years.toLocaleString('he-IL')} שנים`;
+}
+
 function getBestValue(approvals, selector, direction = 'min') {
   const values = approvals
     .map((approval) => ({ id: approval.id, value: selector(approval) }))
@@ -145,7 +158,7 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
               {comparableApprovals.map((approval) => (
                 <ValueCell
                   key={approval.id}
-                  value={approval.summary_metrics.mortgage_years ? `${approval.summary_metrics.mortgage_years} שנים` : '-'}
+                  children={<span dir="rtl" className="inline-block">{formatYears(approval.summary_metrics.mortgage_years)}</span>}
                   isBest={approval.id === bestMortgageYears}
                 />
               ))}
@@ -204,7 +217,9 @@ export default function ApprovalsComparisonTable({ approvals, title = 'השוו�
                           <div className="space-y-1 text-xs leading-5">
                             <div className="font-semibold text-foreground">{track.name}</div>
                             <div>{formatCurrency(track.amount)}</div>
-                            <div>{track.years ? `${track.years} שנים` : '-'}</div>
+                            <div>
+                              <span dir="rtl" className="inline-block">{formatYears(track.years)}</span>
+                            </div>
                             <div>{formatPercent(track.interest_rate)}</div>
                             <div>{formatCurrency(track.monthly_payment)}</div>
                           </div>
