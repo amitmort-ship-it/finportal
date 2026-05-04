@@ -30,10 +30,10 @@ Deno.serve(async (req) => {
   const apiKey = Deno.env.get('NOTION_API_KEY');
   if (!apiKey) return Response.json({ error: 'NOTION_API_KEY not set' }, { status: 400 });
 
-  const payload = await req.json();
-  const parentPageId = payload?.parent_page_id; // optional - if not provided, will create in workspace
+  const payload = await req.json().catch(() => ({}));
+  const parentPageId = payload?.parent_page_id;
 
-  // Search for existing business DB
+  // Search for existing business DB first
   const searchResult = await notionFetch('/search', {
     method: 'POST',
     body: JSON.stringify({
@@ -47,15 +47,37 @@ Deno.serve(async (req) => {
     return Response.json({ success: true, database_id: existing.id, already_existed: true });
   }
 
-  // Create the database
-  const parentConfig = parentPageId
-    ? { type: 'page_id', page_id: parentPageId }
-    : { type: 'workspace', workspace: true };
+  // Need a parent page — either provided or find first accessible page
+  let resolvedParentPageId = parentPageId;
 
+  if (!resolvedParentPageId) {
+    // Search for any page we can use as parent
+    const pageSearch = await notionFetch('/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        filter: { value: 'page', property: 'object' },
+        page_size: 1,
+      }),
+    }, apiKey);
+
+    const firstPage = pageSearch?.results?.[0];
+    if (firstPage?.id) {
+      resolvedParentPageId = firstPage.id;
+    }
+  }
+
+  if (!resolvedParentPageId) {
+    return Response.json({
+      error: 'לא נמצא דף בנושן. אנא העבר parent_page_id של דף קיים בנושן, או וודא שה-API key מחובר לדף.',
+      hint: 'פתח את הנושן, צור דף חדש, שתף אותו עם ה-integration, ושלח את ה-page ID'
+    }, { status: 400 });
+  }
+
+  // Create the database inside that page
   const db = await notionFetch('/databases', {
     method: 'POST',
     body: JSON.stringify({
-      parent: parentConfig,
+      parent: { type: 'page_id', page_id: resolvedParentPageId },
       title: [{ type: 'text', text: { content: 'ניהול עסק — נתוני מערכת' } }],
       properties: {
         'שם': { title: {} },
@@ -90,5 +112,5 @@ Deno.serve(async (req) => {
     }),
   }, apiKey);
 
-  return Response.json({ success: true, database_id: db.id, created: true });
+  return Response.json({ success: true, database_id: db.id, created: true, parent_page_id: resolvedParentPageId });
 });
