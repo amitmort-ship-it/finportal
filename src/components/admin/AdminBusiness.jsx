@@ -42,7 +42,6 @@ const HITECH_TAX_RATE = 0.12;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
-const MAX_VISIBLE_DEALS = 5;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
@@ -872,11 +871,6 @@ export default function AdminBusiness() {
     return Object.values(grouped).sort((a, b) => String(b.key).localeCompare(String(a.key), 'he'));
   }, [historicalIncomeLog]);
 
-  const visibleCurrentMonthIncomeLog = useMemo(
-    () => [...currentMonthIncomeLog].reverse().slice(0, MAX_VISIBLE_DEALS),
-    [currentMonthIncomeLog]
-  );
-
   const filteredDeals = useMemo(() => {
     const filtered = dealLog.filter((deal) => {
       const status = getDealStatus(deal);
@@ -916,11 +910,6 @@ export default function AdminBusiness() {
 
     return sorted;
   }, [dealBucketFilter, dealCategoryFilter, dealStatusFilter, dealSearch, dealLog, dealSortBy, dealSortDirection]);
-
-  const visibleDeals = useMemo(
-    () => filteredDeals.slice(0, MAX_VISIBLE_DEALS),
-    [filteredDeals]
-  );
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
 
@@ -1182,9 +1171,9 @@ export default function AdminBusiness() {
           </Button>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-border">
+        <div className="max-h-[540px] overflow-auto rounded-2xl border border-border">
           <table className="w-full min-w-[760px] text-sm">
-            <thead className="bg-muted/40">
+            <thead className="sticky top-0 z-10 bg-muted/40 backdrop-blur">
               <tr className="border-b border-border text-muted-foreground">
                 <th className="py-2 text-right font-medium">#</th>
                 <th className="py-2 text-right font-medium">
@@ -1302,7 +1291,7 @@ export default function AdminBusiness() {
                   <td colSpan="9" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
                 </tr>
               )}
-              {visibleDeals.map((deal, index) => {
+              {filteredDeals.map((deal, index) => {
                 const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
                 const status = getDealStatus(deal);
 
@@ -1401,11 +1390,6 @@ export default function AdminBusiness() {
             </tbody>
           </table>
         </div>
-        {filteredDeals.length > MAX_VISIBLE_DEALS && (
-          <p className="text-xs text-muted-foreground">
-            מוצגות 5 העסקאות הראשונות מתוך {filteredDeals.length}.
-          </p>
-        )}
       </div>
 
       {/* === INCOME CHART === */}
@@ -1586,7 +1570,7 @@ export default function AdminBusiness() {
             <span className="text-xs text-muted-foreground">{currentMonthLabel} · סה״כ גולמי: {fmt(totalGross)}</span>
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {visibleCurrentMonthIncomeLog.map((entry) => (
+            {[...currentMonthIncomeLog].reverse().map((entry) => (
               <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                 {editingIncomeId === entry.id ? (
                   <div className="space-y-3">
@@ -1630,11 +1614,6 @@ export default function AdminBusiness() {
               </div>
             ))}
           </div>
-          {currentMonthIncomeLog.length > MAX_VISIBLE_DEALS && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              מוצגות 5 העסקאות האחרונות מתוך {currentMonthIncomeLog.length}.
-            </p>
-          )}
         </div>
       )}
 
