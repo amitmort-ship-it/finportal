@@ -73,7 +73,7 @@ export default function ClientUpdates() {
               key={update.id} 
               className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm transition-colors hover:border-blue-300 dark:border-slate-800 dark:bg-slate-950/80 dark:hover:border-blue-800"
             >
-              <p className="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-100 whitespace-pre-line">
+              <p style={{whiteSpace: 'pre-line'}} className="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-100">
                 {update.message}
               </p>
               <div className="flex justify-end mt-2">
