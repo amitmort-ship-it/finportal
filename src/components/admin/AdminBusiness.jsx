@@ -107,6 +107,21 @@ function getDealStatus(deal) {
   return remaining === 0 ? 'שולם מלא' : Number(deal?.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
 }
 
+function getDealStatusStyles(deal) {
+  if (deal?.isFrozen) {
+    return 'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300';
+  }
+
+  const remaining = Math.max(0, Number(deal?.totalAmount || 0) - Number(deal?.paidAmount || 0));
+  if (remaining === 0) {
+    return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-300';
+  }
+
+  return Number(deal?.paidAmount || 0) > 0
+    ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-300'
+    : 'bg-blue-50 text-blue-600 dark:bg-blue-950/25 dark:text-blue-300';
+}
+
 function GaugeBar({ value, max, color, label, sublabel, valueLabel }) {
   const pct = Math.min(100, Math.max(0, ((value || 0) / (max || 1)) * 100));
   return (
@@ -791,6 +806,14 @@ export default function AdminBusiness() {
     () => openDeals.reduce((sum, deal) => sum + Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0)), 0),
     [openDeals]
   );
+  const frozenDealsCount = useMemo(
+    () => dealLog.filter((deal) => deal.isFrozen).length,
+    [dealLog]
+  );
+  const paidDealsCount = useMemo(
+    () => dealLog.filter((deal) => getDealStatus(deal) === 'שולם מלא').length,
+    [dealLog]
+  );
 
   const activeCount = useMemo(() => {
     if (manualActiveCount !== '' && Number(manualActiveCount) >= 0) return Number(manualActiveCount);
@@ -916,7 +939,7 @@ export default function AdminBusiness() {
 
       {/* === TOP KPI ROW === */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 space-y-1 bg-gradient-to-br from-blue-50/60 to-background dark:from-blue-950/10 dark:to-background">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Droplets className="w-4 h-4 text-blue-500" />
             <span>יעד ברוטו חודשי</span>
@@ -927,7 +950,7 @@ export default function AdminBusiness() {
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 space-y-1 bg-gradient-to-br from-emerald-50/60 to-background dark:from-emerald-950/10 dark:to-background">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Wallet className="w-4 h-4 text-emerald-500" />
             <span>נטו החודש</span>
@@ -936,7 +959,7 @@ export default function AdminBusiness() {
           <p className="text-xs text-muted-foreground">מיסים החודש: {fmt(totalTax)}</p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 space-y-1 bg-gradient-to-br from-violet-50/60 to-background dark:from-violet-950/10 dark:to-background">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <TrendingUp className="w-4 h-4 text-violet-500" />
             <span>צנרת 2 חודשים</span>
@@ -947,7 +970,7 @@ export default function AdminBusiness() {
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 space-y-1 bg-gradient-to-br from-orange-50/60 to-background dark:from-orange-950/10 dark:to-background">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <Clock className="w-4 h-4 text-orange-500" />
             <span>תיקים פעילים</span>
@@ -958,7 +981,7 @@ export default function AdminBusiness() {
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-1">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 space-y-1 bg-gradient-to-br from-red-50/60 to-background dark:from-red-950/10 dark:to-background">
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <CreditCard className="w-4 h-4 text-red-500" />
             <span>הוצאות חודשיות</span>
@@ -1114,6 +1137,25 @@ export default function AdminBusiness() {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+            <p className="text-xs text-blue-700 dark:text-blue-300">עסקאות פתוחות</p>
+            <p className="mt-1 text-xl font-bold text-blue-900 dark:text-blue-100">{openDeals.length}</p>
+          </div>
+          <div className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3 dark:border-violet-900/40 dark:bg-violet-950/20">
+            <p className="text-xs text-violet-700 dark:text-violet-300">יתרה פתוחה</p>
+            <p className="mt-1 text-xl font-bold text-violet-900 dark:text-violet-100">{fmt(openDealsTotal)}</p>
+          </div>
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <p className="text-xs text-amber-700 dark:text-amber-300">מוקפאות</p>
+            <p className="mt-1 text-xl font-bold text-amber-900 dark:text-amber-100">{frozenDealsCount}</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+            <p className="text-xs text-emerald-700 dark:text-emerald-300">נסגרו מלא</p>
+            <p className="mt-1 text-xl font-bold text-emerald-900 dark:text-emerald-100">{paidDealsCount}</p>
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-4 gap-2">
           <Input value={newDealClient} onChange={(e) => setNewDealClient(e.target.value)} placeholder="שם הלקוח" />
           <Input type="number" value={newDealTotal} onChange={(e) => setNewDealTotal(e.target.value)} placeholder="סכום עסקה ₪" dir="ltr" />
@@ -1129,9 +1171,9 @@ export default function AdminBusiness() {
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-2xl border border-border">
           <table className="w-full min-w-[760px] text-sm">
-            <thead>
+            <thead className="bg-muted/40">
               <tr className="border-b border-border text-muted-foreground">
                 <th className="py-2 text-right font-medium">#</th>
                 <th className="py-2 text-right font-medium">לקוח</th>
@@ -1255,13 +1297,21 @@ export default function AdminBusiness() {
                 const status = getDealStatus(deal);
 
                 return (
-                  <tr key={deal.id} className="border-b border-border last:border-b-0">
+                  <tr key={deal.id} className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/30">
                     <td className="py-3 text-xs text-muted-foreground">{index + 1}</td>
                     <td className="py-3 text-foreground">
                       {editingDealId === deal.id ? (
                         <Input value={editDealClient} onChange={(e) => setEditDealClient(e.target.value)} />
                       ) : (
-                        deal.clientName
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{deal.clientName}</span>
+                          {deal.isFrozen && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                              <Power className="h-3 w-3" />
+                              מוקפאת
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="py-3">
@@ -1298,12 +1348,12 @@ export default function AdminBusiness() {
                     </td>
                     <td className="py-3 font-medium text-foreground">{fmt(remaining)}</td>
                     <td className="py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${deal.isFrozen ? 'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300' : remaining === 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-300' : Number(deal.paidAmount || 0) > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/25 dark:text-amber-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/25 dark:text-blue-300'}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${getDealStatusStyles(deal)}`}>
                         {status}
                       </span>
                     </td>
                     <td className="py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {editingDealId === deal.id ? (
                           <>
                             <Button size="sm" onClick={() => handleSaveDealEdit(deal.id)}>שמור</Button>
@@ -1314,15 +1364,23 @@ export default function AdminBusiness() {
                             <button
                               type="button"
                               onClick={() => handleToggleDealFrozen(deal.id)}
-                              className={deal.isFrozen ? 'text-amber-600 hover:underline' : 'text-muted-foreground hover:underline'}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                                deal.isFrozen
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300'
+                                  : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300'
+                              }`}
                             >
+                              <Power className="h-3.5 w-3.5" />
                               {deal.isFrozen ? 'הפעל' : 'הקפא'}
                             </button>
-                            <button type="button" onClick={() => handleStartEditDeal(deal)} className="text-primary hover:underline inline-flex items-center gap-1">
+                            <button type="button" onClick={() => handleStartEditDeal(deal)} className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10">
                               <Pencil className="w-3.5 h-3.5" />
                               ערוך
                             </button>
-                            <button type="button" onClick={() => handleRemoveDeal(deal.id)} className="text-destructive hover:underline">הסר</button>
+                            <button type="button" onClick={() => handleRemoveDeal(deal.id)} className="inline-flex items-center gap-1 rounded-full border border-destructive/20 bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
+                              <Trash2 className="h-3.5 w-3.5" />
+                              הסר
+                            </button>
                           </>
                         )}
                       </div>
@@ -1531,14 +1589,18 @@ export default function AdminBusiness() {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <span className="font-semibold text-foreground">{fmt(entry.gross)}</span>
-                      <span className="text-muted-foreground mr-2 text-xs">גולמי</span>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground text-sm">{fmt(entry.gross)}</span>
+                        <span>גולמי</span>
+                        {entry.category && (
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{entry.category}</span>
+                        )}
+                      </div>
                       {entry.source && entry.source !== 'לא צוין' && (
-                        <span className="text-xs text-primary font-medium mr-1">· {entry.source}</span>
-                      )}
-                      {entry.category && (
-                        <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded mr-1">{entry.category}</span>
+                        <div className="truncate text-sm font-medium text-primary">
+                          {entry.source}
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
