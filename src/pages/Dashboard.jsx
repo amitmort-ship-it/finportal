@@ -150,7 +150,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {updates.map((update) => (
                   <div key={update.id} className="p-3 rounded-lg bg-muted/30 text-sm">
-                    <p className="text-foreground">{update.message}</p>
+                    <p style={{whiteSpace: 'pre-line'}} className="text-foreground">{update.message}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(update.created_date).toLocaleDateString('he-IL', {
                         year: '2-digit',
