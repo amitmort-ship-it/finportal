@@ -16,7 +16,7 @@
     },
     "dealLog": {
       "type": "array",
-      "description": "Log of deals, balances, buckets and categories",
+      "description": "Log of deals / pipeline entries",
       "items": {
         "type": "object"
       },

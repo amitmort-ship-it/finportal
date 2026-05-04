@@ -281,7 +281,14 @@ export default function AdminBusiness() {
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
-          setDealLog((Array.isArray(r.dealLog) && r.dealLog.length > 0) ? r.dealLog : (Array.isArray(localDealLog) ? localDealLog : []));
+          const resolvedDealLog = (Array.isArray(r.dealLog) && r.dealLog.length > 0)
+            ? r.dealLog
+            : (Array.isArray(localDealLog) ? localDealLog : []);
+          setDealLog(resolvedDealLog);
+          // If DB had no dealLog but localStorage does, persist to DB immediately
+          if (!(Array.isArray(r.dealLog) && r.dealLog.length > 0) && resolvedDealLog.length > 0) {
+            base44.entities.BusinessData.update(r.id, { dealLog: resolvedDealLog }).catch(() => {});
+          }
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
           setAvgDealSize(r.avgDealSize ?? 8000);
