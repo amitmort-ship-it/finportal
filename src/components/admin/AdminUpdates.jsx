@@ -394,7 +394,7 @@ export default function AdminUpdates({ selectedClient }) {
                   <div key={u.id} className="bg-card rounded-xl border border-border p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="text-foreground break-words">{u.message}</p>
+                        <p className="text-foreground break-words whitespace-pre-line">{u.message}</p>
                         <p className="text-xs text-muted-foreground mt-2">
                           {u.created_date ? format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
                         </p>
