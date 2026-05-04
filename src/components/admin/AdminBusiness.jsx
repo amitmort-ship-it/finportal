@@ -23,6 +23,8 @@ import {
   ChevronDown,
   Download,
   Upload,
+  RefreshCw,
+  Link2,
 } from 'lucide-react';
 import {
   BarChart,
@@ -258,6 +260,9 @@ export default function AdminBusiness() {
   const [editDealCategory, setEditDealCategory] = useState('משכנתאות');
   const [editDealBucket, setEditDealBucket] = useState(DEAL_BUCKETS[0]);
   const [importingDeals, setImportingDeals] = useState(false);
+  const [notionSetupLoading, setNotionSetupLoading] = useState(false);
+  const [notionSyncLoading, setNotionSyncLoading] = useState(false);
+  const [notionStatus, setNotionStatus] = useState(null); // null | 'ok' | 'not_setup'
 
   // Debounce save
   const saveTimer = useRef(null);
@@ -632,6 +637,49 @@ export default function AdminBusiness() {
     toast.success('טמפלט העסקאות ירד');
   };
 
+  const handleSetupNotion = async () => {
+    setNotionSetupLoading(true);
+    try {
+      const res = await base44.functions.invoke('setupBusinessNotionDB', {});
+      const data = res?.data || res;
+      if (data?.database_id) {
+        setNotionStatus('ok');
+        toast.success(data.already_existed ? 'מסד הנתונים כבר קיים בנושן ✓' : 'מסד הנתונים נוצר בהצלחה בנושן!');
+        // Trigger first sync
+        await base44.functions.invoke('syncBusinessToNotion', {});
+      } else {
+        toast.error(data?.error || 'שגיאה ביצירת מסד הנתונים');
+      }
+    } catch (err) {
+      toast.error('שגיאה בחיבור לנושן');
+    } finally {
+      setNotionSetupLoading(false);
+    }
+  };
+
+  const handleManualSync = async () => {
+    setNotionSyncLoading(true);
+    try {
+      const res = await base44.functions.invoke('syncBusinessToNotion', {});
+      const data = res?.data || res;
+      if (data?.success) {
+        setNotionStatus('ok');
+        toast.success(`סונכרן לנושן: ${data.created} חדשים, ${data.updated} עודכנו`);
+      } else {
+        if (data?.error?.includes('not found')) {
+          setNotionStatus('not_setup');
+          toast.error('מסד הנתונים לא נמצא — יש להגדיר תחילה');
+        } else {
+          toast.error(data?.error || 'שגיאה בסנכרון');
+        }
+      }
+    } catch (err) {
+      toast.error('שגיאה בסנכרון לנושן');
+    } finally {
+      setNotionSyncLoading(false);
+    }
+  };
+
   const handleImportDeals = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -923,6 +971,50 @@ export default function AdminBusiness() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* === NOTION SYNC BANNER === */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 flex-wrap">
+        <div className="flex items-center gap-2 text-sm">
+          <Link2 className="w-4 h-4 text-muted-foreground" />
+          <span className="font-medium">סנכרון נושן</span>
+          {notionStatus === 'ok' && (
+            <span className="flex items-center gap-1 text-xs text-emerald-600">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              מחובר — מתעדכן אוטומטית
+            </span>
+          )}
+          {notionStatus === 'not_setup' && (
+            <span className="text-xs text-amber-600">לא מוגדר</span>
+          )}
+          {notionStatus === null && (
+            <span className="text-xs text-muted-foreground">לא הוגדר עדיין</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {notionStatus !== 'ok' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={handleSetupNotion}
+              disabled={notionSetupLoading}
+            >
+              {notionSetupLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+              {notionSetupLoading ? 'מגדיר...' : 'הגדר מסד נתונים בנושן'}
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={handleManualSync}
+            disabled={notionSyncLoading}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${notionSyncLoading ? 'animate-spin' : ''}`} />
+            {notionSyncLoading ? 'מסנכרן...' : 'סנכרן עכשיו'}
+          </Button>
+        </div>
+      </div>
+
       {saving && (
         <div className="text-xs text-muted-foreground text-left">שומר...</div>
       )}
