@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Building2, Trash2, Upload, Loader2, Edit2, Check, X, Download, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AdminFinalMortgage from './AdminFinalMortgage';
 import ApprovalsComparisonTable from '@/components/ApprovalsComparisonTable';
 import {
@@ -26,6 +24,7 @@ import {
 } from '@/lib/approvalInsights';
 
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
+const nativeSelectClassName = 'mt-1 w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
 
 const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', ai_data: null };
 
@@ -66,6 +65,7 @@ const buildNotesWithMetadata = (notes, values = {}, fallbackAiData = null) => {
 };
 
 export default function AdminBankApprovals({ selectedClient }) {
+  const normalizedSelectedClient = String(selectedClient || '').trim().toLowerCase();
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -104,8 +104,8 @@ export default function AdminBankApprovals({ selectedClient }) {
 
       const approvalsList = Array.isArray(data) ? data : [];
       const userList = clientRes?.data?.profiles || clientRes?.profiles || [];
-      const filtered = selectedClient
-        ? approvalsList.filter((approval) => approval?.client_email === selectedClient)
+      const filtered = normalizedSelectedClient
+        ? approvalsList.filter((approval) => String(approval?.client_email || '').toLowerCase() === normalizedSelectedClient)
         : approvalsList;
 
       setApprovals(filtered);
@@ -131,8 +131,12 @@ export default function AdminBankApprovals({ selectedClient }) {
     return () => {
       active = false;
     };
-  }, [selectedClient]);
-  useEffect(() => { if (selectedClient) setForm(f => ({ ...f, client_email: selectedClient })); }, [selectedClient]);
+  }, [normalizedSelectedClient]);
+  useEffect(() => {
+    if (normalizedSelectedClient) {
+      setForm((f) => ({ ...f, client_email: normalizedSelectedClient }));
+    }
+  }, [normalizedSelectedClient]);
   useEffect(() => {
     const sharedInsights = getSharedApprovalInsights(approvals);
     if (!sharedInsights) {
@@ -229,17 +233,26 @@ export default function AdminBankApprovals({ selectedClient }) {
     if (data.mortgage_years) data.mortgage_years = Number(data.mortgage_years); else delete data.mortgage_years;
     if (!data.offer_expiry_date) delete data.offer_expiry_date;
     data.notes = buildNotesWithMetadata(data.notes, data, data.ai_data);
-    await base44.entities.BankApproval.create(data);
-    toast.success('אישור בנק נוסף');
-    setForm({ ...emptyForm, client_email: selectedClient || '' });
-    setOpen(false);
-    load();
+    try {
+      await base44.entities.BankApproval.create(data);
+      toast.success('אישור בנק נוסף');
+      setForm({ ...emptyForm, client_email: normalizedSelectedClient || '' });
+      setOpen(false);
+      await load();
+    } catch (error) {
+      console.error('Failed to create bank approval:', error);
+      toast.error(getErrorMessage(error, 'לא הצלחנו להוסיף את האישור'));
+    }
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.BankApproval.delete(id);
-    toast.success('האישור נמחק');
-    load();
+    try {
+      await base44.entities.BankApproval.delete(id);
+      toast.success('האישור נמחק');
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'מחיקת האישור נכשלה'));
+    }
   };
 
   const startEdit = (a) => {
@@ -278,10 +291,14 @@ export default function AdminBankApprovals({ selectedClient }) {
       ? attachSharedInsightsToNotes(nextNotes, sharedInsights)
       : nextNotes;
     data.notes = nextNotes;
-    await base44.entities.BankApproval.update(editingId, data);
-    toast.success('האישור עודכן');
-    setEditingId(null);
-    load();
+    try {
+      await base44.entities.BankApproval.update(editingId, data);
+      toast.success('האישור עודכן');
+      setEditingId(null);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'עדכון האישור נכשל'));
+    }
   };
 
   const handleSaveInsights = async () => {
@@ -339,30 +356,49 @@ export default function AdminBankApprovals({ selectedClient }) {
             <Building2 className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold">אישורי בנקים</h2>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2"><Plus className="w-4 h-4" />אישור חדש</Button>
-            </DialogTrigger>
-            <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>הוספת אישור בנק</DialogTitle></DialogHeader>
-              <div className="space-y-4 pt-4">
+          <Button type="button" className="gap-2" onClick={() => setOpen((value) => !value)}>
+            <Plus className="w-4 h-4" />
+            {open ? 'סגור טופס' : 'אישור חדש'}
+          </Button>
+        </div>
+        {open && (
+          <div className="mt-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-base font-bold text-foreground">הוספת אישור בנק</h3>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-4">
                 <div>
                   <Label>לקוח</Label>
-                  <Select value={form.client_email} onValueChange={(v) => setForm({ ...form, client_email: v })}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-                    <SelectContent>
-                      {users.map(u => <SelectItem key={u.id} value={u.email}>{u.full_name || u.email}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={form.client_email}
+                    onChange={(e) => setForm({ ...form, client_email: String(e.target.value || '').toLowerCase() })}
+                    className={nativeSelectClassName}
+                  >
+                    <option value="">בחר לקוח</option>
+                    {users.map((u) => (
+                      <option key={u.id || u.email} value={String(u.email || '').toLowerCase()}>
+                        {u.full_name || u.email}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label>שם הבנק</Label>
-                  <Select value={form.bank_name} onValueChange={v => setForm({ ...form, bank_name: v })}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
-                    <SelectContent>
-                      {BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={form.bank_name}
+                    onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
+                    className={nativeSelectClassName}
+                  >
+                    <option value="">בחר בנק</option>
+                    {BANKS.map((bankName) => (
+                      <option key={bankName} value={bankName}>
+                        {bankName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label>כותרת האישור</Label>
@@ -402,13 +438,12 @@ export default function AdminBankApprovals({ selectedClient }) {
                   ) : null}
                 </div>
                 <Button type="button" onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">הוסף אישור</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </div>
+          </div>
+        )}
         {users.length > 0 && selectedClient && (
           <div className="bg-muted/30 rounded-lg px-3 py-2 text-sm text-muted-foreground mt-3">
-            מציג אישורים עבור: <span className="font-medium text-foreground">{users.find(u => u.email === selectedClient)?.full_name || selectedClient}</span>
+            מציג אישורים עבור: <span className="font-medium text-foreground">{users.find(u => String(u.email || '').toLowerCase() === normalizedSelectedClient)?.full_name || normalizedSelectedClient}</span>
           </div>
         )}
       </div>
@@ -625,8 +660,8 @@ export default function AdminBankApprovals({ selectedClient }) {
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" onClick={() => startEdit(a)}><Edit2 className="w-4 h-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => handleDelete(a.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
+                    <Button type="button" size="icon" variant="ghost" onClick={() => startEdit(a)}><Edit2 className="w-4 h-4" /></Button>
+                    <Button type="button" size="icon" variant="ghost" onClick={() => handleDelete(a.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 </div>
               )}
