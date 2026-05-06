@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { FileUp, Loader2, Download, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import ClientDownloadableDocs from '@/components/ClientDownloadableDocs';
 import { toast } from 'sonner';
 
 export default function FilesPage() {
@@ -119,6 +120,8 @@ export default function FilesPage() {
         <h1 className="text-3xl font-bold">המסמכים שלך</h1>
         <p className="text-muted-foreground mt-1">העלה מסמכים דרושים לתיק שלך</p>
       </div>
+
+      <ClientDownloadableDocs clientEmail={user?.email} />
 
       {requests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center">

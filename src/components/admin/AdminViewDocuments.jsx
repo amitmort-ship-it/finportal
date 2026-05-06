@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save, Send } from 'lucide-react';
 import AdminDocumentRequest from './AdminDocumentRequest';
+import AdminDownloadableDocs from './AdminDownloadableDocs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -423,6 +424,8 @@ export default function AdminViewDocuments({ selectedClient }) {
           </Dialog>
         </div>
       </div>
+
+      <AdminDownloadableDocs selectedClient={selectedClient} />
 
       {requests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
