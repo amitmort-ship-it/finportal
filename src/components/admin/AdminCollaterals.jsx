@@ -208,7 +208,17 @@ export default function AdminCollaterals({ selectedClient }) {
                             <Download className="w-3 h-3" />{c.admin_file_name || 'מסמך לחתימה'}
                           </a>
                         ) : <span className="text-xs text-muted-foreground">לא הועלה מסמך</span>}
-                        {c.client_file_url ? (
+                        {/* Client uploaded files (new multi-file array) */}
+                        {(c.client_files?.length > 0) ? (
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-emerald-700">קבצים שהועלו על ידי הלקוח:</span>
+                            {c.client_files.map((f, idx) => (
+                              <a key={idx} href={f.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                                <Download className="w-3 h-3 shrink-0" />{f.file_name || `קובץ ${idx + 1}`}
+                              </a>
+                            ))}
+                          </div>
+                        ) : c.client_file_url ? (
                           <a href={c.client_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline">
                             <Download className="w-3 h-3" />{c.client_file_name || 'מסמך חתום'}
                           </a>
