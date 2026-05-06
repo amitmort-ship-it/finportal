@@ -14,14 +14,6 @@
       "type": "string",
       "description": "Original file name"
     },
-    "sign_links": {
-      "type": "object",
-      "description": "Map of client_email to signing URL",
-      "additionalProperties": {
-        "type": "string"
-      },
-      "default": {}
-    },
     "enabled_for": {
       "type": "array",
       "description": "List of client emails this doc is enabled for",

@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XCircle, Save, Send } from 'lucide-react';
 import AdminDocumentRequest from './AdminDocumentRequest';
 import AdminDownloadableDocs from './AdminDownloadableDocs';
+import AdminServiceAgreement from './AdminServiceAgreement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -425,6 +426,7 @@ export default function AdminViewDocuments({ selectedClient }) {
         </div>
       </div>
 
+      <AdminServiceAgreement selectedClient={selectedClient} />
       <AdminDownloadableDocs selectedClient={selectedClient} />
 
       {requests.length === 0 ? (
