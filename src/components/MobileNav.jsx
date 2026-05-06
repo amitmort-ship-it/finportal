@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -24,7 +24,9 @@ export default function MobileNav() {
   const isAdmin = user?.role === 'admin';
   const isToolsArea = location.pathname === '/tools';
 
-  const items = isAdmin ? [...navItems, { path: '/admin', label: 'ניהול', icon: Settings }] : navItems;
+  const items = isAdmin
+    ? [...navItems, { path: '/simulations', label: 'סימולציות', icon: LineChart }, { path: '/admin', label: 'ניהול', icon: Settings }]
+    : navItems;
 
   return (
     <div
