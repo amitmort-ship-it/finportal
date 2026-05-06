@@ -132,112 +132,84 @@ export default function FilesPage() {
           <p className="text-muted-foreground mt-2">כל המסמכים הדרושים הועלו וחוקיים</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {requests.map((request) => (
-            <div
-              key={request.id}
-              className="bg-card rounded-xl border border-border p-6 space-y-4"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{request.title}</h3>
-                  {request.description ? (
-                    <p className="text-sm text-muted-foreground mt-1">{request.description}</p>
-                  ) : null}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    קטגוריה: {request.category || 'כללי'}
-                  </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          {[
+            { key: 'לווה 1', label: 'לווה 1', color: 'border-blue-200 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/10', headerColor: 'text-blue-700 dark:text-blue-300', badgeBg: 'bg-blue-100 text-blue-700' },
+            { key: 'לווה 2', label: 'לווה 2', color: 'border-purple-200 bg-purple-50/40 dark:border-purple-900/40 dark:bg-purple-950/10', headerColor: 'text-purple-700 dark:text-purple-300', badgeBg: 'bg-purple-100 text-purple-700' },
+            { key: 'משותף', label: 'משותף', color: 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-950/10', headerColor: 'text-emerald-700 dark:text-emerald-300', badgeBg: 'bg-emerald-100 text-emerald-700' },
+          ].map(({ key, label, color, headerColor, badgeBg }) => {
+            const colRequests = requests.filter((r) => r.category === key);
+            return (
+              <div key={key} className={`rounded-xl border ${color} flex flex-col`}>
+                <div className={`px-4 py-3 rounded-t-xl font-bold text-sm ${headerColor} border-b border-current/10 flex items-center justify-between`}>
+                  <span>{label}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeBg}`}>{colRequests.length}</span>
                 </div>
+                <div className="p-3 space-y-3">
+                  {colRequests.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-muted-foreground">אין בקשות בקטגוריה זו</div>
+                  ) : colRequests.map((request) => (
+                    <div key={request.id} className="bg-white dark:bg-card rounded-lg border border-border p-3 space-y-3 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium text-sm leading-snug">{request.title}</h3>
+                        <span className={`shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${
+                          request.status === 'pending' ? 'text-amber-600 bg-amber-50 border-amber-200' :
+                          request.status === 'uploaded' ? 'text-blue-600 bg-blue-50 border-blue-200' :
+                          request.status === 'approved' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' :
+                          'text-red-600 bg-red-50 border-red-200'
+                        }`}>
+                          {request.status === 'pending' ? <><Clock className="w-3 h-3" />ממתין</> :
+                           request.status === 'uploaded' ? <><FileUp className="w-3 h-3" />בדיקה</> :
+                           request.status === 'approved' ? <><CheckCircle2 className="w-3 h-3" />אושר</> :
+                           <><AlertCircle className="w-3 h-3" />תיקון</>}
+                        </span>
+                      </div>
 
-                <div className="text-right">
-                  {request.status === 'pending' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                      <Clock className="w-3 h-3" />
-                      ממתין
-                    </span>
-                  ) : null}
+                      {request.admin_notes ? (
+                        <div className="rounded bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 p-2 text-xs text-amber-800 dark:text-amber-300">
+                          <span className="font-semibold">הערה: </span>{request.admin_notes}
+                        </div>
+                      ) : null}
 
-                  {request.status === 'uploaded' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                      <FileUp className="w-3 h-3" />
-                      בדיקה
-                    </span>
-                  ) : null}
+                      {request.uploaded_files && request.uploaded_files.length > 0 ? (
+                        <div className="space-y-1">
+                          {request.uploaded_files.map((file, index) => (
+                            <a
+                              key={index}
+                              href={file.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 p-1.5 rounded bg-muted/50 hover:bg-muted text-xs text-primary hover:underline transition-colors"
+                            >
+                              <Download className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{file.file_name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
 
-                  {request.status === 'approved' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3" />
-                      אושר
-                    </span>
-                  ) : null}
-
-                  {request.status === 'rejected' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
-                      <AlertCircle className="w-3 h-3" />
-                      נדרשת תיקון
-                    </span>
-                  ) : null}
+                      {request.status !== 'approved' ? (
+                        <label className="flex items-center gap-2 border border-dashed border-border rounded-lg p-2.5 cursor-pointer hover:border-primary/50 transition-colors">
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(event) => handleFileUpload(request.id, event.target.files)}
+                            disabled={uploading[request.id]}
+                          />
+                          {uploading[request.id] ? (
+                            <><Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /><span className="text-xs text-primary font-medium">מעלה...</span></>
+                          ) : (
+                            <><FileUp className="w-3.5 h-3.5 text-muted-foreground" /><span className="text-xs text-muted-foreground">העלה קובץ</span></>
+                          )}
+                        </label>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
               </div>
-
-              {request.admin_notes ? (
-                <div className="rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 p-3">
-                  <p className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
-                    הערה מהמשרד:
-                  </p>
-                  <p className="text-sm text-amber-800 dark:text-amber-300">{request.admin_notes}</p>
-                </div>
-              ) : null}
-
-              {request.uploaded_files && request.uploaded_files.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground">קבצים שהועלו:</p>
-                  <div className="space-y-1">
-                    {request.uploaded_files.map((file, index) => (
-                      <a
-                        key={index}
-                        href={file.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted text-sm text-primary hover:underline transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                        {file.file_name}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {request.status !== 'approved' ? (
-                <div>
-                  <label className="flex items-center gap-2 border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors">
-                    <input
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(event) => handleFileUpload(request.id, event.target.files)}
-                      disabled={uploading[request.id]}
-                    />
-                    {uploading[request.id] ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                        <span className="text-sm text-primary font-medium">מעלה...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileUp className="w-4 h-4 text-muted-foreground" />
-                        <div className="text-left">
-                          <p className="text-sm font-medium text-foreground">בחר קבצים</p>
-                          <p className="text-xs text-muted-foreground">או גרור קבצים לכאן</p>
-                        </div>
-                      </>
-                    )}
-                  </label>
-                </div>
-              ) : null}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
