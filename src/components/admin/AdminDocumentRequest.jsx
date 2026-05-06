@@ -73,7 +73,9 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange, o
       const toCreate = Object.entries(selectedDocs)
         .filter(([, checked]) => checked)
         .map(([key]) => {
-          const [category, title] = key.split('::');
+          const idx = key.indexOf('::');
+          const category = key.substring(0, idx);
+          const title = key.substring(idx + 2);
           return {
             client_email: selectedUser,
             title,
@@ -154,9 +156,9 @@ export default function AdminDocumentRequest({ selectedClient, onClientChange, o
                   );
                 })}
                 {Object.entries(selectedDocs)
-                  .filter(([key, checked]) => checked && key.startsWith(`${category}::`) && !docs.includes(key.split('::')[1]))
+                  .filter(([key, checked]) => checked && key.startsWith(`${category}::`) && !docs.includes(key.substring(key.indexOf('::') + 2)))
                   .map(([key]) => {
-                    const title = key.split('::')[1];
+                    const title = key.substring(key.indexOf('::') + 2);
                     return (
                       <div key={key} className="flex items-center gap-2">
                         <Checkbox id={key} checked={true} onCheckedChange={() => toggleDoc(category, title)} />
