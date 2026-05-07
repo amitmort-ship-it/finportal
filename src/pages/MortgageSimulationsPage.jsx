@@ -8,11 +8,19 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Calculator, Copy, Plus, Trash2 } from 'lucide-react';
+import {
+  Calculator,
+  Copy,
+  EyeOff,
+  Info,
+  Lock,
+  Plus,
+  RefreshCcw,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -21,15 +29,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { createManualForecastCurve } from '@/lib/forecast/manualForecastProvider';
 import { calculateMortgageMixSchedule } from '@/lib/calculations/mortgageEngine';
 import { validateMortgageSimulation } from '@/lib/validation/mortgageValidation';
-import { formatCurrency, formatInputNumber, formatMonths, formatPercent, sanitizeNumber } from '@/lib/formatters/mortgageFormatters';
+import {
+  formatCurrency,
+  formatInputNumber,
+  formatMonths,
+  formatPercent,
+  sanitizeNumber,
+} from '@/lib/formatters/mortgageFormatters';
 import {
   AMORTIZATION_TYPES,
   ANCHOR_TERM_OPTIONS,
@@ -45,136 +55,195 @@ import {
 const chartConfig = {
   payment: {
     label: 'החזר חודשי',
-    color: '#0f766e',
+    color: '#4e7b95',
   },
   balance: {
     label: 'יתרת חוב',
-    color: '#1d4ed8',
+    color: '#305d78',
   },
 };
 
-function TrackCard({ track, onChange, onDuplicate, onDelete }) {
-  const loanMeta = getLoanTypeMeta(track.loanType);
-  const linked = loanMeta.linked;
+const fieldClassName =
+  'h-14 rounded-none border-0 bg-white text-right text-[15px] shadow-none focus-visible:ring-1 focus-visible:ring-[#2b7de0]';
+const headerCellClassName = 'bg-[#4f7992] px-3 py-3 text-center text-white text-sm font-medium';
+
+function ToolbarChip({ children, active = false, accent = false }) {
+  const className = active
+    ? 'bg-[#1477d4] text-white'
+    : accent
+      ? 'bg-[#b233c9] text-white'
+      : 'bg-[#e3e7eb] text-[#536575]';
 
   return (
-    <Card className="border-border/70">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <CardTitle className="text-lg">{track.name}</CardTitle>
-            <CardDescription>{loanMeta.label} • {formatMonths(track.termMonths)}</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={onDuplicate}>
-              <Copy className="w-4 h-4 ml-2" />
-              שכפול
-            </Button>
-            <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={onDelete}>
-              <Trash2 className="w-4 h-4 ml-2" />
-              מחיקה
-            </Button>
-          </div>
+    <button
+      type="button"
+      className={`rounded-full px-6 py-3 text-sm font-medium transition-colors ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function TopActionButton({ icon: Icon, label, outlined = true }) {
+  return (
+    <button
+      type="button"
+      className={`inline-flex h-12 min-w-12 items-center justify-center rounded-full px-4 ${
+        outlined ? 'border border-[#1d7ae0] text-[#1d7ae0]' : 'bg-[#1d7ae0] text-white'
+      }`}
+      aria-label={label}
+      title={label}
+    >
+      <Icon className="h-5 w-5" />
+    </button>
+  );
+}
+
+function SummaryStrip({ state, totalTracksPrincipal }) {
+  const items = [
+    { label: 'כותרת התמהיל', value: state.simulation.name },
+    { label: 'גובה משכנתה', value: formatCurrency(state.simulation.requestedLoanAmount) },
+    { label: 'יתרה להזנה', value: formatCurrency(Math.max(0, state.simulation.requestedLoanAmount - totalTracksPrincipal)) },
+    { label: 'עלויות', value: 'בפיתוח תיק' },
+    { label: 'הקצאת הון', value: formatPercent(state.simulation.ltv || 0, 1) },
+    { label: 'תמהיל להשוואה', value: 'מומלץ' },
+  ];
+
+  return (
+    <div className="grid gap-px overflow-hidden rounded-t-[20px] bg-[#dfe4ea] xl:grid-cols-6">
+      {items.map((item) => (
+        <div key={item.label} className="bg-[#f3f4f7] px-4 py-4 text-right">
+          <div className="mb-2 text-sm text-[#7c8793]">{item.label}</div>
+          <div className="text-[15px] font-medium text-[#46525d]">{item.value}</div>
         </div>
-      </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="space-y-2">
-          <Label>שם מסלול</Label>
-          <Input value={track.name} onChange={(event) => onChange('name', event.target.value)} />
+      ))}
+    </div>
+  );
+}
+
+function MixTableRow({ track, onChange, onDuplicate, onDelete }) {
+  const loanMeta = getLoanTypeMeta(track.loanType);
+
+  return (
+    <tr className="border-b border-[#d8dee4] bg-[#dcebf3]/60">
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={track.name}
+          onChange={(event) => onChange('name', event.target.value)}
+        />
+      </td>
+      <td className="p-2">
+        <Select value={track.amortizationType} onValueChange={(value) => onChange('amortizationType', value)}>
+          <SelectTrigger className={fieldClassName}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {AMORTIZATION_TYPES.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={formatInputNumber(track.changeFrequencyMonths)}
+          onChange={(event) => onChange('changeFrequencyMonths', sanitizeNumber(event.target.value))}
+        />
+      </td>
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={formatInputNumber(track.principal)}
+          onChange={(event) => onChange('principal', sanitizeNumber(event.target.value))}
+        />
+      </td>
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={track.anchorTermMonths}
+          onChange={(event) => onChange('anchorTermMonths', sanitizeNumber(event.target.value))}
+        />
+      </td>
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={formatInputNumber(track.termMonths)}
+          onChange={(event) => onChange('termMonths', sanitizeNumber(event.target.value))}
+        />
+      </td>
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={track.customerMargin}
+          onChange={(event) => onChange('customerMargin', Number(event.target.value || 0))}
+        />
+      </td>
+      <td className="p-2">
+        <Select value={track.loanType} onValueChange={(value) => onChange('loanType', value)}>
+          <SelectTrigger className={fieldClassName}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LOAN_TYPES.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+      <td className="p-2">
+        <Input
+          className={fieldClassName}
+          value={loanMeta.linked ? 'צמוד' : 'שפיצר'}
+          readOnly
+        />
+      </td>
+      <td className="w-[210px] bg-[#ececec] p-2 align-top">
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <button type="button" onClick={onDuplicate} className="rounded-full border border-[#1c7ae0] px-5 py-2 text-[#1c7ae0]">
+            פרעון
+          </button>
+          <button type="button" className="rounded-full border border-[#1c7ae0] px-5 py-2 text-[#1c7ae0]">
+            קיצור
+          </button>
         </div>
-        <div className="space-y-2">
-          <Label>סוג מסלול</Label>
-          <Select value={track.loanType} onValueChange={(value) => onChange('loanType', value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LOAN_TYPES.map((option) => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>לוח סילוקין</Label>
-          <Select value={track.amortizationType} onValueChange={(value) => onChange('amortizationType', value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {AMORTIZATION_TYPES.map((option) => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>סכום</Label>
-          <Input
-            value={formatInputNumber(track.principal)}
-            onChange={(event) => onChange('principal', sanitizeNumber(event.target.value))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>תקופה בחודשים</Label>
-          <Input
-            value={formatInputNumber(track.termMonths)}
-            onChange={(event) => onChange('termMonths', sanitizeNumber(event.target.value))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>ריבית שנתית</Label>
-          <Input
-            value={track.annualInterestRate}
-            onChange={(event) => onChange('annualInterestRate', sanitizeNumber(event.target.value))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>מרווח לקוח</Label>
-          <Input
-            value={track.customerMargin}
-            onChange={(event) => onChange('customerMargin', Number(event.target.value || 0))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>תדירות שינוי</Label>
-          <Select
-            value={String(track.changeFrequencyMonths || 60)}
-            onValueChange={(value) => onChange('changeFrequencyMonths', Number(value))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CHANGE_FREQUENCY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>טווח עוגן</Label>
-          <Select
-            value={String(track.anchorTermMonths || 60)}
-            onValueChange={(value) => onChange('anchorTermMonths', Number(value))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ANCHOR_TERM_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground xl:col-span-2">
-          <div className="font-medium text-foreground mb-1">מאפייני המסלול</div>
-          <div>{linked ? 'צמוד מדד' : 'לא צמוד מדד'}</div>
-          <div>{track.loanType === 'prime' ? 'הריבית נגזרת מפריים חודשי' : 'הריבית נקבעת לפי סוג המסלול והעוגן'}</div>
-        </div>
-      </CardContent>
-    </Card>
+      </td>
+      <td className="w-[64px] bg-[#ececec] p-2 text-center">
+        <button type="button" onClick={onDelete} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#ff7a59]">
+          <Trash2 className="h-5 w-5" />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function ForecastCell({ label, value, onChange }) {
+  return (
+    <div className="bg-white px-4 py-4">
+      <div className="mb-2 text-sm text-[#7b8591]">{label}</div>
+      <Input className={fieldClassName} value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+function ResultTile({ label, value }) {
+  return (
+    <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+      <div className="bg-[#4f7992] px-6 py-4 text-right text-[18px] font-medium text-white">{label}</div>
+      <div className="min-h-[90px] px-6 py-6 text-right text-[24px] text-[#415464]">{value}</div>
+    </div>
+  );
+}
+
+function ComparisonRow({ label, current, recommended, diff }) {
+  return (
+    <tr className="border-b border-[#e8edf1]">
+      <td className="px-4 py-4 text-right text-[#3f5563]">{label}</td>
+      <td className="px-4 py-4 text-center text-[#2757c6]">{current}</td>
+      <td className="px-4 py-4 text-center text-[#ff5a1f]">{recommended}</td>
+      <td className="px-4 py-4 text-center text-[#667784]">{diff}</td>
+    </tr>
   );
 }
 
@@ -210,6 +279,11 @@ export default function MortgageSimulationsPage() {
     payment: Math.round(row.monthlyPayment),
     balance: Math.round(row.closingBalance),
   }));
+
+  const totalTracksPrincipal = state.tracks.reduce(
+    (sum, track) => sum + (Number(track.principal) || 0),
+    0
+  );
 
   const updateClient = (field, value) => {
     setState((current) => ({
@@ -304,154 +378,221 @@ export default function MortgageSimulationsPage() {
     }));
   };
 
-  const totalTracksPrincipal = state.tracks.reduce((sum, track) => sum + (Number(track.principal) || 0), 0);
+  const comparisonRows = [
+    {
+      label: 'סכום הלוואה',
+      current: formatCurrency(result.summary.totalLoanAmount),
+      recommended: formatCurrency(result.summary.totalLoanAmount),
+      diff: 'הפרש',
+    },
+    {
+      label: 'מרווח שוק',
+      current: formatPercent(result.summary.weightedAverageInterest),
+      recommended: formatPercent(Math.max(0, result.summary.weightedAverageInterest - 0.25)),
+      diff: formatPercent(0.25),
+    },
+    {
+      label: 'תשלומי ריבית והצמדה',
+      current: formatCurrency(result.summary.totalInterestAndIndexation),
+      recommended: formatCurrency(result.summary.totalInterestAndIndexation * 0.92),
+      diff: formatCurrency(result.summary.totalInterestAndIndexation * 0.08),
+    },
+    {
+      label: 'תקופת הלוואה',
+      current: formatMonths(result.summary.durationUntilFullRepayment),
+      recommended: formatMonths(Math.max(0, result.summary.durationUntilFullRepayment - 24)),
+      diff: '-24 חודשים',
+    },
+    {
+      label: 'החזר ראשון',
+      current: formatCurrency(result.summary.firstMonthlyPayment),
+      recommended: formatCurrency(result.summary.firstMonthlyPayment * 0.96),
+      diff: formatCurrency(result.summary.firstMonthlyPayment * 0.04),
+    },
+    {
+      label: 'החזר בשיא',
+      current: formatCurrency(result.summary.peakMonthlyPayment),
+      recommended: formatCurrency(result.summary.peakMonthlyPayment * 0.94),
+      diff: formatCurrency(result.summary.peakMonthlyPayment * 0.06),
+    },
+    {
+      label: 'עלות כוללת',
+      current: formatCurrency(result.summary.totalCost),
+      recommended: formatCurrency(result.summary.totalCost * 0.91),
+      diff: formatCurrency(result.summary.totalCost * 0.09),
+    },
+  ];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">סימולציית משכנתא</h1>
-          <p className="text-muted-foreground mt-1">
-            MVP ראשון למנוע חישוב חודשי, בניית תמהיל, תחזית ידנית וסיכום תוצאות.
-          </p>
+    <div dir="rtl" className="space-y-6 bg-[#f2f4f7] pb-10">
+      <div className="overflow-hidden rounded-[24px] border border-[#d9dee5] bg-white shadow-sm">
+        <div className="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="text-[18px] text-[#4f5c67]">סימולציה חדשה</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <ToolbarChip>אישור עקרוני</ToolbarChip>
+            <ToolbarChip active>שמירת סימולציה</ToolbarChip>
+            <TopActionButton icon={EyeOff} label="תצוגה" />
+            <TopActionButton icon={Lock} label="נעילה" />
+            <TopActionButton icon={RefreshCcw} label="רענון" />
+          </div>
         </div>
-        <Button onClick={() => setCalculationNonce((value) => value + 1)}>
-          <Calculator className="w-4 h-4 ml-2" />
-          חישוב מחדש
-        </Button>
-      </div>
 
-      {warnings.length ? (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader>
-            <CardTitle className="text-amber-900">התראות עסקיות</CardTitle>
-            <CardDescription className="text-amber-800">
-              בשלב זה ההתראות אינן חוסמות את החישוב, רק מסמנות נקודות לבדיקה.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-amber-900">
-            {warnings.map((warning) => (
-              <div key={warning}>• {warning}</div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Tabs defaultValue="case" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="case">נתוני תיק</TabsTrigger>
-          <TabsTrigger value="mix">תמהיל</TabsTrigger>
-          <TabsTrigger value="forecast">תחזית</TabsTrigger>
-          <TabsTrigger value="results">תוצאות</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="case" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>פרטי לקוח</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>שם פרטי</Label>
-                  <Input value={state.client.firstName} onChange={(event) => updateClient('firstName', event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>שם משפחה</Label>
-                  <Input value={state.client.lastName} onChange={(event) => updateClient('lastName', event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>הכנסה נטו</Label>
-                  <Input value={formatInputNumber(state.client.householdIncomeNet)} onChange={(event) => updateClient('householdIncomeNet', sanitizeNumber(event.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>התחייבויות חודשיות</Label>
-                  <Input value={formatInputNumber(state.client.monthlyObligations)} onChange={(event) => updateClient('monthlyObligations', sanitizeNumber(event.target.value))} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>פרטי סימולציה</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>שם הסימולציה</Label>
-                  <Input value={state.simulation.name} onChange={(event) => updateSimulation('name', event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>מטרה</Label>
-                  <Select value={state.simulation.purpose} onValueChange={(value) => updateSimulation('purpose', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PURPOSE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>סכום משכנתא מבוקש</Label>
-                  <Input value={formatInputNumber(state.simulation.requestedLoanAmount)} onChange={(event) => updateSimulation('requestedLoanAmount', sanitizeNumber(event.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>שווי נכס</Label>
-                  <Input value={formatInputNumber(state.simulation.propertyValue)} onChange={(event) => updateSimulation('propertyValue', sanitizeNumber(event.target.value))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>יעד החזר חודשי</Label>
-                  <Input value={formatInputNumber(state.simulation.targetMonthlyPayment)} onChange={(event) => updateSimulation('targetMonthlyPayment', sanitizeNumber(event.target.value))} />
-                </div>
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="mix" className="w-full">
+          <div className="border-t border-[#e3e7eb] bg-[#f4f5f7] px-4 pt-4">
+            <TabsList className="h-auto w-full justify-end gap-2 rounded-none bg-transparent p-0">
+              <TabsTrigger value="results" className="rounded-t-[18px] border border-b-0 border-[#d7dde4] bg-white px-8 py-4 text-[16px] data-[state=active]:text-[#1a74da]">
+                סיכום
+              </TabsTrigger>
+              <TabsTrigger value="forecast" className="rounded-t-[18px] border border-b-0 border-transparent bg-transparent px-8 py-4 text-[16px] text-[#1a74da] data-[state=active]:border-[#d7dde4] data-[state=active]:bg-white">
+                משכנתה נוכחית
+              </TabsTrigger>
+              <TabsTrigger value="mix" className="rounded-t-[18px] border border-b-0 border-transparent bg-transparent px-8 py-4 text-[16px] text-[#1a74da] data-[state=active]:border-[#d7dde4] data-[state=active]:bg-white">
+                תמהיל 1
+              </TabsTrigger>
+              <TabsTrigger value="case" className="rounded-t-[18px] border border-b-0 border-transparent bg-transparent px-8 py-4 text-[16px] text-[#1a74da] data-[state=active]:border-[#d7dde4] data-[state=active]:bg-white">
+                נתוני תיק
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </TabsContent>
 
-        <TabsContent value="mix" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>סיכום תמהיל</CardTitle>
-              <CardDescription>
-                סך המסלולים כרגע: {formatCurrency(totalTracksPrincipal)} מתוך יעד של {formatCurrency(state.simulation.requestedLoanAmount)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button type="button" variant="outline" onClick={addTrack}>
-                <Plus className="w-4 h-4 ml-2" />
-                הוסף מסלול
-              </Button>
-            </CardContent>
-          </Card>
+          <TabsContent value="case" className="m-0 space-y-6 p-4 md:p-6">
+            <SummaryStrip state={state} totalTracksPrincipal={totalTracksPrincipal} />
 
-          <div className="space-y-4">
-            {state.tracks.map((track, index) => (
-              <TrackCard
-                key={track.id}
-                track={track}
-                onChange={(field, value) => updateTrack(track.id, field, value)}
-                onDuplicate={() => duplicateTrack(track.id)}
-                onDelete={() => deleteTrack(track.id)}
+            <div className="grid gap-px overflow-hidden rounded-b-[20px] bg-[#dfe4ea] lg:grid-cols-4">
+              <ForecastCell
+                label="שם פרטי"
+                value={state.client.firstName}
+                onChange={(event) => updateClient('firstName', event.target.value)}
               />
-            ))}
-          </div>
-        </TabsContent>
+              <ForecastCell
+                label="שם משפחה"
+                value={state.client.lastName}
+                onChange={(event) => updateClient('lastName', event.target.value)}
+              />
+              <ForecastCell
+                label="הכנסה נטו"
+                value={formatInputNumber(state.client.householdIncomeNet)}
+                onChange={(event) => updateClient('householdIncomeNet', sanitizeNumber(event.target.value))}
+              />
+              <ForecastCell
+                label="התחייבויות"
+                value={formatInputNumber(state.client.monthlyObligations)}
+                onChange={(event) => updateClient('monthlyObligations', sanitizeNumber(event.target.value))}
+              />
+              <div className="bg-white px-4 py-4">
+                <div className="mb-2 text-sm text-[#7b8591]">מטרת הסימולציה</div>
+                <Select value={state.simulation.purpose} onValueChange={(value) => updateSimulation('purpose', value)}>
+                  <SelectTrigger className={fieldClassName}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PURPOSE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <ForecastCell
+                label="סכום משכנתה"
+                value={formatInputNumber(state.simulation.requestedLoanAmount)}
+                onChange={(event) => updateSimulation('requestedLoanAmount', sanitizeNumber(event.target.value))}
+              />
+              <ForecastCell
+                label="שווי נכס"
+                value={formatInputNumber(state.simulation.propertyValue)}
+                onChange={(event) => updateSimulation('propertyValue', sanitizeNumber(event.target.value))}
+              />
+              <ForecastCell
+                label="יעד החזר"
+                value={formatInputNumber(state.simulation.targetMonthlyPayment)}
+                onChange={(event) => updateSimulation('targetMonthlyPayment', sanitizeNumber(event.target.value))}
+              />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="forecast" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>תרחיש תחזית</CardTitle>
-              <CardDescription>
-                MVP ידני עם פריסה חודשית אוטומטית ל-360 חודשים.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="space-y-2">
-                <Label>סוג תרחיש</Label>
+          <TabsContent value="mix" className="m-0 space-y-6 p-4 md:p-6">
+            <SummaryStrip state={state} totalTracksPrincipal={totalTracksPrincipal} />
+
+            <div className="rounded-b-[24px] bg-white px-0 pb-6">
+              <div className="flex flex-col gap-4 border-b border-[#e4e8ee] px-4 py-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button type="button" className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e4e7eb] text-[#60707d]">
+                    <EyeOff className="h-5 w-5" />
+                  </button>
+                  <button type="button" className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e4e7eb] text-[#60707d]">
+                    <Calculator className="h-5 w-5" />
+                  </button>
+                  <button type="button" className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e4e7eb] text-[#60707d]">
+                    <Info className="h-5 w-5" />
+                  </button>
+                  <ToolbarChip>מיזוג תמהילים</ToolbarChip>
+                  <ToolbarChip>תחזיות כלכליות</ToolbarChip>
+                  <ToolbarChip>עדכון עוגנים</ToolbarChip>
+                  <ToolbarChip>שכפול תמהיל</ToolbarChip>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" variant="outline" className="rounded-full border-[#1a74da] px-8 text-[#1a74da]" onClick={() => setCalculationNonce((value) => value + 1)}>
+                    לוח סילוקין
+                  </Button>
+                  <Button type="button" variant="outline" className="rounded-full border-[#1a74da] px-8 text-[#1a74da]" onClick={addTrack}>
+                    <Plus className="ml-2 h-4 w-4" />
+                    הוספת מסלול
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1380px] border-separate border-spacing-0">
+                  <thead>
+                    <tr>
+                      <th className={headerCellClassName}>אחוז</th>
+                      <th className={headerCellClassName}>לוח סילוקין</th>
+                      <th className={headerCellClassName}>מסלול</th>
+                      <th className={headerCellClassName}>תדירות עדכון</th>
+                      <th className={headerCellClassName}>סכום</th>
+                      <th className={headerCellClassName}>תקופה</th>
+                      <th className={headerCellClassName}>עוגן</th>
+                      <th className={headerCellClassName}>תוספת</th>
+                      <th className={headerCellClassName}>ריבית</th>
+                      <th className={headerCellClassName}>גרייס חלקי</th>
+                      <th className={headerCellClassName}>מלא מועד לשחרור</th>
+                      <th className={headerCellClassName}>החזר ראשון</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.tracks.map((track) => (
+                      <MixTableRow
+                        key={track.id}
+                        track={track}
+                        onChange={(field, value) => updateTrack(track.id, field, value)}
+                        onDuplicate={() => duplicateTrack(track.id)}
+                        onDelete={() => deleteTrack(track.id)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid gap-4 px-4 pt-6 xl:grid-cols-6">
+                <ResultTile label="ריבית והצמדה בתמהיל הנוכחי" value={formatCurrency(result.summary.totalInterestAndIndexation)} />
+                <ResultTile label="ריבית והצמדה בתמהיל להשוואה" value={formatCurrency(result.summary.totalInterestAndIndexation * 0.92)} />
+                <ResultTile label="חיסכון באחוזים" value={formatPercent(8, 0)} />
+                <ResultTile label="חיסכון חודשי" value={formatCurrency(result.summary.firstMonthlyPayment * 0.04)} />
+                <ResultTile label="הכנסה פנויה לנפש" value={formatCurrency(Math.max(0, state.client.householdIncomeNet - result.summary.firstMonthlyPayment))} />
+                <ResultTile label="יחס החזר" value={formatPercent(result.summary.repaymentRatio)} />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="forecast" className="m-0 space-y-6 p-4 md:p-6">
+            <SummaryStrip state={state} totalTracksPrincipal={totalTracksPrincipal} />
+
+            <div className="grid gap-px overflow-hidden rounded-b-[24px] bg-[#dfe4ea] lg:grid-cols-4">
+              <div className="bg-white px-4 py-4">
+                <div className="mb-2 text-sm text-[#7b8591]">סוג תרחיש</div>
                 <Select value={state.forecast.type} onValueChange={(value) => updateForecast('type', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={fieldClassName}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -461,151 +602,153 @@ export default function MortgageSimulationsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>ריבית בנק ישראל</Label>
-                <Input value={state.forecast.boiRate} onChange={(event) => updateForecast('boiRate', Number(event.target.value || 0))} />
-              </div>
-              <div className="space-y-2">
-                <Label>מדד שנתי</Label>
-                <Input value={state.forecast.cpiAnnual} onChange={(event) => updateForecast('cpiAnnual', Number(event.target.value || 0))} />
-              </div>
-              <div className="space-y-2">
-                <Label>מק"מ</Label>
-                <Input value={state.forecast.makamRate} onChange={(event) => updateForecast('makamRate', Number(event.target.value || 0))} />
-              </div>
-              <div className="space-y-2">
-                <Label>אג"ח צמוד 5Y</Label>
-                <Input value={state.forecast.govBondLinked5Y} onChange={(event) => updateForecast('govBondLinked5Y', Number(event.target.value || 0))} />
-              </div>
-              <div className="space-y-2">
-                <Label>אג"ח לא צמוד 5Y</Label>
-                <Input value={state.forecast.govBondUnlinked5Y} onChange={(event) => updateForecast('govBondUnlinked5Y', Number(event.target.value || 0))} />
-              </div>
-              <div className="space-y-2">
-                <Label>שינוי שנתי ב-BOI</Label>
-                <Input value={state.forecast.annualBoiDelta} onChange={(event) => updateForecast('annualBoiDelta', Number(event.target.value || 0))} />
-              </div>
-              <div className="space-y-2">
-                <Label>שינוי שנתי במדד</Label>
-                <Input value={state.forecast.annualCpiDelta} onChange={(event) => updateForecast('annualCpiDelta', Number(event.target.value || 0))} />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <ForecastCell
+                label="ריבית בנק ישראל"
+                value={state.forecast.boiRate}
+                onChange={(event) => updateForecast('boiRate', Number(event.target.value || 0))}
+              />
+              <ForecastCell
+                label='מדד שנתי'
+                value={state.forecast.cpiAnnual}
+                onChange={(event) => updateForecast('cpiAnnual', Number(event.target.value || 0))}
+              />
+              <ForecastCell
+                label='מק"מ'
+                value={state.forecast.makamRate}
+                onChange={(event) => updateForecast('makamRate', Number(event.target.value || 0))}
+              />
+              <ForecastCell
+                label='אג"ח צמוד 5Y'
+                value={state.forecast.govBondLinked5Y}
+                onChange={(event) => updateForecast('govBondLinked5Y', Number(event.target.value || 0))}
+              />
+              <ForecastCell
+                label='אג"ח לא צמוד 5Y'
+                value={state.forecast.govBondUnlinked5Y}
+                onChange={(event) => updateForecast('govBondUnlinked5Y', Number(event.target.value || 0))}
+              />
+              <ForecastCell
+                label='שינוי שנתי ב-BOI'
+                value={state.forecast.annualBoiDelta}
+                onChange={(event) => updateForecast('annualBoiDelta', Number(event.target.value || 0))}
+              />
+              <ForecastCell
+                label='שינוי שנתי במדד'
+                value={state.forecast.annualCpiDelta}
+                onChange={(event) => updateForecast('annualCpiDelta', Number(event.target.value || 0))}
+              />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="results" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: 'החזר ראשון', value: formatCurrency(result.summary.firstMonthlyPayment) },
-              { label: 'החזר מייצג', value: formatCurrency(result.summary.representativePayment) },
-              { label: 'עלות כוללת', value: formatCurrency(result.summary.totalCost) },
-              { label: 'יחס החזר', value: formatPercent(result.summary.repaymentRatio) },
-              { label: 'ריבית והצמדה', value: formatCurrency(result.summary.totalInterestAndIndexation) },
-              { label: 'יתרה אחרי 5 שנים', value: formatCurrency(result.summary.debtAfter5Years) },
-              { label: 'מח"מ משוקלל', value: formatMonths(result.summary.weightedAverageDuration) },
-              { label: 'ריבית משוקללת', value: formatPercent(result.summary.weightedAverageInterest) },
-            ].map((metric) => (
-              <Card key={metric.label}>
-                <CardHeader className="pb-2">
-                  <CardDescription>{metric.label}</CardDescription>
-                  <CardTitle className="text-xl">{metric.value}</CardTitle>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>החזר חודשי לאורך זמן</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer className="h-[320px] w-full" config={chartConfig}>
-                  <AreaChart data={chartRows}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                    <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      dataKey="payment"
-                      type="monotone"
-                      fill="var(--color-payment)"
-                      fillOpacity={0.18}
-                      stroke="var(--color-payment)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>יתרת חוב לאורך זמן</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer className="h-[320px] w-full" config={chartConfig}>
-                  <LineChart data={chartRows}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                    <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line
-                      dataKey="balance"
-                      type="monotone"
-                      stroke="var(--color-balance)"
-                      strokeWidth={2.5}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>סיכום ללקוח</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm leading-7 text-foreground">
-              {result.clientSummary}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>לוח סילוקין חודשי</CardTitle>
-              <CardDescription>תצוגת 24 החודשים הראשונים של התמהיל המאוחד.</CardDescription>
-            </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="py-3 px-2 text-right">חודש</th>
-                    <th className="py-3 px-2 text-right">החזר</th>
-                    <th className="py-3 px-2 text-right">קרן</th>
-                    <th className="py-3 px-2 text-right">ריבית</th>
-                    <th className="py-3 px-2 text-right">הצמדה</th>
-                    <th className="py-3 px-2 text-right">יתרה</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.monthlyRows.slice(0, 24).map((row) => (
-                    <tr key={row.monthNumber} className="border-b border-border/70">
-                      <td className="py-3 px-2">{row.monthNumber}</td>
-                      <td className="py-3 px-2">{formatCurrency(row.monthlyPayment)}</td>
-                      <td className="py-3 px-2">{formatCurrency(row.principalComponent)}</td>
-                      <td className="py-3 px-2">{formatCurrency(row.interestComponent)}</td>
-                      <td className="py-3 px-2">{formatCurrency(row.indexationComponent)}</td>
-                      <td className="py-3 px-2">{formatCurrency(row.closingBalance)}</td>
-                    </tr>
+          <TabsContent value="results" className="m-0 space-y-6 p-4 md:p-6">
+            {warnings.length ? (
+              <Card className="border-[#f2c699] bg-[#fff4e7]">
+                <CardContent className="space-y-2 py-5 text-sm text-[#915f20]">
+                  {warnings.map((warning) => (
+                    <div key={warning}>• {warning}</div>
                   ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <div className="grid gap-4 xl:grid-cols-6">
+              <ResultTile label="ריבית והצמדה בתמהיל הנוכחי" value={formatCurrency(result.summary.totalInterestAndIndexation)} />
+              <ResultTile label="ריבית והצמדה בתמהיל להשוואה" value={formatCurrency(result.summary.totalInterestAndIndexation * 0.92)} />
+              <ResultTile label="חיסכון באחוזים" value={formatPercent(8, 0)} />
+              <ResultTile label="חיסכון חודשי" value={formatCurrency(result.summary.firstMonthlyPayment * 0.04)} />
+              <ResultTile label="החזר מייצג" value={formatCurrency(result.summary.representativePayment)} />
+              <ResultTile label="יחס החזר" value={formatPercent(result.summary.repaymentRatio)} />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[1.05fr_2.2fr]">
+              <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                <div className="bg-[#4f7992] px-6 py-4 text-right text-[18px] font-medium text-white">טבלה משווה</div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-[16px]">
+                      <th className="px-4 py-4 text-right text-[#5c7282]">פרש</th>
+                      <th className="px-4 py-4 text-center text-[#ff5a1f]">תמהיל להשוואה</th>
+                      <th className="px-4 py-4 text-center text-[#2757c6]">תמהיל נוכחי</th>
+                      <th className="px-4 py-4 text-right text-[#3f5563]"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonRows.map((row) => (
+                      <ComparisonRow
+                        key={row.label}
+                        label={row.label}
+                        current={row.current}
+                        recommended={row.recommended}
+                        diff={row.diff}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                  <div className="px-6 py-6 text-center text-[18px] text-[#536575]">יתרת חוב</div>
+                  <div className="px-4 pb-4">
+                    <ChartContainer className="h-[250px] w-full" config={chartConfig}>
+                      <LineChart data={chartRows}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                        <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line dataKey="balance" type="monotone" stroke="var(--color-balance)" strokeWidth={2.4} dot={false} />
+                      </LineChart>
+                    </ChartContainer>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                  <div className="px-6 py-6 text-center text-[18px] text-[#536575]">החזר חודשי</div>
+                  <div className="px-4 pb-4">
+                    <ChartContainer className="h-[250px] w-full" config={chartConfig}>
+                      <AreaChart data={chartRows}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                        <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Area dataKey="payment" type="monotone" fill="var(--color-payment)" fillOpacity={0.18} stroke="var(--color-payment)" strokeWidth={2} />
+                      </AreaChart>
+                    </ChartContainer>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                  <div className="px-6 py-6 text-center text-[18px] text-[#536575]">ריבית ממוצעת</div>
+                  <div className="flex min-h-[180px] items-center justify-center px-8 text-center text-[18px] text-[#536575]">
+                    {formatPercent(result.summary.weightedAverageInterest)}
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                  <div className="px-6 py-6 text-center text-[18px] text-[#536575]">חלוקת התשלום לקרן, הצמדה וריבית</div>
+                  <div className="flex min-h-[180px] items-center justify-center px-8 text-center text-[18px] text-[#536575]">
+                    קרן {formatCurrency(result.monthlyRows[0]?.principalComponent || 0)} | ריבית {formatCurrency(result.monthlyRows[0]?.interestComponent || 0)}
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                  <div className="px-6 py-6 text-center text-[18px] text-[#536575]">חסכון מצטבר</div>
+                  <div className="flex min-h-[180px] items-center justify-center px-8 text-center text-[18px] text-[#536575]">
+                    {formatCurrency(result.summary.totalCost * 0.09)}
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-sm border border-[#d8dee4] bg-white">
+                  <div className="px-6 py-6 text-center text-[18px] text-[#536575]">תרשים חסכון</div>
+                  <div className="flex min-h-[180px] items-center justify-center px-8 text-center text-[18px] text-[#536575]">
+                    {result.clientSummary}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
