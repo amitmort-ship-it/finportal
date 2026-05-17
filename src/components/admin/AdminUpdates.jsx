@@ -366,7 +366,14 @@ export default function AdminUpdates({ selectedClient }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction onClick={handleSend} className="bg-primary hover:bg-primary/90">
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                setConfirmOpen(false);
+                handleSend();
+              }}
+              className="bg-primary hover:bg-primary/90"
+            >
               אני מאשר/ת – שלח
             </AlertDialogAction>
             <AlertDialogCancel>ביטול</AlertDialogCancel>
