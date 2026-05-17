@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Bell, FileUp, LogIn, Trash2 } from 'lucide-react';
+import { Bell, FileUp, LogIn, UserPlus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -75,6 +75,7 @@ function buildLoginNotificationsFromProfiles(profiles) {
 
 function getNotificationIcon(type) {
   if (type === 'login') return LogIn;
+  if (type === 'registered') return UserPlus;
   if (type === 'file_upload') return FileUp;
   return Bell;
 }
@@ -87,6 +88,16 @@ function getNotificationStyles(type) {
       icon: 'text-sky-700 dark:text-sky-300',
       badge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
       label: 'כניסה למערכת',
+    };
+  }
+
+  if (type === 'registered') {
+    return {
+      card: 'border-violet-200 bg-violet-50/80 dark:border-violet-900/40 dark:bg-violet-950/25',
+      iconWrap: 'bg-violet-100 dark:bg-violet-950/40',
+      icon: 'text-violet-700 dark:text-violet-300',
+      badge: 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300',
+      label: 'הרשמה ראשונה',
     };
   }
 
@@ -126,9 +137,19 @@ export default function AdminNotifications({ selectedClient }) {
 
       const loginNotifications = buildLoginNotificationsFromProfiles(profiles);
 
+      const adminEventNotifications = (updates || [])
+        .filter((u) => String(u?.client_email || '') === '__admin__' && EVENT_TYPE_REGEX.test(String(u?.message || '')))
+        .map(parseNotification);
+
       const fileUploadNotifications = buildFileUploadNotifications(fileRequests);
 
-      const merged = [...fileUploadNotifications, ...loginNotifications]
+      // adminEventNotifications already cover login/registered — skip profile-based duplicates
+      const adminEventClientEmails = new Set(adminEventNotifications.map((n) => n.clientEmail));
+      const filteredLoginNotifications = loginNotifications.filter(
+        (n) => !adminEventClientEmails.has(n.clientEmail),
+      );
+
+      const merged = [...adminEventNotifications, ...fileUploadNotifications, ...filteredLoginNotifications]
         .filter((item) => !selectedClient || item.clientEmail === selectedClient)
         .sort((a, b) => {
           const aDate = new Date(a.createdAt || 0).getTime();

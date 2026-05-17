@@ -1,9 +1,9 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
 }
 
 Deno.serve(async (req) => {
@@ -16,27 +16,9 @@ Deno.serve(async (req) => {
     }
 
     const currentEmail = normalizeEmail(currentUser.email);
-    let caseProfile = null;
 
     const directProfiles = await base44.asServiceRole.entities.ClientProfile.filter({ email: currentEmail });
-    if (directProfiles.length > 0) {
-      caseProfile = directProfiles[0];
-    } else {
-      const memberships = await base44.asServiceRole.entities.CaseUser.filter({
-        user_email: currentEmail,
-        status: 'active',
-      });
-
-      if (memberships.length > 0) {
-        const caseProfiles = await base44.asServiceRole.entities.ClientProfile.filter({
-          id: memberships[0].case_profile_id,
-        });
-
-        if (caseProfiles.length > 0) {
-          caseProfile = caseProfiles[0];
-        }
-      }
-    }
+    let caseProfile = directProfiles.length > 0 ? directProfiles[0] : null;
 
     if (!caseProfile?.email) {
       return Response.json({ error: 'Case profile not found for current user' }, { status: 404 });
@@ -46,20 +28,29 @@ Deno.serve(async (req) => {
     const caseLabel = caseProfile.full_name || caseProfile.email;
     const now = new Date().toISOString();
 
+    // Detect first login (registration) — if last_login_at was never set
+    const isFirstLogin = !caseProfile.last_login_at;
+
     await base44.asServiceRole.entities.ClientProfile.update(caseProfile.id, {
       last_login_at: now,
       last_login_user_email: currentEmail,
       last_login_user_name: displayName,
     });
 
+    const eventType = isFirstLogin ? 'registered' : 'login';
+    const messageText = isFirstLogin
+      ? `${displayName} נרשם/ה לראשונה לאיזור האישי עבור תיק ${caseLabel}`
+      : `${displayName} נכנס/ה לאיזור האישי עבור תיק ${caseLabel}`;
+
     const notification = await base44.asServiceRole.entities.ClientUpdate.create({
       client_email: ADMIN_NOTIFICATIONS_EMAIL,
-      message: `[[admin_event:login]][[client:${normalizeEmail(caseProfile.email)}]] ${displayName} נכנס/ה למערכת עבור תיק ${caseLabel}`,
+      message: `[[admin_event:${eventType}]][[client:${normalizeEmail(caseProfile.email)}]] ${messageText}`,
     });
 
     return Response.json({
       success: true,
       notification,
+      isFirstLogin,
       client_email: normalizeEmail(caseProfile.email),
     });
   } catch (error) {
