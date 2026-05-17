@@ -274,6 +274,19 @@ export default function AdminViewDocuments({ selectedClient }) {
     );
   }
 
+  const CATEGORIES = ['לווה 1', 'לווה 2', 'משותף'];
+  const CATEGORY_STYLES = {
+    'לווה 1': { color: 'border-blue-200 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/10', headerColor: 'text-blue-700 dark:text-blue-300', badgeBg: 'bg-blue-100 text-blue-700' },
+    'לווה 2': { color: 'border-purple-200 bg-purple-50/40 dark:border-purple-900/40 dark:bg-purple-950/10', headerColor: 'text-purple-700 dark:text-purple-300', badgeBg: 'bg-purple-100 text-purple-700' },
+    'משותף': { color: 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-950/10', headerColor: 'text-emerald-700 dark:text-emerald-300', badgeBg: 'bg-emerald-100 text-emerald-700' },
+  };
+
+  const grouped = CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = requests.filter(r => r.category === cat);
+    return acc;
+  }, {});
+  const uncategorized = requests.filter(r => !r.category);
+
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
@@ -358,12 +371,16 @@ export default function AdminViewDocuments({ selectedClient }) {
 
                 <div>
                   <Label>קטגוריה</Label>
-                  <Input
-                    value={form.category}
-                    onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                    placeholder="אופציונלי"
-                    className="mt-1"
-                  />
+                  <Select value={form.category} onValueChange={(value) => setForm((prev) => ({ ...prev, category: value }))}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="בחר קטגוריה" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -434,111 +451,104 @@ export default function AdminViewDocuments({ selectedClient }) {
           אין בקשות מסמכים
         </div>
       ) : (
-        <div className="space-y-4">
-          {requests.map((req) => {
-            const parsedContent = splitDescriptionAndReviewNotes(req);
-            return (
-              <div key={req.id} className="bg-card rounded-xl border border-border p-4">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div>
-                    <div className="font-semibold">{req.title}</div>
-                    <div className="text-sm text-muted-foreground">{req.client_email}</div>
-                    {parsedContent.description ? (
-                      <div className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{parsedContent.description}</div>
-                    ) : null}
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                      req.status === 'uploaded'
-                        ? 'bg-blue-50 text-blue-600'
-                        : req.status === 'approved'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : req.status === 'rejected'
-                            ? 'bg-red-50 text-red-600'
-                            : 'bg-amber-50 text-amber-600'
-                    }`}
-                  >
-                    {req.status === 'pending'
-                      ? 'ממתין'
-                      : req.status === 'uploaded'
-                        ? 'התקבל וממתין לבדיקה'
-                        : req.status === 'approved'
-                          ? 'אושר כתקין'
-                          : 'נדרש תיקון / מסמך חדש'}
-                  </span>
-                </div>
-
-                {req.uploaded_files && req.uploaded_files.length > 0 ? (
-                  <div className="space-y-2">
-                    {req.uploaded_files.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50">
-                        <Download className="w-4 h-4 text-primary shrink-0" />
-                        <a
-                          href={file.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-primary hover:underline flex-1"
-                        >
-                          {file.file_name}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="mt-4 space-y-2">
-                  <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
-                    הערה פנימית / הערה ללקוח
-                  </Label>
-                  <Textarea
-                    id={`admin-view-note-${req.id}`}
-                    value={reviewNotes[req.id] || ''}
-                    onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                    placeholder="למשל: חסר ספח, התמונה מטושטשת, נא להעלות מחדש צילום ברור..."
-                    className="min-h-24"
-                  />
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2">
-                      <Save className="w-4 h-4" />
-                      שמור הערה
-                    </Button>
-
-                    {req.status === 'uploaded' || req.status === 'rejected' ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => handleStatusUpdate(req.id, 'approved')}
-                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        אשר כתקין
-                      </Button>
-                    ) : null}
-
-                    {req.status === 'uploaded' || req.status === 'approved' ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleStatusUpdate(req.id, 'rejected')}
-                        className="gap-2"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        סמן כלא תקין
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  {parsedContent.reviewNotes ? (
-                    <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
-                      <span className="font-medium text-foreground">הערת בדיקה:</span> {parsedContent.reviewNotes}
-                    </div>
-                  ) : null}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {CATEGORIES.map(cat => (
+            <div key={cat} className={`rounded-xl border ${CATEGORY_STYLES[cat].color} flex flex-col`}>
+              <div className={`px-4 py-3 rounded-t-xl font-bold text-sm ${CATEGORY_STYLES[cat].headerColor} border-b border-current/10 flex items-center justify-between`}>
+                <span>{cat}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_STYLES[cat].badgeBg}`}>{grouped[cat]?.length || 0}</span>
               </div>
-            );
-          })}
+              <div className="p-3 space-y-3 flex-1">
+                {grouped[cat]?.length === 0 ? (
+                  <div className="text-center py-6 text-xs text-muted-foreground">אין בקשות בקטגוריה זו</div>
+                ) : grouped[cat]?.map((req) => {
+                  const parsedContent = splitDescriptionAndReviewNotes(req);
+                  return (
+                    <div key={req.id} className="bg-white dark:bg-card rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium text-sm leading-snug">{req.title}</h3>
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
+                          req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
+                          req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                          req.status === 'rejected' ? 'bg-red-50 text-red-600' :
+                          'bg-amber-50 text-amber-600'
+                        }`}>
+                          {req.status === 'pending' ? 'ממתין' :
+                           req.status === 'uploaded' ? 'בדיקה' :
+                           req.status === 'approved' ? 'אושר' :
+                           'תיקון'}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">{req.client_email}</div>
+
+                      {req.uploaded_files && req.uploaded_files.length > 0 ? (
+                        <div className="space-y-1">
+                          {req.uploaded_files.map((file, idx) => (
+                            <a
+                              key={idx}
+                              href={file.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 p-1.5 rounded bg-muted/50 hover:bg-muted text-xs text-primary hover:underline transition-colors"
+                            >
+                              <Download className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{file.file_name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-2 pt-2 border-t border-border">
+                        <Label htmlFor={`admin-view-note-${req.id}`} className="text-xs text-muted-foreground">
+                          הערה
+                        </Label>
+                        <Textarea
+                          id={`admin-view-note-${req.id}`}
+                          value={reviewNotes[req.id] || ''}
+                          onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                          placeholder="הערה..."
+                          className="min-h-16 text-xs"
+                        />
+
+                        <div className="flex flex-col gap-1.5">
+                          <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2 w-full text-xs h-8">
+                            <Save className="w-3 h-3" />
+                            שמור
+                          </Button>
+
+                          {req.status === 'uploaded' || req.status === 'rejected' ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleStatusUpdate(req.id, 'approved')}
+                              className="gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-xs h-8"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              אשר
+                            </Button>
+                          ) : null}
+
+                          {req.status === 'uploaded' || req.status === 'approved' ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleStatusUpdate(req.id, 'rejected')}
+                              className="gap-2 w-full text-xs h-8"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              דחה
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
