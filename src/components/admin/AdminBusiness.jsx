@@ -253,6 +253,7 @@ export default function AdminBusiness() {
   const [dealSearch, setDealSearch] = useState('');
   const [dealSortBy, setDealSortBy] = useState('default');
   const [dealSortDirection, setDealSortDirection] = useState('asc');
+  const [hidePaidDeals, setHidePaidDeals] = useState(true);
   const [editingDealId, setEditingDealId] = useState(null);
   const [editDealClient, setEditDealClient] = useState('');
   const [editDealTotal, setEditDealTotal] = useState('');
@@ -929,6 +930,7 @@ export default function AdminBusiness() {
   const filteredDeals = useMemo(() => {
     const filtered = dealLog.filter((deal) => {
       const status = getDealStatus(deal);
+      if (hidePaidDeals && status === 'שולם מלא') return false;
       const matchesBucket = dealBucketFilter === 'all' || deal.bucket === dealBucketFilter;
       const matchesCategory = dealCategoryFilter === 'all' || (deal.category || 'משכנתאות') === dealCategoryFilter;
       const matchesStatus = dealStatusFilter === 'all' || status === dealStatusFilter;
@@ -1232,6 +1234,16 @@ export default function AdminBusiness() {
             <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleExportDeals} disabled={dealLog.length === 0}>
               <Download className="w-4 h-4" />
               ייצוא אקסל
+            </Button>
+            <Button
+              type="button"
+              variant={hidePaidDeals ? 'secondary' : 'outline'}
+              size="sm"
+              className="gap-2"
+              onClick={() => setHidePaidDeals((v) => !v)}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {hidePaidDeals ? `הצג שולם מלא (${paidDealsCount})` : 'הסתר שולם מלא'}
             </Button>
           </div>
         </div>
