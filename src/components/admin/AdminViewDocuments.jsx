@@ -79,6 +79,7 @@ export default function AdminViewDocuments({ selectedClient }) {
   const [requestDocsOpen, setRequestDocsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [reviewNotes, setReviewNotes] = useState({});
+  const [editingTitles, setEditingTitles] = useState({});
   const [form, setForm] = useState({
     client_email: '',
     title: '',
@@ -252,6 +253,14 @@ export default function AdminViewDocuments({ selectedClient }) {
 
     applyRequestUpdateLocally(updatedRequest);
     toast.success('סטטוס המסמך עודכן');
+  };
+
+  const handleSaveTitle = async (id) => {
+    const newTitle = editingTitles[id];
+    if (!newTitle?.trim()) return;
+    await base44.entities.FileRequest.update(id, { title: newTitle.trim() });
+    applyRequestUpdateLocally({ id, title: newTitle.trim() });
+    toast.success('השם עודכן');
   };
 
   const handleSaveNotes = async (id) => {
@@ -466,7 +475,23 @@ export default function AdminViewDocuments({ selectedClient }) {
                   return (
                     <div key={req.id} className="bg-white dark:bg-card rounded-lg border border-border p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-sm leading-snug">{req.title}</h3>
+                        {editingTitles[req.id] !== undefined ? (
+                          <div className="flex items-center gap-1 flex-1">
+                            <Input
+                              value={editingTitles[req.id]}
+                              onChange={(e) => setEditingTitles((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                              className="h-7 text-xs"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveTitle(req.id);
+                                if (e.key === 'Escape') setEditingTitles((prev) => { const n = {...prev}; delete n[req.id]; return n; });
+                              }}
+                              autoFocus
+                            />
+                            <Button type="button" size="sm" variant="ghost" className="h-7 px-1 text-xs" onClick={() => handleSaveTitle(req.id)}><Save className="w-3 h-3" /></Button>
+                          </div>
+                        ) : (
+                          <h3 className="font-medium text-sm leading-snug cursor-pointer hover:text-primary" onClick={() => setEditingTitles((prev) => ({ ...prev, [req.id]: req.title }))}>{req.title}</h3>
+                        )}
                         <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
                           req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' :
                           req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
@@ -479,6 +504,7 @@ export default function AdminViewDocuments({ selectedClient }) {
                            'תיקון'}
                         </span>
                       </div>
+
 
                       <div className="text-xs text-muted-foreground">{req.client_email}</div>
 
