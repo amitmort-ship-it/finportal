@@ -2,10 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, Trash2 } from 'lucide-react';
+import { MessageSquare, Send, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
 const EVENT_TYPE_REGEX = /\[\[admin_event:([a-z_]+)\]\]/i;
@@ -108,6 +118,7 @@ export default function AdminUpdates({ selectedClient }) {
   const normalizedSelectedClient = String(selectedClient || '').trim().toLowerCase();
   const [client, setClient] = useState(normalizedSelectedClient === '_all' ? 'all' : normalizedSelectedClient || '');
   const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -329,12 +340,39 @@ export default function AdminUpdates({ selectedClient }) {
             placeholder="כתוב עדכון עבור הלקוח..."
             className="mb-3 min-h-24"
           />
-          <Button type="button" onClick={handleSend} disabled={!message.trim() || sending} className="gap-2">
+          <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!message.trim() || sending} className="gap-2">
             <Send className="w-4 h-4" />
             {sending ? 'שולח...' : 'שלח עדכון'}
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              אישור שליחת עדכון
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-2">
+              <p>אנא ודא שהעדכון נשלח ללקוח הנכון:</p>
+              <p className="font-semibold text-foreground">
+                {client === 'all'
+                  ? '📢 כל הלקוחות'
+                  : clientNames[client] || client}
+              </p>
+              <p className="text-sm">ההודעה:</p>
+              <p className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground whitespace-pre-line">{message}</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction onClick={handleSend} className="bg-primary hover:bg-primary/90">
+              אני מאשר/ת – שלח
+            </AlertDialogAction>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {!client ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
