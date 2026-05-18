@@ -9,6 +9,7 @@ export default function JoinCasePage() {
   const [params] = useSearchParams();
   const { user, navigateToLogin, refreshCaseAccess } = useAuth();
   const [status, setStatus] = useState('idle');
+  const [errorMsg, setErrorMsg] = useState('');
   const token = params.get('token');
 
   useEffect(() => {
@@ -24,8 +25,10 @@ export default function JoinCasePage() {
         setStatus('success');
         toast.success('You have joined the shared mortgage case');
       } catch (error) {
+        const msg = error?.response?.data?.error || error.message || 'Failed to join the case';
         setStatus('error');
-        toast.error(error.message || 'Failed to join the case');
+        setErrorMsg(msg);
+        toast.error(msg);
       }
     };
 
@@ -66,7 +69,7 @@ export default function JoinCasePage() {
       ) : null}
 
       {status === 'error' ? (
-        <p className="text-destructive">We could not verify this invite for your account.</p>
+        <p className="text-destructive">{errorMsg || 'We could not verify this invite for your account.'}</p>
       ) : null}
     </div>
   );
