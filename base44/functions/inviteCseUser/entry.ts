@@ -1,6 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function normalizeEmail(value: string) {
+function normalizeEmail(value) {
   return value.trim().toLowerCase();
 }
 
