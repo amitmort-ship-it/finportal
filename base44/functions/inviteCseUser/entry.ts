@@ -44,12 +44,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Only admins can invite additional users' }, { status: 403 });
     }
 
-    const existingCaseOwner = await base44.entities.ClientProfile.filter({ email: inviteeEmail });
+    const existingCaseOwner = await base44.asServiceRole.entities.ClientProfile.filter({ email: inviteeEmail });
     if (existingCaseOwner.length > 0) {
       return Response.json({ error: 'This email already owns a different case' }, { status: 409 });
     }
 
-    const existingMemberships = await base44.entities.CaseUser.filter({
+    const existingMemberships = await base44.asServiceRole.entities.CaseUser.filter({
       case_profile_id: caseProfile.id,
       user_email: inviteeEmail,
     });
@@ -58,16 +58,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'This user already has access to the case' }, { status: 409 });
     }
 
-    const pendingInvites = await base44.entities.CaseInvite.filter({
+    const pendingInvites = await base44.asServiceRole.entities.CaseInvite.filter({
       case_profile_id: caseProfile.id,
       email: inviteeEmail,
       status: 'pending',
     });
 
     if (pendingInvites.length > 0) {
-      // Delete the old pending invite so we can resend a fresh one
       for (const invite of pendingInvites) {
-        await base44.entities.CaseInvite.delete(invite.id);
+        await base44.asServiceRole.entities.CaseInvite.delete(invite.id);
       }
     }
 
@@ -75,7 +74,7 @@ Deno.serve(async (req) => {
     const appBaseUrl = Deno.env.get('VITE_BASE44_APP_BASE_URL') || req.headers.get('origin') || '';
     const joinUrl = `${appBaseUrl.replace(/\/$/, '')}/join-case?token=${token}`;
 
-    await base44.entities.CaseInvite.create({
+    await base44.asServiceRole.entities.CaseInvite.create({
       case_profile_id: caseProfile.id,
       email: inviteeEmail,
       full_name: inviteeName || null,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ export default function AdminClients() {
   const [invitingId, setInvitingId] = useState(null);
   const [memberInviteOpen, setMemberInviteOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const selectedClientRef = useRef(null);
   const [memberInviteName, setMemberInviteName] = useState('');
   const [memberInviteEmail, setMemberInviteEmail] = useState('');
   const [sendingMemberInvite, setSendingMemberInvite] = useState(false);
@@ -160,17 +161,20 @@ export default function AdminClients() {
   };
 
   const openMemberInviteDialog = (client) => {
+    selectedClientRef.current = client;
     setSelectedClient(client);
     setMemberInviteName('');
     setMemberInviteEmail('');
     setMemberInviteOpen(true);
   };
 
-  const handleInviteAdditionalUser = async () => {
+  const handleInviteAdditionalUser = async (clientOverride) => {
     const email = memberInviteEmail.trim().toLowerCase();
     const fullName = memberInviteName.trim();
+    const client = clientOverride || selectedClient || selectedClientRef.current;
 
-    if (!selectedClient?.id || !email) {
+    if (!client?.id || !email) {
+      toast.error('חסר מידע - נסה לסגור ולפתוח שוב את הדיאלוג');
       return;
     }
 
@@ -180,7 +184,7 @@ export default function AdminClients() {
       const res = await base44.functions.invoke('inviteCseUser', {
         email,
         full_name: fullName,
-        case_profile_id: selectedClient.id,
+        case_profile_id: client.id,
       });
 
       if (res?.data?.error) {

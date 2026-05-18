@@ -1,6 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function normalizeEmail(value: string) {
+function normalizeEmail(value) {
   return value.trim().toLowerCase();
 }
 
@@ -31,31 +31,27 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invite email does not match the signed-in user' }, { status: 403 });
     }
 
-    const existingMemberships = await base44.entities.CaseUser.filter({
+    const existingMemberships = await base44.asServiceRole.entities.CaseUser.filter({
       case_profile_id: invite.case_profile_id,
       user_email: currentEmail,
     });
 
     if (existingMemberships.length > 0) {
-      await base44.entities.CaseUser.update(existingMemberships[0].id, {
+      await base44.asServiceRole.entities.CaseUser.update(existingMemberships[0].id, {
         status: 'active',
-        joined_at: new Date().toISOString(),
       });
     } else {
-      await base44.entities.CaseUser.create({
+      await base44.asServiceRole.entities.CaseUser.create({
         case_profile_id: invite.case_profile_id,
         user_email: currentEmail,
         full_name: currentUser.full_name || invite.full_name || currentEmail,
         role: 'co_borrower',
         status: 'active',
-        invited_by_email: invite.invited_by_email,
-        joined_at: new Date().toISOString(),
       });
     }
 
-    await base44.entities.CaseInvite.update(invite.id, {
+    await base44.asServiceRole.entities.CaseInvite.update(invite.id, {
       status: 'accepted',
-      accepted_at: new Date().toISOString(),
     });
 
     return Response.json({ success: true, case_profile_id: invite.case_profile_id });
