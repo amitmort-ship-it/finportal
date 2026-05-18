@@ -1,0 +1,59 @@
+{
+  "name": "CaseUser",
+  "type": "object",
+  "properties": {
+    "case_profile_id": {
+      "type": "string",
+      "description": "ID of the ClientProfile this membership belongs to"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the additional user"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Full name of the additional user"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "co_borrower"
+      ],
+      "default": "co_borrower"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "case_profile_id",
+    "user_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

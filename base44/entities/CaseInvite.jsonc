@@ -1,0 +1,75 @@
+{
+  "name": "CaseInvite",
+  "type": "object",
+  "properties": {
+    "case_profile_id": {
+      "type": "string",
+      "description": "ID of the ClientProfile this invite belongs to"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email of the invited user"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Full name of the invited user"
+    },
+    "invited_by_email": {
+      "type": "string",
+      "description": "Email of the admin who sent the invite"
+    },
+    "token": {
+      "type": "string",
+      "description": "Unique token for the invite link"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "case_profile_id",
+    "email",
+    "token"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
