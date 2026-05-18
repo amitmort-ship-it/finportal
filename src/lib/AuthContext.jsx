@@ -152,9 +152,12 @@ export const AuthProvider = ({ children }) => {
        try {
          const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' });
          if (memberships.length > 0) {
-           const caseProfiles = await base44.entities.ClientProfile.filter({ id: memberships[0].case_profile_id });
-           if (caseProfiles.length > 0) {
-             resolvedCase = caseProfiles[0];
+           // Use the primary borrower email from CaseUser to fetch via RLS-compatible filter
+           const caseProfileId = memberships[0].case_profile_id;
+           // Fetch via backend function that uses service role
+           const res = await base44.functions.invoke('getCaseProfile', { case_profile_id: caseProfileId });
+           if (res?.data?.profile) {
+             resolvedCase = res.data.profile;
            }
          }
        } catch (e) {

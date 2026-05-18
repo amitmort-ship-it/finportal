@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing token' }, { status: 400 });
     }
 
-    const invites = await base44.entities.CaseInvite.filter({ token });
+    const invites = await base44.asServiceRole.entities.CaseInvite.filter({ token });
     if (!invites.length) {
       return Response.json({ error: 'Invite not found' }, { status: 404 });
     }
@@ -28,7 +28,9 @@ Deno.serve(async (req) => {
     const invitedEmail = normalizeEmail(invite.email);
 
     if (currentEmail !== invitedEmail) {
-      return Response.json({ error: 'Invite email does not match the signed-in user' }, { status: 403 });
+      return Response.json({ 
+        error: `This invite was sent to ${invitedEmail}. You are signed in as ${currentEmail}. Please sign in with the correct email.` 
+      }, { status: 403 });
     }
 
     const existingMemberships = await base44.asServiceRole.entities.CaseUser.filter({
