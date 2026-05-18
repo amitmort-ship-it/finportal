@@ -168,13 +168,17 @@ export default function AdminClients() {
     setMemberInviteOpen(true);
   };
 
-  const handleInviteAdditionalUser = async (clientOverride) => {
+  const handleInviteAdditionalUser = async () => {
     const email = memberInviteEmail.trim().toLowerCase();
     const fullName = memberInviteName.trim();
-    const client = clientOverride || selectedClient || selectedClientRef.current;
+    const client = selectedClientRef.current;
 
-    if (!client?.id || !email) {
-      toast.error('חסר מידע - נסה לסגור ולפתוח שוב את הדיאלוג');
+    if (!client?.id) {
+      toast.error('שגיאה: לא נמצא תיק לקוח');
+      return;
+    }
+    if (!email) {
+      toast.error('יש להזין כתובת אימייל');
       return;
     }
 
@@ -191,6 +195,8 @@ export default function AdminClients() {
         toast.error(res.data.error);
         return;
       }
+      
+      console.log('inviteCseUser response:', res?.data);
 
       toast.success('הזמנה נשלחה בהצלחה למייל עם קישור הצטרפות לתיק');
       setMemberInviteOpen(false);
@@ -199,6 +205,7 @@ export default function AdminClients() {
       setMemberInviteEmail('');
       await loadClients();
     } catch (error) {
+      console.error('inviteCseUser error:', error);
       toast.error(error.message || 'שגיאה בשליחת ההזמנה');
     } finally {
       setSendingMemberInvite(false);
@@ -301,7 +308,7 @@ export default function AdminClients() {
             </div>
 
             <Button
-              onClick={handleInviteAdditionalUser}
+              onClick={() => handleInviteAdditionalUser()}
               disabled={sendingMemberInvite || !memberInviteEmail.trim()}
               className="w-full"
             >
