@@ -13,19 +13,22 @@ export default function JoinCasePage() {
   const token = params.get('token');
 
   useEffect(() => {
-    if (!token || !user?.email || status === 'success') {
+    if (!token || !user?.email || status === 'loading' || status === 'success') {
       return;
     }
 
     const acceptInvite = async () => {
       setStatus('loading');
       try {
-        await base44.functions.invoke('acceptCaseInvite', { token });
+        const res = await base44.functions.invoke('acceptCaseInvite', { token });
+        if (res?.data?.error) {
+          throw new Error(res.data.error);
+        }
         await refreshCaseAccess();
         setStatus('success');
-        toast.success('You have joined the shared mortgage case');
+        toast.success('הצטרפת לתיק המשכנתא בהצלחה');
       } catch (error) {
-        const msg = error?.response?.data?.error || error.message || 'Failed to join the case';
+        const msg = error?.response?.data?.error || error?.data?.error || error.message || 'Failed to join the case';
         setStatus('error');
         setErrorMsg(msg);
         toast.error(msg);
@@ -69,7 +72,17 @@ export default function JoinCasePage() {
       ) : null}
 
       {status === 'error' ? (
-        <p className="text-destructive">{errorMsg || 'We could not verify this invite for your account.'}</p>
+        <div className="space-y-3">
+          <p className="text-destructive">{errorMsg || 'לא ניתן לאמת את ההזמנה.'}</p>
+          {errorMsg?.includes('signed in as') ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">יש להתנתק ולהתחבר עם האימייל שאליו נשלחה ההזמנה.</p>
+              <Button variant="outline" onClick={() => { base44.auth.logout(window.location.href); }}>
+                התנתק והתחבר מחדש
+              </Button>
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
