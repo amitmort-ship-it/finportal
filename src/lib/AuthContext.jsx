@@ -147,7 +147,21 @@ export const AuthProvider = ({ children }) => {
        console.error('Case access resolution failed:', error);
      }
 
-     // CaseUser and CaseInvite entities don't exist in this schema, skip their loading
+     // If no direct profile found, check if user is a co-borrower via CaseUser
+     if (!resolvedCase) {
+       try {
+         const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' });
+         if (memberships.length > 0) {
+           const caseProfiles = await base44.entities.ClientProfile.filter({ id: memberships[0].case_profile_id });
+           if (caseProfiles.length > 0) {
+             resolvedCase = caseProfiles[0];
+           }
+         }
+       } catch (e) {
+         console.error('CaseUser lookup failed:', e);
+       }
+     }
+
      if (resolvedCase) {
        const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
        if (!hasPrimaryMember) {
