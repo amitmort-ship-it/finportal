@@ -65,7 +65,10 @@ Deno.serve(async (req) => {
     });
 
     if (pendingInvites.length > 0) {
-      return Response.json({ error: 'There is already a pending invitation for this email' }, { status: 409 });
+      // Delete the old pending invite so we can resend a fresh one
+      for (const invite of pendingInvites) {
+        await base44.entities.CaseInvite.delete(invite.id);
+      }
     }
 
     const token = crypto.randomUUID();
