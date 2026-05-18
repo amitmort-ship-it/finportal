@@ -177,10 +177,18 @@ export default function AdminClients() {
     setSendingMemberInvite(true);
 
     try {
-      // Invite user first
-      await base44.users.inviteUser(email, 'user');
+      const res = await base44.functions.invoke('inviteCseUser', {
+        email,
+        full_name: fullName,
+        case_profile_id: selectedClient.id,
+      });
 
-      toast.success('הזמנה למשתמש נוסף נשלחה בהצלחה');
+      if (res?.data?.error) {
+        toast.error(res.data.error);
+        return;
+      }
+
+      toast.success('הזמנה נשלחה בהצלחה למייל עם קישור הצטרפות לתיק');
       setMemberInviteOpen(false);
       setSelectedClient(null);
       setMemberInviteName('');
