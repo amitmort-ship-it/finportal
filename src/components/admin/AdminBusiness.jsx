@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import SimulationPanel from './SimulationPanel';
 import { base44 } from '@/api/base44Client';
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +12,7 @@ import {
   Droplets,
   TrendingUp,
   AlertTriangle,
-  Wallet,
+  Wallet
   Plus,
   CheckCircle2,
   Clock,
@@ -272,13 +274,12 @@ export default function AdminBusiness() {
     const load = async () => {
       try {
         const [stagesRes, records] = await Promise.all([
-          base44.entities.ProcessStage.filter({}, '-created_date'),
-          base44.entities.BusinessData.filter({ key: DB_KEY }),
-        ]);
-        setStages(stagesRes);
+                      base44.entities.ProcessStage.filter({}, '-created_date'),
+                      supabase.from('budget_data').select('*').eq('id', DB_KEY),
+                    ]);
 
-        if (records.length > 0) {
-          const r = records[0];
+                  if (records.data && records.data.length > 0) {
+                      const r = { id: records.data[0].id, ...records.data[0].data };
           setRecordId(r.id);
           setIncomeLog(r.incomeLog || []);
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
@@ -288,7 +289,7 @@ export default function AdminBusiness() {
           setDealLog(resolvedDealLog);
           // If DB had no dealLog but localStorage does, persist to DB immediately
           if (!(Array.isArray(r.dealLog) && r.dealLog.length > 0) && resolvedDealLog.length > 0) {
-            base44.entities.BusinessData.update(r.id, { dealLog: resolvedDealLog }).catch(() => {});
+                        supabase.from('budget_data').update({ data: { ...records.data[0]?.data, dealLog: resolvedDealLog } }).eq('id', DB_KEY).catch(() => {});
           }
           setFixedExpenses(r.fixedExpenses || []);
           setVariableExpenses(r.variableExpenses || []);
@@ -349,9 +350,9 @@ export default function AdminBusiness() {
       try {
         localStorage.setItem(DEAL_LOG_STORAGE_KEY, JSON.stringify(data.dealLog || []));
         if (recordId) {
-          await base44.entities.BusinessData.update(recordId, data);
+                    await supabase.from('budget_data').update({ data }).eq('id', recordId);
         } else {
-          const created = await base44.entities.BusinessData.create({ key: DB_KEY, ...data });
+                      const { data: created } = await supabase.from('budget_data').insert({ id: DB_KEY, data }).select().single();
           setRecordId(created.id);
         }
       } catch (err) {
