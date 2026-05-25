@@ -184,7 +184,12 @@ export const AuthProvider = ({ children }) => {
   const switchCase = (caseId) => {
     if (!user?.email) return;
     sessionStorage.setItem(`activeCase:${user.email}`, caseId);
-    loadCaseAccess(user, caseId);
+    const found = allCases.find(c => c.id === caseId);
+    if (found) {
+      setActiveCase(found);
+    } else {
+      loadCaseAccess(user, caseId);
+    }
   };
 
   const logout = (shouldRedirect = true) => {

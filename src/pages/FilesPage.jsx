@@ -7,7 +7,7 @@ import ClientServiceAgreement from '@/components/ClientServiceAgreement';
 import { toast } from 'sonner';
 
 export default function FilesPage() {
-  const { user } = useAuth();
+  const { user, caseEmail } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState({});
@@ -16,7 +16,7 @@ export default function FilesPage() {
     const loadRequests = async () => {
       try {
         const data = await base44.entities.FileRequest.filter(
-          { client_email: user?.email },
+          { client_email: caseEmail },
           '-created_date',
         );
         setRequests(data);
@@ -28,16 +28,16 @@ export default function FilesPage() {
       }
     };
 
-    if (user?.email) {
+    if (caseEmail) {
       loadRequests();
     }
-  }, [user?.email]);
+  }, [caseEmail]);
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!caseEmail) return;
 
     const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
-      if (event.data?.client_email === user?.email) {
+      if (event.data?.client_email === caseEmail) {
         if (event.type === 'delete') {
           setRequests((prev) => prev.filter((request) => request.id !== event.id));
         } else {
@@ -57,7 +57,7 @@ export default function FilesPage() {
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [user?.email]);
+  }, [caseEmail]);
 
   const handleFileUpload = async (requestId, files) => {
     if (!files.length) return;
@@ -122,8 +122,8 @@ export default function FilesPage() {
         <p className="text-muted-foreground mt-1">העלה מסמכים דרושים לתיק שלך</p>
       </div>
 
-      <ClientServiceAgreement clientEmail={user?.email} />
-      <ClientDownloadableDocs clientEmail={user?.email} />
+      <ClientServiceAgreement clientEmail={caseEmail} />
+      <ClientDownloadableDocs clientEmail={caseEmail} />
 
       {requests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center">

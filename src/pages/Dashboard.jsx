@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProcessTracker from '@/components/ProcessTracker';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, caseEmail } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [mortgage, setMortgage] = useState(null);
   const [processStage, setProcessStage] = useState(null);
@@ -17,7 +17,7 @@ export default function Dashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const userEmail = user?.email;
+        const userEmail = caseEmail;
         if (!userEmail) return;
 
         const [
@@ -57,7 +57,7 @@ export default function Dashboard() {
     };
 
     loadData();
-  }, [user?.email]);
+  }, [caseEmail]);
 
   if (loading) {
     return (
