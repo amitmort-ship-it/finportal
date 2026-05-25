@@ -44,11 +44,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Only admins can invite additional users' }, { status: 403 });
     }
 
-    const existingCaseOwner = await base44.asServiceRole.entities.ClientProfile.filter({ email: inviteeEmail });
-    if (existingCaseOwner.length > 0) {
-      return Response.json({ error: 'This email already owns a different case' }, { status: 409 });
-    }
-
     const existingMemberships = await base44.asServiceRole.entities.CaseUser.filter({
       case_profile_id: caseProfile.id,
       user_email: inviteeEmail,
