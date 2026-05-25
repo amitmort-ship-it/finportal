@@ -15,11 +15,13 @@ Deno.serve(async (req) => {
     }
 
     // Verify the requesting user is actually a member of this case
-    const memberships = await base44.asServiceRole.entities.CaseUser.filter({
+    // Fetch all memberships for this case and compare emails case-insensitively
+    const allMemberships = await base44.asServiceRole.entities.CaseUser.filter({
       case_profile_id,
-      user_email: currentUser.email.trim().toLowerCase(),
       status: 'active',
     });
+    const userEmailNorm = currentUser.email.trim().toLowerCase();
+    const memberships = allMemberships.filter(m => m.user_email?.trim().toLowerCase() === userEmailNorm);
 
     if (!memberships.length) {
       return Response.json({ error: 'Access denied' }, { status: 403 });

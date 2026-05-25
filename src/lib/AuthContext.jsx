@@ -150,9 +150,9 @@ export const AuthProvider = ({ children }) => {
      // If no direct profile found, check if user is a co-borrower via CaseUser
      if (!resolvedCase) {
        try {
-         const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' });
+         const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' }, '-created_date');
          if (memberships.length > 0) {
-           // Use the primary borrower email from CaseUser to fetch via RLS-compatible filter
+           // Use the most recently added membership
            const caseProfileId = memberships[0].case_profile_id;
            // Fetch via backend function that uses service role
            const res = await base44.functions.invoke('getCaseProfile', { case_profile_id: caseProfileId });
