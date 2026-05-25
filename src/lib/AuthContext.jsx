@@ -17,6 +17,7 @@ function getInvokeError(result) {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [activeCase, setActiveCase] = useState(null);
+  const [allCases, setAllCases] = useState([]);
   const [caseMembers, setCaseMembers] = useState([]);
   const [pendingCaseInvites, setPendingCaseInvites] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -126,65 +127,64 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loadCaseAccess = async (currentUser) => {
+  const loadCaseAccess = async (currentUser, overrideCaseId = null) => {
     if (!currentUser?.email) {
       setActiveCase(null);
+      setAllCases([]);
       setCaseMembers([]);
       setPendingCaseInvites([]);
       return null;
     }
 
-    let resolvedCase = null;
-    let resolvedMembers = [];
-    let resolvedInvites = [];
+    let resolvedCases = [];
 
+    // 1. Direct profile (primary borrower)
     try {
-       const directProfiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
-       if (directProfiles.length > 0) {
-         resolvedCase = directProfiles[0];
-       }
-     } catch (error) {
-       console.error('Case access resolution failed:', error);
-     }
+      const directProfiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
+      if (directProfiles.length > 0) {
+        resolvedCases.push({ ...directProfiles[0], _source: 'primary' });
+      }
+    } catch (error) {
+      console.error('Case access resolution failed:', error);
+    }
 
-     // If no direct profile found, check if user is a co-borrower via CaseUser
-     if (!resolvedCase) {
-       try {
-         const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' }, '-created_date');
-         if (memberships.length > 0) {
-           // Use the most recently added membership
-           const caseProfileId = memberships[0].case_profile_id;
-           // Fetch via backend function that uses service role
-           const res = await base44.functions.invoke('getCaseProfile', { case_profile_id: caseProfileId });
-           if (res?.data?.profile) {
-             resolvedCase = res.data.profile;
-           }
-         }
-       } catch (e) {
-         console.error('CaseUser lookup failed:', e);
-       }
-     }
+    // 2. Co-borrower memberships
+    try {
+      const memberships = await base44.entities.CaseUser.filter({ user_email: currentUser.email, status: 'active' }, '-created_date');
+      for (const m of memberships) {
+        const alreadyIn = resolvedCases.some(c => c.id === m.case_profile_id);
+        if (!alreadyIn) {
+          const res = await base44.functions.invoke('getCaseProfile', { case_profile_id: m.case_profile_id });
+          if (res?.data?.profile) {
+            resolvedCases.push({ ...res.data.profile, _source: 'co_borrower' });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('CaseUser lookup failed:', e);
+    }
 
-     if (resolvedCase) {
-       const hasPrimaryMember = resolvedMembers.some((member) => member.email === resolvedCase.email);
-       if (!hasPrimaryMember) {
-         resolvedMembers.unshift({
-           id: `primary-${resolvedCase.id}`,
-           email: resolvedCase.email,
-           full_name: resolvedCase.full_name || resolvedCase.email,
-           role: 'primary_borrower',
-           status: 'active',
-           joined_at: null,
-           invited_by_email: null,
-           is_primary: true,
-         });
-       }
-     }
+    setAllCases(resolvedCases);
+
+    // Pick active case: override > previously selected > most recent
+    let resolvedCase = null;
+    if (overrideCaseId) {
+      resolvedCase = resolvedCases.find(c => c.id === overrideCaseId) || resolvedCases[0] || null;
+    } else {
+      const savedId = sessionStorage.getItem(`activeCase:${currentUser.email}`);
+      resolvedCase = (savedId && resolvedCases.find(c => c.id === savedId)) || resolvedCases[0] || null;
+    }
 
     setActiveCase(resolvedCase);
-    setCaseMembers(resolvedMembers);
-    setPendingCaseInvites(resolvedInvites);
+    setCaseMembers([]);
+    setPendingCaseInvites([]);
     return resolvedCase;
+  };
+
+  const switchCase = (caseId) => {
+    if (!user?.email) return;
+    sessionStorage.setItem(`activeCase:${user.email}`, caseId);
+    loadCaseAccess(user, caseId);
   };
 
   const logout = (shouldRedirect = true) => {
@@ -212,6 +212,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{
       user,
       activeCase,
+      allCases,
       caseMembers,
       pendingCaseInvites,
       caseEmail: activeCase?.email || user?.email || null,
@@ -224,6 +225,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkAppState,
+      switchCase,
       refreshCaseAccess: () => loadCaseAccess(user),
     }}>
       {children}

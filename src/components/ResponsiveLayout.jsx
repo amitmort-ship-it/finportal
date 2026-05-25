@@ -4,11 +4,12 @@ import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package, Calculator, LineChart } from 'lucide-react';
+import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { useState } from 'react';
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
   { path: '/files', label: 'מסמכים', icon: FileText },
@@ -25,8 +26,10 @@ const adminItems = [
 
 export default function ResponsiveLayout() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, activeCase, allCases, switchCase } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const hasMultipleCases = !isAdmin && allCases?.length > 1;
+  const [showCasePicker, setShowCasePicker] = useState(false);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -51,6 +54,35 @@ export default function ResponsiveLayout() {
             <ThemeToggle className="shrink-0" />
           </div>
           <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
+
+          {hasMultipleCases && (
+            <div className="mt-2 relative">
+              <button
+                onClick={() => setShowCasePicker(v => !v)}
+                className="w-full flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <FolderOpen className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="truncate">{activeCase?.full_name || activeCase?.email || 'בחר תיק'}</span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${showCasePicker ? 'rotate-180' : ''}`} />
+              </button>
+              {showCasePicker && (
+                <div className="absolute top-full mt-1 right-0 left-0 z-50 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
+                  {allCases.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => { switchCase(c.id); setShowCasePicker(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs text-right transition-colors hover:bg-muted ${activeCase?.id === c.id ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}`}
+                    >
+                      <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{c.full_name || c.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -166,10 +198,38 @@ export default function ResponsiveLayout() {
           </div>
           <ThemeToggle className="shrink-0" />
         </div>
+        {hasMultipleCases && (
+          <div className="px-4 pb-2 relative">
+            <button
+              onClick={() => setShowCasePicker(v => !v)}
+              className="w-full flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <FolderOpen className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="truncate">{activeCase?.full_name || activeCase?.email || 'בחר תיק'}</span>
+              </div>
+              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${showCasePicker ? 'rotate-180' : ''}`} />
+            </button>
+            {showCasePicker && (
+              <div className="absolute top-full mt-1 right-4 left-4 z-50 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
+                {allCases.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => { switchCase(c.id); setShowCasePicker(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs text-right transition-colors hover:bg-muted ${activeCase?.id === c.id ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}`}
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{c.full_name || c.email}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       <main
-        className="md:mr-64 pt-24 md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto"
+        className={`md:mr-64 ${hasMultipleCases ? 'pt-32' : 'pt-24'} md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto`}
         ref={(el) => el && location.pathname && el.scrollTo(0, 0)}
       >
         <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
