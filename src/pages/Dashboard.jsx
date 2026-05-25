@@ -15,10 +15,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const loadData = async () => {
       try {
         const userEmail = caseEmail;
-        if (!userEmail) return;
+        if (!userEmail) { setLoading(false); return; }
 
         const [
           packageData,

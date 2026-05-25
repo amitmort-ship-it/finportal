@@ -28,8 +28,12 @@ export default function FilesPage() {
       }
     };
 
+    setLoading(true);
     if (caseEmail) {
       loadRequests();
+    } else {
+      setRequests([]);
+      setLoading(false);
     }
   }, [caseEmail]);
 

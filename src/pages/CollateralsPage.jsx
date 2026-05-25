@@ -62,6 +62,7 @@ export default function CollateralsPage() {
   }, [caseEmail]);
 
   useEffect(() => {
+    setLoading(true);
     load();
   }, [load]);
 
