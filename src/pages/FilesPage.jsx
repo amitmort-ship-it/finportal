@@ -15,11 +15,8 @@ export default function FilesPage() {
   useEffect(() => {
     const loadRequests = async () => {
       try {
-        const data = await base44.entities.FileRequest.filter(
-          { client_email: caseEmail },
-          '-created_date',
-        );
-        setRequests(data);
+        const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'FileRequest' });
+        setRequests(res.data.data || []);
       } catch (error) {
         console.error('Error loading file requests:', error);
         toast.error('שגיאה בטעינת בקשות המסמכים');

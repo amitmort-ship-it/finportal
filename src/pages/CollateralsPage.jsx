@@ -52,8 +52,8 @@ export default function CollateralsPage() {
     }
 
     try {
-      const data = await base44.entities.Collateral.filter({ client_email: caseEmail }, '-created_date');
-      setCollaterals(data);
+      const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'Collateral' });
+      setCollaterals(res.data.data || []);
     } catch (err) {
       console.error('load collaterals error:', err);
     } finally {

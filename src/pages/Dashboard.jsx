@@ -18,26 +18,10 @@ export default function Dashboard() {
     setLoading(true);
     const loadData = async () => {
       try {
-        const userEmail = caseEmail;
-        if (!userEmail) { setLoading(false); return; }
+        if (!caseEmail) { setLoading(false); return; }
 
-        const [
-          packageData,
-          mortgageData,
-          stageData,
-          updateData,
-          collaterals,
-          fileRequests,
-          approvals,
-        ] = await Promise.all([
-          base44.entities.SelectedPackage.filter({ client_email: userEmail }, '-created_date'),
-          base44.entities.FinalMortgage.filter({ client_email: userEmail }, '-created_date'),
-          base44.entities.ProcessStage.filter({ client_email: userEmail }),
-          base44.entities.ClientUpdate.filter({ client_email: userEmail }, '-created_date'),
-          base44.entities.Collateral.filter({ client_email: userEmail }),
-          base44.entities.FileRequest.filter({ client_email: userEmail }),
-          base44.entities.BankApproval.filter({ client_email: userEmail }),
-        ]);
+        const res = await base44.functions.invoke('getCaseDashboard', { case_email: caseEmail });
+        const { packageData, mortgageData, stageData, updateData, collaterals, fileRequests, approvals } = res.data;
 
         setSelectedPackage(packageData?.[0] || null);
         setMortgage(mortgageData?.[0] || null);
