@@ -17,8 +17,8 @@ export default function PackagePage() {
         return;
       }
 
-      const data = await base44.entities.SelectedPackage.filter({ client_email: caseEmail }, '-created_date');
-      setPackages(data);
+      const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'SelectedPackage' });
+      setPackages(res.data.data || []);
       setLoading(false);
     };
 

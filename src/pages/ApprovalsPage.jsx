@@ -12,7 +12,10 @@ export default function ApprovalsPage() {
   const { caseEmail } = useAuth();
   const { data: approvals = [], isLoading: loading } = useQuery({
     queryKey: ['bank-approvals', caseEmail],
-    queryFn: async () => base44.entities.BankApproval.filter({ client_email: caseEmail }, '-created_date'),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'BankApproval' });
+      return res.data.data || [];
+    },
     enabled: !!caseEmail,
   });
 
