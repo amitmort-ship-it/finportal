@@ -83,25 +83,39 @@ Deno.serve(async (req) => {
       status: 'pending',
     });
 
-    await base44.integrations.Core.SendEmail({
-      to: inviteeEmail,
-      subject: 'Invitation to join your mortgage case',
-      body: `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px;">
-          <h2 style="margin: 0 0 16px; color: #0f172a;">הוזמנת להצטרף לתיק המשכנתא</h2>
-          <p style="color: #334155; line-height: 1.7;">
-            נשלחה אליך הזמנה להצטרף לתיק המשכנתא המשותף של ${caseProfile.full_name || caseProfile.email}.
-          </p>
-          <p style="color: #334155; line-height: 1.7;">
-            אם כבר יש לך משתמש, התחבר ואז לחץ על הקישור. אם אין לך עדיין משתמש, צור חשבון עם אותו אימייל:
-            <strong>${inviteeEmail}</strong>
-          </p>
-          <a href="${joinUrl}" style="display: inline-block; margin-top: 16px; background: #2563eb; color: white; text-decoration: none; padding: 12px 20px; border-radius: 10px;">
-            הצטרפות לתיק
-          </a>
-        </div>
-      `,
-    });
+    // First invite the user to the app (so they can log in), ignore if already exists
+    try {
+      await base44.auth.inviteUser(inviteeEmail, 'user');
+    } catch (inviteErr) {
+      // User may already be registered — that's fine, continue
+      console.log('inviteUser note:', inviteErr?.message || inviteErr);
+    }
+
+    // Send the case-specific join email via the Core integration (works for any email now that user is invited)
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: inviteeEmail,
+        subject: 'הוזמנת להצטרף לתיק המשכנתא',
+        body: `
+          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 24px;">
+            <h2 style="margin: 0 0 16px; color: #0f172a;">הוזמנת להצטרף לתיק המשכנתא</h2>
+            <p style="color: #334155; line-height: 1.7;">
+              נשלחה אליך הזמנה להצטרף לתיק המשכנתא המשותף של ${caseProfile.full_name || caseProfile.email}.
+            </p>
+            <p style="color: #334155; line-height: 1.7;">
+              לחץ על הכפתור להלן כדי להצטרף לתיק. אם עדיין אין לך חשבון, תתבקש ליצור אחד עם האימייל:
+              <strong>${inviteeEmail}</strong>
+            </p>
+            <a href="${joinUrl}" style="display: inline-block; margin-top: 16px; background: #2563eb; color: white; text-decoration: none; padding: 12px 20px; border-radius: 10px;">
+              הצטרפות לתיק
+            </a>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.log('SendEmail note:', emailErr?.message || emailErr);
+      // Non-fatal — invite was created, user can use the join URL directly
+    }
 
     return Response.json({ success: true, join_url: joinUrl });
   } catch (error) {

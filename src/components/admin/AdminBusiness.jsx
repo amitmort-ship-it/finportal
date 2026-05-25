@@ -10,7 +10,7 @@ import {
   Droplets,
   TrendingUp,
   AlertTriangle,
-  Wallet
+  Wallet,
   Plus,
   CheckCircle2,
   Clock,
