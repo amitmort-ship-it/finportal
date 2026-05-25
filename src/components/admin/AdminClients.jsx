@@ -45,18 +45,23 @@ export default function AdminClients() {
     setLoading(true);
 
     try {
-      const profiles = await base44.entities.ClientProfile.filter({}, '-created_date');
+      const [profiles, memberships, invites] = await Promise.all([
+        base44.entities.ClientProfile.filter({}, '-created_date'),
+        base44.entities.CaseUser.filter({ status: 'active' }),
+        base44.entities.CaseInvite.filter({ status: 'pending' }),
+      ]);
 
-      let memberships = [];
-      let invites = [];
-
-      const clientsWithMeta = profiles.map((profile) => ({
-        ...profile,
-        members: [],
-        pending_invites: [],
-        member_count: 1,
-        pending_invite_count: 0,
-      }));
+      const clientsWithMeta = profiles.map((profile) => {
+        const members = memberships.filter(m => m.case_profile_id === profile.id);
+        const pending_invites = invites.filter(i => i.case_profile_id === profile.id);
+        return {
+          ...profile,
+          members,
+          pending_invites,
+          member_count: 1 + members.length,
+          pending_invite_count: pending_invites.length,
+        };
+      });
 
       setClients(clientsWithMeta);
     } catch (error) {
