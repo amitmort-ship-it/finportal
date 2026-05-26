@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
@@ -8,57 +9,30 @@ import { toast } from 'sonner';
 
 export default function FilesPage() {
   const { user, caseEmail } = useAuth();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [uploading, setUploading] = useState({});
 
-  useEffect(() => {
-    const loadRequests = async () => {
-      try {
-        const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'FileRequest' });
-        setRequests(res.data.data || []);
-      } catch (error) {
-        console.error('Error loading file requests:', error);
-        toast.error('שגיאה בטעינת בקשות המסמכים');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: requests = [], isLoading: loading } = useQuery({
+    queryKey: ['file-requests', caseEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'FileRequest' });
+      return res.data.data || [];
+    },
+    enabled: !!caseEmail,
+  });
 
-    setLoading(true);
-    if (caseEmail) {
-      loadRequests();
-    } else {
-      setRequests([]);
-      setLoading(false);
-    }
-  }, [caseEmail]);
-
+  // Real-time updates
   useEffect(() => {
     if (!caseEmail) return;
 
     const unsubscribe = base44.entities.FileRequest.subscribe((event) => {
       if (event.data?.client_email === caseEmail) {
-        if (event.type === 'delete') {
-          setRequests((prev) => prev.filter((request) => request.id !== event.id));
-        } else {
-          setRequests((prev) => {
-            const existing = prev.findIndex((request) => request.id === event.id);
-            if (existing >= 0) {
-              const updated = [...prev];
-              updated[existing] = event.data;
-              return updated;
-            }
-            return [event.data, ...prev];
-          });
-        }
+        queryClient.invalidateQueries({ queryKey: ['file-requests', caseEmail] });
       }
     });
 
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
-  }, [caseEmail]);
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+  }, [caseEmail, queryClient]);
 
   const handleFileUpload = async (requestId, files) => {
     if (!files.length) return;
@@ -72,7 +46,6 @@ export default function FilesPage() {
         Array.from(files).map(async (file) => {
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-          // sync to Google Drive in the background (don't block on errors)
           base44.functions.invoke('uploadToDrive', {
             file_url,
             file_name: file.name,

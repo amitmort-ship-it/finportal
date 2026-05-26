@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import PackageCard from '../components/PackageCard';
@@ -6,29 +6,15 @@ import { Package } from 'lucide-react';
 
 export default function PackagePage() {
   const { caseEmail } = useAuth();
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadPackages = async () => {
-      if (!caseEmail) {
-        setPackages([]);
-        setLoading(false);
-        return;
-      }
-
+  const { data: packages = [], isLoading: loading } = useQuery({
+    queryKey: ['selected-packages', caseEmail],
+    queryFn: async () => {
       const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'SelectedPackage' });
-      setPackages(res.data.data || []);
-      setLoading(false);
-    };
-
-    loadPackages();
-  }, [caseEmail]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {}, 120000);
-    return () => clearInterval(timer);
-  }, []);
+      return res.data.data || [];
+    },
+    enabled: !!caseEmail,
+  });
 
   if (loading) {
     return (

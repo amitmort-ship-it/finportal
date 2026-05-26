@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import CollateralCard from '../components/CollateralCard';
@@ -41,30 +41,18 @@ const CATEGORIES = [
 
 export default function CollateralsPage() {
   const { caseEmail } = useAuth();
-  const [collaterals, setCollaterals] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    if (!caseEmail) {
-      setCollaterals([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: collaterals = [], isLoading: loading } = useQuery({
+    queryKey: ['collaterals', caseEmail],
+    queryFn: async () => {
       const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'Collateral' });
-      setCollaterals(res.data.data || []);
-    } catch (err) {
-      console.error('load collaterals error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [caseEmail]);
+      return res.data.data || [];
+    },
+    enabled: !!caseEmail,
+  });
 
-  useEffect(() => {
-    setLoading(true);
-    load();
-  }, [load]);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['collaterals', caseEmail] });
 
   if (loading) {
     return (
@@ -74,8 +62,6 @@ export default function CollateralsPage() {
     );
   }
 
-  const total = collaterals.length;
-
   return (
     <div>
       <div className="mb-8">
@@ -83,7 +69,7 @@ export default function CollateralsPage() {
         <p className="text-muted-foreground mt-1">מסמכים הדורשים חתימה</p>
       </div>
 
-      {total === 0 ? (
+      {collaterals.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
           <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground">אין מסמכים כרגע</h3>
@@ -106,7 +92,7 @@ export default function CollateralsPage() {
                     <div className="text-center py-6 text-xs text-muted-foreground">אין מסמכים בקטגוריה זו</div>
                   ) : (
                     items.map((c) => (
-                      <CollateralCard key={c.id} collateral={c} onUpdate={load} />
+                      <CollateralCard key={c.id} collateral={c} onUpdate={invalidate} />
                     ))
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { Bell, Package, Shield, FileText, Building2, Activity, Landmark } from 'lucide-react';
@@ -7,42 +7,26 @@ import ProcessTracker from '@/components/ProcessTracker';
 
 export default function Dashboard() {
   const { user, caseEmail } = useAuth();
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [mortgage, setMortgage] = useState(null);
-  const [processStage, setProcessStage] = useState(null);
-  const [updates, setUpdates] = useState([]);
-  const [stats, setStats] = useState({ refinance: 0, collateral: 0, document: 0, approval: 0 });
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    const loadData = async () => {
-      try {
-        if (!caseEmail) { setLoading(false); return; }
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['dashboard', caseEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getCaseDashboard', { case_email: caseEmail });
+      return res.data;
+    },
+    enabled: !!caseEmail,
+  });
 
-        const res = await base44.functions.invoke('getCaseDashboard', { case_email: caseEmail });
-        const { packageData, mortgageData, stageData, updateData, collaterals, fileRequests, approvals } = res.data;
-
-        setSelectedPackage(packageData?.[0] || null);
-        setMortgage(mortgageData?.[0] || null);
-        setProcessStage(stageData?.[0] || null);
-        setUpdates(updateData.slice(0, 3));
-
-        setStats({
-          refinance: mortgageData.length,
-          collateral: collaterals.filter(c => c.status !== 'completed').length,
-          document: fileRequests.filter(f => f.status === 'pending').length,
-          approval: approvals.length,
-        });
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [caseEmail]);
+  const selectedPackage = data?.packageData?.[0] || null;
+  const mortgage = data?.mortgageData?.[0] || null;
+  const processStage = data?.stageData?.[0] || null;
+  const updates = (data?.updateData || []).slice(0, 3);
+  const stats = {
+    refinance: data?.mortgageData?.length || 0,
+    collateral: (data?.collaterals || []).filter(c => c.status !== 'completed').length,
+    document: (data?.fileRequests || []).filter(f => f.status === 'pending').length,
+    approval: data?.approvals?.length || 0,
+  };
 
   if (loading) {
     return (
