@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen } from 'lucide-react';
+import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
@@ -169,6 +169,13 @@ export default function ResponsiveLayout() {
             צור קשר עם עמית
           </a>
 
+          <Link
+            to="/profile"
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all w-full ${location.pathname === '/profile' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+          >
+            <User className="w-4 h-4" />
+            פרופיל
+          </Link>
           <button
             onClick={() => base44.auth.logout()}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"

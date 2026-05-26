@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart, User } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { path: '/approvals', label: 'בנקים', icon: Building2 },
   { path: '/collaterals', label: 'בטחונות', icon: Shield },
   { path: '/tools', label: 'כלים', icon: Calculator },
+  { path: '/profile', label: 'פרופיל', icon: User },
 ];
 
 const toolShortcuts = [
