@@ -16,7 +16,7 @@ export default function AdminClientViewPicker() {
       setLoading(true);
       try {
         const res = await base44.functions.invoke('getAllClients', {});
-        setClients(res.data?.clients || []);
+        setClients(res.data?.profiles || res.data?.clients || []);
       } catch (e) {
         console.error(e);
       } finally {
