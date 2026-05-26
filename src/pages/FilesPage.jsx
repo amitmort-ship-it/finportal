@@ -19,6 +19,8 @@ export default function FilesPage() {
       return res.data.data || [];
     },
     enabled: !!caseEmail,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Real-time updates

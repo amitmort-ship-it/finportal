@@ -50,6 +50,8 @@ export default function CollateralsPage() {
       return res.data.data || [];
     },
     enabled: !!caseEmail,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['collaterals', caseEmail] });

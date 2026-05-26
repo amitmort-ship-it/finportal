@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext();
 
@@ -26,6 +27,12 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
   const [adminViewClient, setAdminViewClient] = useState(null); // { email, full_name } — admin impersonation
+
+  const setAdminViewClientAndClearCache = (client) => {
+    setAdminViewClient(client);
+    // Clear all cached queries so new client data is fetched fresh
+    queryClientInstance.removeQueries();
+  };
 
   useEffect(() => {
     checkAppState();
@@ -240,7 +247,7 @@ export const AuthProvider = ({ children }) => {
       switchCase,
       refreshCaseAccess: () => loadCaseAccess(user),
       adminViewClient,
-      setAdminViewClient,
+      setAdminViewClient: setAdminViewClientAndClearCache,
     }}>
       {children}
     </AuthContext.Provider>

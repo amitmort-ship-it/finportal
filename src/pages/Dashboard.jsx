@@ -19,6 +19,8 @@ export default function Dashboard() {
     },
     enabled: effectiveEnabled,
     staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 
   const selectedPackage = data?.packageData?.[0] || null;

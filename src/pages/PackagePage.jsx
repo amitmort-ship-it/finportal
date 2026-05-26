@@ -14,6 +14,8 @@ export default function PackagePage() {
       return res.data.data || [];
     },
     enabled: !!caseEmail,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   if (loading) {
