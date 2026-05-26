@@ -4,11 +4,12 @@ import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen, User } from 'lucide-react';
+import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen, User, Eye } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import AdminClientViewPicker from './AdminClientViewPicker';
 import { useState } from 'react';
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
@@ -26,7 +27,7 @@ const adminItems = [
 
 export default function ResponsiveLayout() {
   const location = useLocation();
-  const { user, activeCase, allCases, switchCase } = useAuth();
+  const { user, activeCase, allCases, switchCase, adminViewClient, setAdminViewClient } = useAuth();
   const isAdmin = user?.role === 'admin';
   const hasMultipleCases = !isAdmin && allCases?.length > 1;
   const [showCasePicker, setShowCasePicker] = useState(false);
@@ -54,6 +55,8 @@ export default function ResponsiveLayout() {
             <ThemeToggle className="shrink-0" />
           </div>
           <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
+
+          {isAdmin && <AdminClientViewPicker />}
 
           {hasMultipleCases && (
             <div className="mt-2 relative">
@@ -248,6 +251,21 @@ export default function ResponsiveLayout() {
           />
         </div>
 
+        {isAdmin && adminViewClient && (
+          <div className="mx-4 md:mx-8 mt-4 rounded-xl bg-amber-50 border border-amber-300 dark:bg-amber-950/30 dark:border-amber-700 px-4 py-2.5 flex items-center justify-between gap-3" dir="rtl">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm font-medium">
+              <Eye className="w-4 h-4 shrink-0" />
+              <span>צופה כ: <span className="font-bold">{adminViewClient.full_name}</span></span>
+              <span className="text-amber-600 dark:text-amber-400 text-xs font-normal" dir="ltr">({adminViewClient.email})</span>
+            </div>
+            <button
+              onClick={() => setAdminViewClient(null)}
+              className="text-xs text-amber-700 dark:text-amber-400 hover:text-amber-900 underline shrink-0"
+            >
+              חזור לתצוגה רגילה
+            </button>
+          </div>
+        )}
         <div className="p-4 md:p-8 max-w-5xl mx-auto relative z-10">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>

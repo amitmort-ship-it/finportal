@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
+  const [adminViewClient, setAdminViewClient] = useState(null); // { email, full_name } — admin impersonation
 
   useEffect(() => {
     checkAppState();
@@ -213,6 +214,12 @@ export const AuthProvider = ({ children }) => {
     base44.auth.redirectToLogin(window.location.href);
   };
 
+  const isAdmin = user?.role === 'admin';
+  // When admin is viewing a specific client, override caseEmail
+  const effectiveCaseEmail = isAdmin && adminViewClient
+    ? adminViewClient.email
+    : (activeCase?.email || user?.email || null);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -220,7 +227,7 @@ export const AuthProvider = ({ children }) => {
       allCases,
       caseMembers,
       pendingCaseInvites,
-      caseEmail: activeCase?.email || user?.email || null,
+      caseEmail: effectiveCaseEmail,
       isPrimaryCaseUser: activeCase?.email === user?.email,
       isAuthenticated,
       isLoadingAuth,
@@ -232,6 +239,8 @@ export const AuthProvider = ({ children }) => {
       checkAppState,
       switchCase,
       refreshCaseAccess: () => loadCaseAccess(user),
+      adminViewClient,
+      setAdminViewClient,
     }}>
       {children}
     </AuthContext.Provider>
