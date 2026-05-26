@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProcessTracker from '@/components/ProcessTracker';
 
 export default function Dashboard() {
-  const { user, caseEmail } = useAuth();
+  const { user, caseEmail, adminViewClient } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  // Admin with no client selected shouldn't load dashboard
+  const effectiveEnabled = !!caseEmail && (!isAdmin || !!adminViewClient);
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ['dashboard', caseEmail],
@@ -14,7 +17,8 @@ export default function Dashboard() {
       const res = await base44.functions.invoke('getCaseDashboard', { case_email: caseEmail });
       return res.data;
     },
-    enabled: !!caseEmail,
+    enabled: effectiveEnabled,
+    staleTime: 0,
   });
 
   const selectedPackage = data?.packageData?.[0] || null;
@@ -27,6 +31,16 @@ export default function Dashboard() {
     document: (data?.fileRequests || []).filter(f => f.status === 'pending').length,
     approval: data?.approvals?.length || 0,
   };
+
+  if (isAdmin && !adminViewClient) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+        <div className="text-5xl">👁️</div>
+        <h2 className="text-xl font-bold">בחר לקוח לצפייה</h2>
+        <p className="text-muted-foreground">השתמש בדרופדאון "תצוגת לקוח" בסיידבר כדי לבחור תיק</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
