@@ -332,8 +332,13 @@ export default function AdminClients() {
           אין לקוחות עדיין
         </div>
       ) : (
-        <div className="max-h-[70vh] overflow-y-auto pr-1 space-y-3">
-          {clients.map((client) => (
+        (() => {
+          const activeClients = clients.filter(c => !c.treatment_ended_at);
+          const endedClients = clients.filter(c => !!c.treatment_ended_at);
+          return (
+        <div className="space-y-8">
+          <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3">
+          {activeClients.map((client) => (
             <div
               key={client.id}
               className="bg-card rounded-xl border border-border shadow-sm p-5 flex items-center justify-between gap-4"
@@ -483,7 +488,88 @@ export default function AdminClients() {
               ) : null}
             </div>
           ))}
+          </div>
+
+          {endedClients.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <Timer className="w-4 h-4" />
+                לקוחות שסיים טיפול ({endedClients.length})
+              </h3>
+              <div className="max-h-[40vh] overflow-y-auto pr-1 space-y-3 opacity-70">
+                {endedClients.map((client) => (
+                  <div
+                    key={client.id}
+                    className="bg-muted/40 rounded-xl border border-border shadow-sm p-5 flex items-center justify-between gap-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      {editingId === client.id ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            placeholder="שם מלא"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleSaveName(client.id)} disabled={saving}>
+                              {saving ? 'שומר...' : 'שמור'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                              ביטול
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div>
+                            <div className="font-semibold">{client.full_name || 'ללא שם'}</div>
+                            <div className="text-sm text-muted-foreground">{client.email}</div>
+                          </div>
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border">
+                            <Timer className="w-3 h-3" />
+                            סיום טיפול לפני {daysSince(client.treatment_ended_at)} ימים
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {editingId !== client.id && (
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-orange-600 border-orange-300 hover:bg-orange-50"
+                          onClick={() => handleEndTreatment(client)}
+                          title="חדש טיפול"
+                        >
+                          <FlagOff className="w-3.5 h-3.5" />
+                          חדש טיפול
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => { setEditingId(client.id); setEditingName(client.full_name || ''); }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(client.id)}
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+          );
+        })()
       )}
     </div>
   );
