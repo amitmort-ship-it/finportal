@@ -107,7 +107,12 @@ export default function AdminProcessStage({ selectedClient }) {
         });
         setRecord(created);
       }
-      toast.success('שלב התהליך עודכן');
+      // Send email notification to client
+      await base44.functions.invoke('notifyStageUpdate', {
+        client_email: normalizedClientEmail,
+        stage_name: stage,
+      });
+      toast.success('שלב התהליך עודכן ומייל נשלח ללקוח');
     } catch {
       toast.error('לא הצלחנו לשמור את שינוי השלב');
     } finally {
