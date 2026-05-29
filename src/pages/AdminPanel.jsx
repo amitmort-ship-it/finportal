@@ -42,7 +42,7 @@ const TAB_CONFIG = [
   { id: 'documents', label: 'מסמכים', icon: FileText },
   { id: 'packages', label: 'תמהיל', icon: Package },
   { id: 'collaterals', label: 'בטחונות', icon: Lock },
-  { id: 'process', label: 'שלבים', icon: ListChecks },
+  { id: 'process', label: 'שלבים' },
   { id: 'timeline', label: 'טיימליין', icon: GitBranch },
 ];
 
@@ -113,7 +113,7 @@ export default function AdminPanel() {
             const Icon = tab.icon;
             return (
               <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm">
-                <Icon className="w-4 h-4 lg:mr-2" />
+                {Icon && <Icon className="w-4 h-4 lg:mr-2" />}
                 <span className="hidden lg:inline">{tab.label}</span>
               </TabsTrigger>
             );
