@@ -47,6 +47,8 @@ Deno.serve(async (req) => {
       collaterals,
       fileRequests,
       approvals,
+      clientTimelines,
+      globalTemplates,
     ] = await Promise.all([
       base44.asServiceRole.entities.SelectedPackage.filter({ client_email: case_email }, '-created_date'),
       base44.asServiceRole.entities.FinalMortgage.filter({ client_email: case_email }, '-created_date'),
@@ -55,7 +57,14 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.Collateral.filter({ client_email: case_email }),
       base44.asServiceRole.entities.FileRequest.filter({ client_email: case_email }),
       base44.asServiceRole.entities.BankApproval.filter({ client_email: case_email }),
+      base44.asServiceRole.entities.ClientTimeline.filter({ client_email: case_email }),
+      base44.asServiceRole.entities.TimelineTemplate.filter({ key: 'global' }),
     ]);
+
+    // Resolve timeline stages: client-specific overrides global
+    const clientTimeline = clientTimelines[0] || null;
+    const globalTemplate = globalTemplates[0] || null;
+    const timelineStages = (clientTimeline?.stages?.length ? clientTimeline.stages : globalTemplate?.stages) || [];
 
     return Response.json({
       packageData,
@@ -65,6 +74,7 @@ Deno.serve(async (req) => {
       collaterals,
       fileRequests,
       approvals,
+      timelineStages,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

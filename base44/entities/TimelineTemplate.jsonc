@@ -1,0 +1,54 @@
+{
+  "name": "TimelineTemplate",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Unique key, use 'global' for the default template"
+    },
+    "stages": {
+      "type": "array",
+      "description": "Ordered list of stages",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "estimated_days": {
+            "type": "number"
+          },
+          "next_step": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

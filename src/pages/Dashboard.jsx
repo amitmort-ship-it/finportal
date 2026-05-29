@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Bell, Package, Shield, FileText, Building2, Activity, Landmark } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProcessTracker from '@/components/ProcessTracker';
+import VisualTimeline from '@/components/VisualTimeline';
 
 export default function Dashboard() {
   const { user, caseEmail, adminViewClient } = useAuth();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const mortgage = data?.mortgageData?.[0] || null;
   const processStage = data?.stageData?.[0] || null;
   const updates = (data?.updateData || []).slice(0, 3);
+  const timelineStages = data?.timelineStages || [];
   const stats = {
     refinance: data?.mortgageData?.length || 0,
     collateral: (data?.collaterals || []).filter(c => c.status !== 'completed').length,
@@ -152,18 +154,24 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Process Stage */}
-        {processStage && (
-          <Card className="border-blue-200 dark:border-blue-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg">שלבי התהליך</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProcessTracker currentStage={processStage.current_stage} notes={processStage.notes} />
-            </CardContent>
-          </Card>
-        )}
-      </div>
+        </div>
+
+      {/* Visual Timeline */}
+      {timelineStages.length > 0 && processStage && (
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span>מסע התהליך שלך</span>
+              {processStage.notes && (
+                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{processStage.notes}</span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VisualTimeline stages={timelineStages} currentStageName={processStage.current_stage} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
