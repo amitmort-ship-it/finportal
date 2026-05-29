@@ -24,6 +24,8 @@ export default function AdminTimelineEditor({ selectedClient }) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewStage, setPreviewStage] = useState('');
+  const [currentStageRecord, setCurrentStageRecord] = useState(null);
+  const [currentStageName, setCurrentStageName] = useState('');
 
   useEffect(() => {
     loadData();
@@ -32,13 +34,18 @@ export default function AdminTimelineEditor({ selectedClient }) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [templates, clientTimelines] = await Promise.all([
+      const [templates, clientTimelines, processStages] = await Promise.all([
         base44.entities.TimelineTemplate.filter({ key: 'global' }),
         selectedClient ? base44.entities.ClientTimeline.filter({ client_email: selectedClient }) : Promise.resolve([]),
+        selectedClient ? base44.entities.ProcessStage.filter({ client_email: selectedClient }) : Promise.resolve([]),
       ]);
 
       const global = templates[0] || null;
       const clientRec = clientTimelines[0] || null;
+
+      const stageRec = processStages[0] || null;
+      setCurrentStageRecord(stageRec);
+      setCurrentStageName(stageRec?.current_stage || '');
 
       setGlobalTemplate(global);
       setClientRecord(clientRec);
@@ -93,6 +100,16 @@ export default function AdminTimelineEditor({ selectedClient }) {
     }
   };
 
+  const saveCurrentStage = async (stageName) => {
+    if (!selectedClient || !stageName) return;
+    if (currentStageRecord) {
+      await base44.entities.ProcessStage.update(currentStageRecord.id, { current_stage: stageName });
+    } else {
+      const created = await base44.entities.ProcessStage.create({ client_email: selectedClient, current_stage: stageName });
+      setCurrentStageRecord(created);
+    }
+  };
+
   const handlePublish = async () => {
     if (!selectedClient) return;
     setSaving(true);
@@ -104,12 +121,13 @@ export default function AdminTimelineEditor({ selectedClient }) {
         setClientRecord(created);
         setIsCustom(true);
       }
-      const currentStage = stages[0]?.name || '';
+      const stageToPublish = currentStageName || stages[0]?.name || '';
+      await saveCurrentStage(stageToPublish);
       await base44.functions.invoke('notifyStageUpdate', {
         client_email: selectedClient,
-        stage_name: currentStage,
+        stage_name: stageToPublish,
       });
-      toast.success('התבנית פורסמה ומייל נשלח ללקוח');
+      toast.success('השלב פורסם ומייל נשלח ללקוח');
     } catch {
       toast.error('שגיאה בפרסום');
     } finally {
@@ -244,6 +262,40 @@ export default function AdminTimelineEditor({ selectedClient }) {
           הוסף שלב
         </Button>
       </div>
+
+      {/* Current stage selector */}
+      {selectedClient && stages.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-5" dir="rtl">
+          <h3 className="font-semibold mb-3">שלב נוכחי של הלקוח</h3>
+          <select
+            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            value={currentStageName}
+            onChange={e => setCurrentStageName(e.target.value)}
+          >
+            <option value="">בחר שלב נוכחי...</option>
+            {stages.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
+          </select>
+          <Button
+            className="mt-3 gap-2"
+            variant="outline"
+            disabled={saving || !currentStageName}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await saveCurrentStage(currentStageName);
+                toast.success('שלב נוכחי נשמר');
+              } catch {
+                toast.error('שגיאה בשמירה');
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            <Save className="w-4 h-4" />
+            שמור שלב נוכחי
+          </Button>
+        </div>
+      )}
 
       {/* Save buttons */}
       <div className="flex gap-3 flex-wrap pb-4">
