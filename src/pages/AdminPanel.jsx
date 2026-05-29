@@ -10,7 +10,6 @@ import AdminBankApprovals from '@/components/admin/AdminBankApprovals';
 import AdminViewDocuments from '@/components/admin/AdminViewDocuments';
 import AdminPackages from '@/components/admin/AdminPackages';
 import AdminCollaterals from '@/components/admin/AdminCollaterals';
-import AdminProcessStage from '@/components/admin/AdminProcessStage';
 import AdminTimelineEditor from '@/components/admin/AdminTimelineEditor';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
@@ -42,7 +41,6 @@ const TAB_CONFIG = [
   { id: 'documents', label: 'מסמכים', icon: FileText },
   { id: 'packages', label: 'תמהיל', icon: Package },
   { id: 'collaterals', label: 'בטחונות', icon: Lock },
-  { id: 'process', label: 'שלבים' },
   { id: 'timeline', label: 'טיימליין', icon: GitBranch },
 ];
 
@@ -172,10 +170,6 @@ export default function AdminPanel() {
 
         <TabsContent value="collaterals" className="space-y-6">
           <AdminCollaterals selectedClient={selectedClient} />
-        </TabsContent>
-
-        <TabsContent value="process" className="space-y-6">
-          <AdminProcessStage selectedClient={selectedClient} />
         </TabsContent>
 
         <TabsContent value="timeline" className="space-y-6">
