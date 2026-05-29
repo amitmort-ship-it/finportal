@@ -5,9 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ListChecks, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import ProcessTracker from '../ProcessTracker';
+import VisualTimeline from '../VisualTimeline';
 
-const STAGES = [
+const DEFAULT_STAGES = [
   'איסוף מסמכים',
   'בניית תמהיל',
   'מכרז ריביות',
@@ -20,67 +20,83 @@ const nativeSelectClassName = 'mt-1 flex h-9 w-full rounded-md border border-inp
 
 export default function AdminProcessStage({ selectedClient }) {
   const [record, setRecord] = useState(null);
-  const [stage, setStage] = useState('איסוף מסמכים');
+  const [stage, setStage] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [stageNames, setStageNames] = useState(DEFAULT_STAGES);
   const normalizedClientEmail = String(selectedClient || '').trim().toLowerCase();
+
+  // Load stage names from timeline template
+  useEffect(() => {
+    const loadTemplate = async () => {
+      try {
+        // Try client-specific first, then global
+        if (normalizedClientEmail && normalizedClientEmail !== '_all') {
+          const clientTimelines = await base44.entities.ClientTimeline.filter({ client_email: normalizedClientEmail });
+          if (clientTimelines[0]?.stages?.length) {
+            setStageNames(clientTimelines[0].stages.map(s => s.name));
+            return;
+          }
+        }
+        const globals = await base44.entities.TimelineTemplate.filter({ key: 'global' });
+        if (globals[0]?.stages?.length) {
+          setStageNames(globals[0].stages.map(s => s.name));
+        }
+      } catch {
+        // fallback to defaults
+      }
+    };
+    loadTemplate();
+  }, [normalizedClientEmail]);
 
   useEffect(() => {
     if (!normalizedClientEmail || normalizedClientEmail === '_all') {
       setRecord(null);
-      setStage('איסוף מסמכים');
+      setStage('');
       setNotes('');
       return;
     }
 
     let isActive = true;
-
     const load = async () => {
       setLoading(true);
       try {
         const list = await base44.entities.ProcessStage.filter({ client_email: normalizedClientEmail });
         if (!isActive) return;
-
-        const nextRecord = Array.isArray(list) && list.length > 0 ? list[0] : null;
-        const nextStage = STAGES.includes(nextRecord?.current_stage) ? nextRecord.current_stage : 'איסוף מסמכים';
-        const nextNotes = typeof nextRecord?.notes === 'string' ? nextRecord.notes : '';
-
+        const nextRecord = list?.[0] || null;
         setRecord(nextRecord);
-        setStage(nextStage);
-        setNotes(nextNotes);
-      } catch (error) {
+        setStage(nextRecord?.current_stage || '');
+        setNotes(nextRecord?.notes || '');
+      } catch {
         if (!isActive) return;
-        console.error('Failed to load process stage', error);
         setRecord(null);
-        setStage('איסוף מסמכים');
+        setStage('');
         setNotes('');
-        toast.error('לא הצלחנו לטעון את שלב התהליך ללקוח הזה');
+        toast.error('לא הצלחנו לטעון את שלב התהליך');
       } finally {
-        if (isActive) {
-          setLoading(false);
-        }
+        if (isActive) setLoading(false);
       }
     };
-
     load();
-
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, [normalizedClientEmail]);
+
+  // Once stage names are loaded, default the stage if not set
+  useEffect(() => {
+    if (!stage && stageNames.length > 0) {
+      setStage(stageNames[0]);
+    }
+  }, [stageNames]);
 
   const handleSave = async () => {
     if (!normalizedClientEmail || normalizedClientEmail === '_all') {
       toast.error('בחר לקוח');
       return;
     }
-
     setSaving(true);
-
     try {
       const payload = { current_stage: stage, notes: String(notes || '') };
-
       if (record?.id) {
         const updated = await base44.entities.ProcessStage.update(record.id, payload);
         setRecord(updated || { ...record, ...payload });
@@ -91,10 +107,8 @@ export default function AdminProcessStage({ selectedClient }) {
         });
         setRecord(created);
       }
-
       toast.success('שלב התהליך עודכן');
-    } catch (error) {
-      console.error('Failed to save process stage', error);
+    } catch {
       toast.error('לא הצלחנו לשמור את שינוי השלב');
     } finally {
       setSaving(false);
@@ -110,16 +124,18 @@ export default function AdminProcessStage({ selectedClient }) {
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
+    <div className="space-y-6">
       {/* Edit panel */}
-      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="bg-card rounded-xl border border-border p-5 space-y-4 max-w-md">
+        <div className="flex items-center gap-2">
           <ListChecks className="w-5 h-5 text-primary" />
           <h2 className="text-base font-bold">עדכון שלב התהליך</h2>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-8"><div className="w-6 h-6 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-4 border-muted border-t-primary rounded-full animate-spin" />
+          </div>
         ) : (
           <>
             <div>
@@ -129,10 +145,8 @@ export default function AdminProcessStage({ selectedClient }) {
                 onChange={(e) => setStage(e.target.value)}
                 className={nativeSelectClassName}
               >
-                {STAGES.map((currentStage) => (
-                  <option key={currentStage} value={currentStage}>
-                    {currentStage}
-                  </option>
+                {stageNames.map((s) => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>
@@ -153,8 +167,16 @@ export default function AdminProcessStage({ selectedClient }) {
         )}
       </div>
 
-      {/* Preview */}
-      <ProcessTracker currentStage={stage} notes={notes} />
+      {/* Timeline preview */}
+      {stageNames.length > 0 && stage && (
+        <div className="bg-card rounded-xl border border-border p-5">
+          <p className="text-sm font-semibold text-muted-foreground mb-4">תצוגה מקדימה</p>
+          <VisualTimeline
+            stages={stageNames.map(name => ({ name }))}
+            currentStageName={stage}
+          />
+        </div>
+      )}
     </div>
   );
 }
