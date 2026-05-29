@@ -23,7 +23,6 @@ export default function AdminTimelineEditor({ selectedClient }) {
   const [isCustom, setIsCustom] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  // For preview — use the ProcessStage current stage name
   const [previewStage, setPreviewStage] = useState('');
 
   useEffect(() => {
@@ -98,7 +97,6 @@ export default function AdminTimelineEditor({ selectedClient }) {
     if (!selectedClient) return;
     setSaving(true);
     try {
-      // Save client template first
       if (clientRecord) {
         await base44.entities.ClientTimeline.update(clientRecord.id, { stages });
       } else {
@@ -106,7 +104,6 @@ export default function AdminTimelineEditor({ selectedClient }) {
         setClientRecord(created);
         setIsCustom(true);
       }
-      // Send email notification
       const currentStage = stages[0]?.name || '';
       await base44.functions.invoke('notifyStageUpdate', {
         client_email: selectedClient,
@@ -249,7 +246,7 @@ export default function AdminTimelineEditor({ selectedClient }) {
       </div>
 
       {/* Save buttons */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap pb-4">
         <Button onClick={handleSaveGlobal} disabled={saving} className="gap-2">
           <Save className="w-4 h-4" />
           {saving ? 'שומר...' : 'שמור כתבנית גלובלית'}
@@ -261,7 +258,7 @@ export default function AdminTimelineEditor({ selectedClient }) {
           </Button>
         )}
         {selectedClient && (
-          <Button onClick={handlePublish} disabled={saving} variant="default" className="gap-2 bg-green-600 hover:bg-green-700">
+          <Button onClick={handlePublish} disabled={saving} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
             <Send className="w-4 h-4" />
             {saving ? 'שולח...' : 'פרסם ללקוח + שלח מייל'}
           </Button>
