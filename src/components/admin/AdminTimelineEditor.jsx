@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trash2, Plus, GripVertical, RotateCcw, Save } from 'lucide-react';
+import { Trash2, Plus, GripVertical, RotateCcw, Save, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import VisualTimeline from '@/components/VisualTimeline';
 
@@ -89,6 +89,32 @@ export default function AdminTimelineEditor({ selectedClient }) {
       toast.success('תבנית אישית נשמרה ללקוח');
     } catch (e) {
       toast.error('שגיאה בשמירה');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!selectedClient) return;
+    setSaving(true);
+    try {
+      // Save client template first
+      if (clientRecord) {
+        await base44.entities.ClientTimeline.update(clientRecord.id, { stages });
+      } else {
+        const created = await base44.entities.ClientTimeline.create({ client_email: selectedClient, stages });
+        setClientRecord(created);
+        setIsCustom(true);
+      }
+      // Send email notification
+      const currentStage = stages[0]?.name || '';
+      await base44.functions.invoke('notifyStageUpdate', {
+        client_email: selectedClient,
+        stage_name: currentStage,
+      });
+      toast.success('התבנית פורסמה ומייל נשלח ללקוח');
+    } catch {
+      toast.error('שגיאה בפרסום');
     } finally {
       setSaving(false);
     }
@@ -232,6 +258,12 @@ export default function AdminTimelineEditor({ selectedClient }) {
           <Button onClick={handleSaveClient} disabled={saving} variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/5">
             <Save className="w-4 h-4" />
             {saving ? 'שומר...' : 'שמור כתבנית אישית ללקוח זה'}
+          </Button>
+        )}
+        {selectedClient && (
+          <Button onClick={handlePublish} disabled={saving} variant="default" className="gap-2 bg-green-600 hover:bg-green-700">
+            <Send className="w-4 h-4" />
+            {saving ? 'שולח...' : 'פרסם ללקוח + שלח מייל'}
           </Button>
         )}
       </div>
