@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ListChecks, Save } from 'lucide-react';
+import { ListChecks, Save, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import VisualTimeline from '../VisualTimeline';
 
@@ -23,6 +23,7 @@ export default function AdminProcessStage({ selectedClient }) {
   const [stage, setStage] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [stageNames, setStageNames] = useState(DEFAULT_STAGES);
   const normalizedClientEmail = String(selectedClient || '').trim().toLowerCase();
@@ -89,6 +90,20 @@ export default function AdminProcessStage({ selectedClient }) {
     }
   }, [stageNames]);
 
+  const saveStage = async () => {
+    const payload = { current_stage: stage, notes: String(notes || '') };
+    if (record?.id) {
+      const updated = await base44.entities.ProcessStage.update(record.id, payload);
+      setRecord(updated || { ...record, ...payload });
+    } else {
+      const created = await base44.entities.ProcessStage.create({
+        client_email: normalizedClientEmail,
+        ...payload,
+      });
+      setRecord(created);
+    }
+  };
+
   const handleSave = async () => {
     if (!normalizedClientEmail || normalizedClientEmail === '_all') {
       toast.error('בחר לקוח');
@@ -96,27 +111,32 @@ export default function AdminProcessStage({ selectedClient }) {
     }
     setSaving(true);
     try {
-      const payload = { current_stage: stage, notes: String(notes || '') };
-      if (record?.id) {
-        const updated = await base44.entities.ProcessStage.update(record.id, payload);
-        setRecord(updated || { ...record, ...payload });
-      } else {
-        const created = await base44.entities.ProcessStage.create({
-          client_email: normalizedClientEmail,
-          ...payload,
-        });
-        setRecord(created);
-      }
-      // Send email notification to client
-      await base44.functions.invoke('notifyStageUpdate', {
-        client_email: normalizedClientEmail,
-        stage_name: stage,
-      });
-      toast.success('שלב התהליך עודכן ומייל נשלח ללקוח');
+      await saveStage();
+      toast.success('שלב התהליך נשמר');
     } catch {
       toast.error('לא הצלחנו לשמור את שינוי השלב');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!normalizedClientEmail || normalizedClientEmail === '_all') {
+      toast.error('בחר לקוח');
+      return;
+    }
+    setPublishing(true);
+    try {
+      await saveStage();
+      await base44.functions.invoke('notifyStageUpdate', {
+        client_email: normalizedClientEmail,
+        stage_name: stage,
+      });
+      toast.success('השלב פורסם ללקוח ומייל נשלח!');
+    } catch {
+      toast.error('לא הצלחנו לפרסם את השלב');
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -164,10 +184,16 @@ export default function AdminProcessStage({ selectedClient }) {
                 rows={3}
               />
             </div>
-            <Button type="button" onClick={handleSave} disabled={saving || loading} className="w-full gap-2">
-              <Save className="w-4 h-4" />
-              {saving ? 'שומר...' : 'שמור שלב'}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" onClick={handleSave} disabled={saving || publishing || loading} variant="outline" className="flex-1 gap-2">
+                <Save className="w-4 h-4" />
+                {saving ? 'שומר...' : 'שמור'}
+              </Button>
+              <Button type="button" onClick={handlePublish} disabled={saving || publishing || loading} className="flex-1 gap-2">
+                <Send className="w-4 h-4" />
+                {publishing ? 'שולח...' : 'פרסם ללקוח'}
+              </Button>
+            </div>
           </>
         )}
       </div>

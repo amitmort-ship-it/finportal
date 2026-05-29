@@ -1,13 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
+  const body = await req.json();
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me();
   if (user?.role !== 'admin') {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { client_email, stage_name } = await req.json();
+  const { client_email, stage_name } = body;
   if (!client_email || !stage_name) {
     return Response.json({ error: 'Missing params' }, { status: 400 });
   }
