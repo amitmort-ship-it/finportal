@@ -168,22 +168,45 @@ export default function AdminTimelineEditor({ selectedClient }) {
   }
 
   return (
-    <div className="space-y-8" dir="rtl">
-      {/* Preview */}
-      {stages.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">תצוגה מקדימה</h3>
+    <div className="space-y-6" dir="rtl">
+      {/* Quick action: current stage */}
+      {selectedClient && stages.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-5 flex flex-col md:flex-row md:items-end gap-4">
+          <div className="flex-1">
+            <Label className="mb-1.5 block font-semibold">שלב נוכחי של הלקוח</Label>
             <select
-              className="text-xs border border-border rounded-md px-2 py-1 bg-background"
-              value={previewStage}
-              onChange={e => setPreviewStage(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={currentStageName}
+              onChange={e => setCurrentStageName(e.target.value)}
             >
-              <option value="">בחר שלב נוכחי לתצוגה</option>
+              <option value="">בחר שלב...</option>
               {stages.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
             </select>
           </div>
-          <VisualTimeline stages={stages} currentStageName={previewStage || stages[0]?.name} />
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              disabled={saving || !currentStageName}
+              className="gap-2"
+              onClick={async () => {
+                setSaving(true);
+                try { await saveCurrentStage(currentStageName); toast.success('שלב נשמר'); }
+                catch { toast.error('שגיאה בשמירה'); }
+                finally { setSaving(false); }
+              }}
+            >
+              <Save className="w-4 h-4" />
+              שמור
+            </Button>
+            <Button
+              disabled={saving || !currentStageName}
+              className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+              onClick={handlePublish}
+            >
+              <Send className="w-4 h-4" />
+              {saving ? 'שולח...' : 'שמור + שלח מייל'}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -263,56 +286,16 @@ export default function AdminTimelineEditor({ selectedClient }) {
         </Button>
       </div>
 
-      {/* Current stage selector */}
-      {selectedClient && stages.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-5" dir="rtl">
-          <h3 className="font-semibold mb-3">שלב נוכחי של הלקוח</h3>
-          <select
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            value={currentStageName}
-            onChange={e => setCurrentStageName(e.target.value)}
-          >
-            <option value="">בחר שלב נוכחי...</option>
-            {stages.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
-          </select>
-          <Button
-            className="mt-3 gap-2"
-            variant="outline"
-            disabled={saving || !currentStageName}
-            onClick={async () => {
-              setSaving(true);
-              try {
-                await saveCurrentStage(currentStageName);
-                toast.success('שלב נוכחי נשמר');
-              } catch {
-                toast.error('שגיאה בשמירה');
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            <Save className="w-4 h-4" />
-            שמור שלב נוכחי
-          </Button>
-        </div>
-      )}
-
-      {/* Save buttons */}
+      {/* Save template buttons */}
       <div className="flex gap-3 flex-wrap pb-4">
-        <Button onClick={handleSaveGlobal} disabled={saving} className="gap-2">
+        <Button onClick={handleSaveGlobal} disabled={saving} variant="outline" className="gap-2">
           <Save className="w-4 h-4" />
-          {saving ? 'שומר...' : 'שמור כתבנית גלובלית'}
+          {saving ? 'שומר...' : 'שמור תבנית גלובלית'}
         </Button>
         {selectedClient && (
           <Button onClick={handleSaveClient} disabled={saving} variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/5">
             <Save className="w-4 h-4" />
-            {saving ? 'שומר...' : 'שמור כתבנית אישית ללקוח זה'}
-          </Button>
-        )}
-        {selectedClient && (
-          <Button onClick={handlePublish} disabled={saving} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
-            <Send className="w-4 h-4" />
-            {saving ? 'שולח...' : 'פרסם ללקוח + שלח מייל'}
+            {saving ? 'שומר...' : 'שמור תבנית אישית ללקוח'}
           </Button>
         )}
       </div>
