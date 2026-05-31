@@ -141,7 +141,7 @@ export default function AdminPanel() {
         <TabsContent value="dashboard" className="space-y-6">
           <AdminNotifications />
           <RefinanceMonitor />
-          <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); setActiveTab('updates'); }} />
+          <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); }} />
         </TabsContent>
 
         <TabsContent value="business" className="space-y-6">
