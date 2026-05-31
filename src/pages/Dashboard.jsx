@@ -27,7 +27,7 @@ export default function Dashboard() {
   const updates = (data?.updateData || []).slice(0, 5);
   const timelineStages = data?.timelineStages || [];
   const stats = {
-    refinance: data?.mortgageData?.length || 0,
+    refinance: data?.packageData?.length || 0,
     collateral: (data?.collaterals || []).filter(c => c.status !== 'completed').length,
     document: (data?.fileRequests || []).filter(f => f.status === 'pending').length,
     approval: data?.approvals?.length || 0,
