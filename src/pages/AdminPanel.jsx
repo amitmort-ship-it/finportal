@@ -125,6 +125,7 @@ export default function AdminPanel() {
             { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients', bg: 'bg-green-600', text: 'text-white' },
             { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', bg: 'bg-blue-600', text: 'text-white' },
             { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09', bg: 'bg-amber-600', text: 'text-white' },
+            { label: 'יומן', url: 'https://calendar.google.com/calendar/u/3/r/week', bg: 'bg-sky-500', text: 'text-white' },
           ].map(({ label, url, bg, text }) => (
             <a
               key={label}
