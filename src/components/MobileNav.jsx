@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart, User } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart, User, StickyNote } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useState } from 'react';
+import MobileNotesModal from './MobileNotesModal';
 
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
@@ -24,6 +26,7 @@ export default function MobileNav() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const isToolsArea = location.pathname === '/tools';
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const items = isAdmin
     ? [...navItems, { path: '/simulations', label: 'סימולציות', icon: LineChart }, { path: '/admin', label: 'ניהול', icon: Settings }]
@@ -78,6 +81,19 @@ export default function MobileNav() {
           })}
         </div>
       </div>
+
+      {/* Notes button — admin only */}
+      {isAdmin && (
+        <button
+          onClick={() => setNotesOpen(true)}
+          className="fixed bottom-20 left-4 z-40 w-11 h-11 rounded-full bg-card border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}
+        >
+          <StickyNote className="w-5 h-5" />
+        </button>
+      )}
+
+      <MobileNotesModal open={notesOpen} onClose={() => setNotesOpen(false)} />
     </div>
   );
 }
