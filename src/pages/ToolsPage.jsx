@@ -365,6 +365,10 @@ function CompoundInterestCalculator() {
     }));
   };
 
+  const TAX_RATE = 0.25;
+  const netInterest = results.totalInterest * (1 - TAX_RATE);
+  const netBalance = results.totalDeposits + netInterest;
+
   const summaryCards = [
     {
       title: 'הסכום העתידי שלך',
@@ -383,6 +387,13 @@ function CompoundInterestCalculator() {
       value: formatCurrency(results.totalInterest),
       icon: Landmark,
       tone: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/25 dark:border-amber-900/50 dark:text-amber-300',
+    },
+    {
+      title: 'רווח לאחר מס (25%)',
+      value: formatCurrency(netInterest),
+      subtitle: `סה"כ נטו: ${formatCurrency(netBalance)}`,
+      icon: Calculator,
+      tone: 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300',
     },
   ];
 
@@ -438,16 +449,20 @@ function CompoundInterestCalculator() {
         </div>
 
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {summaryCards.map(({ title, value, icon: Icon, tone }) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {summaryCards.map((card) => {
+              const { title, value, icon: Icon, tone } = card;
+              return (
               <div key={title} className={`rounded-2xl border p-4 md:p-5 text-right ${tone}`}>
                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/70 dark:bg-slate-950/70 flex items-center justify-center mb-3">
                   <Icon className="w-5 h-5" />
                 </div>
                 <p className="text-sm font-medium opacity-90">{title}</p>
                 <p className="text-base md:text-xl font-bold mt-1 text-foreground leading-tight">{value}</p>
+                {card.subtitle && <p className="text-xs mt-1 opacity-75">{card.subtitle}</p>}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-4 md:p-5">
@@ -552,6 +567,10 @@ function CompoundInterestCalculator() {
                         <span className="text-muted-foreground">רווח מהריבית</span>
                         <span className="text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</span>
                       </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">רווח לאחר מס (25%)</span>
+                        <span className="text-violet-700 font-medium">{formatCurrency(row.totalInterest * 0.75)}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -564,6 +583,7 @@ function CompoundInterestCalculator() {
                         <th className="text-right py-3 px-2 font-medium">יתרה</th>
                         <th className="text-right py-3 px-2 font-medium">סך הפקדות</th>
                         <th className="text-right py-3 px-2 font-medium">רווח מהריבית</th>
+                        <th className="text-right py-3 px-2 font-medium">רווח לאחר מס (25%)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -573,6 +593,7 @@ function CompoundInterestCalculator() {
                           <td className="py-3 px-2 text-foreground">{formatCurrency(row.balance)}</td>
                           <td className="py-3 px-2 text-muted-foreground">{formatCurrency(row.totalDeposits)}</td>
                           <td className="py-3 px-2 text-emerald-700 font-medium">{formatCurrency(row.totalInterest)}</td>
+                          <td className="py-3 px-2 text-violet-700 font-medium">{formatCurrency(row.totalInterest * 0.75)}</td>
                         </tr>
                       ))}
                     </tbody>
