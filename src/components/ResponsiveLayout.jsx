@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import AdminClientViewPicker from './AdminClientViewPicker';
+import SidebarNotes from './SidebarNotes';
 import { useState } from 'react';
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
@@ -136,6 +137,8 @@ export default function ResponsiveLayout() {
             </>
           )}
         </nav>
+
+        {isAdmin && <SidebarNotes />}
 
         {isAdmin && (
           <div className="px-4 pb-3 space-y-1">
