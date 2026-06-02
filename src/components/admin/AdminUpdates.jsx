@@ -4,8 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, Send, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { he } from 'date-fns/locale';
+function formatIsraeliDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('he-IL', {
+    timeZone: 'Asia/Jerusalem',
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -407,7 +416,7 @@ export default function AdminUpdates({ selectedClient }) {
                         </div>
                         <p className="text-foreground dark:text-slate-100 break-words">{item.cleanMessage}</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                          {formatIsraeliDate(item.createdAt)}
                         </p>
                       </div>
                       <Button
@@ -441,7 +450,7 @@ export default function AdminUpdates({ selectedClient }) {
                       <div className="flex-1 min-w-0">
                         <p className="text-foreground break-words whitespace-pre-line">{u.message}</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {u.created_date ? format(new Date(u.created_date), 'dd.MM.yyyy HH:mm', { locale: he }) : ''}
+                          {formatIsraeliDate(u.created_date)}
                         </p>
                       </div>
                       <Button

@@ -2,8 +2,17 @@ import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Bell, FileUp, LogIn, UserPlus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { he } from 'date-fns/locale';
+function formatIsraeliDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('he-IL', {
+    timeZone: 'Asia/Jerusalem',
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 import { toast } from 'sonner';
 
 const ADMIN_NOTIFICATIONS_EMAIL = '__admin__';
@@ -252,9 +261,7 @@ export default function AdminNotifications({ selectedClient }) {
                       </div>
                       <p className="text-sm text-foreground dark:text-slate-100 break-words leading-relaxed">{notification.message}</p>
                       <p className="text-xs text-muted-foreground">
-                        {notification.createdAt
-                          ? format(new Date(notification.createdAt), 'dd.MM.yyyy HH:mm', { locale: he })
-                          : ''}
+                        {formatIsraeliDate(notification.createdAt)}
                       </p>
                     </div>
                   </div>
