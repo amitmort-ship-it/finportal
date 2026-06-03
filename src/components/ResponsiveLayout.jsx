@@ -149,6 +149,7 @@ export default function ResponsiveLayout() {
               { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
               { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
               { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09' },
+              { label: 'עוגנים', url: 'https://www.snpv.co.il/anchors' },
               { label: 'יומן', url: 'https://calendar.google.com/calendar/u/3/r/week' },
             ].map(({ label, url }) => (
               <a
