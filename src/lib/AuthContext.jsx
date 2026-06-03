@@ -94,8 +94,15 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const profiles = await base44.entities.ClientProfile.filter({ email: currentUser.email });
-        if (profiles.length > 0 && profiles[0].full_name) {
-          currentUser.full_name = profiles[0].full_name;
+        if (profiles.length > 0) {
+          if (profiles[0].full_name) {
+            currentUser.full_name = profiles[0].full_name;
+          }
+          if (profiles[0].access_blocked && currentUser.role !== 'admin') {
+            setAuthError({ type: 'access_blocked', message: 'הגישה שלך חסומה. אנא פנה ליועץ.' });
+            setIsLoadingAuth(false);
+            return;
+          }
         }
       } catch (e) {
       }

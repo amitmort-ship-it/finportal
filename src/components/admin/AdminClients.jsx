@@ -15,6 +15,8 @@ import {
   MailPlus,
   FlagOff,
   Timer,
+  ShieldOff,
+  ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -144,6 +146,13 @@ export default function AdminClients() {
   const handleDelete = async (id) => {
     await base44.entities.ClientProfile.delete(id);
     toast.success('תיק הלקוח נמחק');
+    await loadClients();
+  };
+
+  const handleToggleBlock = async (client) => {
+    const newBlocked = !client.access_blocked;
+    await base44.entities.ClientProfile.update(client.id, { access_blocked: newBlocked });
+    toast.success(newBlocked ? 'גישת הלקוח נחסמה' : 'גישת הלקוח שוחררה');
     await loadClients();
   };
 
@@ -447,6 +456,20 @@ export default function AdminClients() {
 
                   <Button
                     size="sm"
+                    variant="outline"
+                    className={`gap-1.5 ${client.access_blocked ? 'text-red-600 border-red-300 bg-red-50 hover:bg-red-100' : 'text-slate-500 border-slate-300 hover:bg-slate-50'}`}
+                    onClick={() => handleToggleBlock(client)}
+                    title={client.access_blocked ? 'שחרר גישה' : 'חסום גישה למערכת'}
+                  >
+                    {client.access_blocked ? (
+                      <><ShieldCheck className="w-3.5 h-3.5" />שחרר גישה</>
+                    ) : (
+                      <><ShieldOff className="w-3.5 h-3.5" />חסום גישה</>
+                    )}
+                  </Button>
+
+                  <Button
+                    size="sm"
                     variant={client.treatment_ended_at ? 'secondary' : 'outline'}
                     className={`gap-1.5 ${client.treatment_ended_at ? 'text-muted-foreground' : 'text-orange-600 border-orange-300 hover:bg-orange-50'}`}
                     onClick={() => handleEndTreatment(client)}
@@ -535,6 +558,19 @@ export default function AdminClients() {
                     </div>
                     {editingId !== client.id && (
                       <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`gap-1.5 ${client.access_blocked ? 'text-red-600 border-red-300 bg-red-50 hover:bg-red-100' : 'text-slate-500 border-slate-300 hover:bg-slate-50'}`}
+                          onClick={() => handleToggleBlock(client)}
+                          title={client.access_blocked ? 'שחרר גישה' : 'חסום גישה למערכת'}
+                        >
+                          {client.access_blocked ? (
+                            <><ShieldCheck className="w-3.5 h-3.5" />שחרר גישה</>
+                          ) : (
+                            <><ShieldOff className="w-3.5 h-3.5" />חסום גישה</>
+                          )}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

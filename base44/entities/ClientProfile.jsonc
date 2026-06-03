@@ -18,6 +18,11 @@
     "treatment_ended_at": {
       "type": "string",
       "description": "ISO date when treatment was marked as ended"
+    },
+    "access_blocked": {
+      "type": "boolean",
+      "description": "Whether the client's portal access is blocked",
+      "default": false
     }
   },
   "required": [

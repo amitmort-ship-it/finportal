@@ -7,6 +7,7 @@ import { ThemeProvider } from 'next-themes';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { base44 } from '@/api/base44Client';
 import ResponsiveLayout from './components/ResponsiveLayout';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -40,6 +41,21 @@ const AuthenticatedApp = () => {
     } else if (authError.type === 'auth_required') {
       navigateToLogin();
       return null;
+    } else if (authError.type === 'access_blocked') {
+      return (
+        <div dir="rtl" className="min-h-screen flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm w-full bg-card border border-border rounded-2xl p-8 text-center shadow-lg space-y-4">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+            </div>
+            <h2 className="text-xl font-bold text-foreground">הגישה חסומה</h2>
+            <p className="text-muted-foreground text-sm">הגישה שלך למערכת חסומה. אנא פנה ליועץ שלך לפרטים נוספים.</p>
+            <button onClick={() => base44.auth.logout()} className="w-full mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+              התנתק
+            </button>
+          </div>
+        </div>
+      );
     }
   }
 
