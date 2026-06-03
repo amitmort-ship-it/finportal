@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Bell, Package, Shield, FileText, Building2, Activity, Landmark } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import VisualTimeline from '@/components/VisualTimeline';
+import MeetingRoomCard from '@/components/MeetingRoomCard';
 
 export default function Dashboard() {
   const { user, caseEmail, adminViewClient } = useAuth();
@@ -109,6 +110,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Meeting Room */}
+      <MeetingRoomCard />
 
       {/* Main content: Updates + Mortgage side by side */}
       <div className="grid md:grid-cols-2 gap-4">

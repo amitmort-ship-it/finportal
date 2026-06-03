@@ -11,6 +11,7 @@ import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-r
 import ThemeToggle from './ThemeToggle';
 import AdminClientViewPicker from './AdminClientViewPicker';
 import SidebarNotes from './SidebarNotes';
+import MeetingRoomAdmin from './admin/MeetingRoomAdmin';
 import { useState } from 'react';
 const navItems = [
   { path: '/', label: 'ראשי', icon: LayoutDashboard },
@@ -138,6 +139,11 @@ export default function ResponsiveLayout() {
           )}
         </nav>
 
+        {isAdmin && (
+          <div className="mx-3 mb-3 rounded-xl border border-border bg-muted/30 p-3">
+            <MeetingRoomAdmin />
+          </div>
+        )}
         {isAdmin && <SidebarNotes />}
 
         {isAdmin && (
