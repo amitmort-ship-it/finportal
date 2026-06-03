@@ -457,7 +457,7 @@ export default function AdminClients() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`gap-1.5 ${client.access_blocked ? 'text-red-600 border-red-300 bg-red-50 hover:bg-red-100' : 'text-slate-500 border-slate-300 hover:bg-slate-50'}`}
+                    className={`gap-1.5 ${client.access_blocked ? 'text-orange-600 border-orange-300 bg-orange-50 hover:bg-orange-100' : 'text-orange-600 border-orange-300 hover:bg-orange-50'}`}
                     onClick={() => handleToggleBlock(client)}
                     title={client.access_blocked ? 'שחרר גישה' : 'חסום גישה למערכת'}
                   >
@@ -561,7 +561,7 @@ export default function AdminClients() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={`gap-1.5 ${client.access_blocked ? 'text-red-600 border-red-300 bg-red-50 hover:bg-red-100' : 'text-slate-500 border-slate-300 hover:bg-slate-50'}`}
+                          className={`gap-1.5 ${client.access_blocked ? 'text-orange-600 border-orange-300 bg-orange-50 hover:bg-orange-100' : 'text-orange-600 border-orange-300 hover:bg-orange-50'}`}
                           onClick={() => handleToggleBlock(client)}
                           title={client.access_blocked ? 'שחרר גישה' : 'חסום גישה למערכת'}
                         >
