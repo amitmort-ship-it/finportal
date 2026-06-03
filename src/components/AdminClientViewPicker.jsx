@@ -110,7 +110,10 @@ export default function AdminClientViewPicker() {
                   adminViewClient?.email === c.email ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'
                 }`}
               >
-                <span className="font-medium">{c.full_name || c.email}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium">{c.full_name || c.email}</span>
+                  {c.access_blocked && <span className="text-orange-500 text-[10px] font-semibold">(חסום)</span>}
+                </div>
                 <span className="text-muted-foreground" dir="ltr">{c.email}</span>
               </button>
             ))}
