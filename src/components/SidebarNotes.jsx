@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { StickyNote, Plus, Trash2, Check } from 'lucide-react';
 
-const STORAGE_KEY = 'sidebar_notes_v1';
-
 export default function SidebarNotes() {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
@@ -15,28 +13,31 @@ export default function SidebarNotes() {
   useEffect(() => {
     const load = async () => {
       try {
-        const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        if (Array.isArray(local) && local.length > 0) {
-          setNotes(local);
-        }
         const records = await base44.entities.BusinessData.filter({ key: 'main' });
         if (records.length > 0) {
           const r = records[0];
           setRecordId(r.id);
-          if (Array.isArray(r.sidebarNotes) && r.sidebarNotes.length > 0) {
-            setNotes(r.sidebarNotes);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(r.sidebarNotes));
-          }
+          const remoteNotes = Array.isArray(r.sidebarNotes) ? r.sidebarNotes : [];
+          setNotes(remoteNotes);
         }
       } catch (e) {
         // silent
       }
     };
     load();
+
+    // Real-time sync across devices
+    const unsubscribe = base44.entities.BusinessData.subscribe((event) => {
+      if (event.data?.key === 'main' && Array.isArray(event.data?.sidebarNotes)) {
+        setNotes(event.data.sidebarNotes);
+        if (event.data.id) setRecordId(event.data.id);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const persist = (updated) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       try {
