@@ -62,6 +62,29 @@
       "type": "string",
       "description": "Free-form notes and lists",
       "default": ""
+    },
+    "sidebarNotes": {
+      "type": "array",
+      "description": "Quick notes shown in admin sidebar",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "meetLink": {
+      "type": "string",
+      "description": "Google Meet link for the virtual meeting room",
+      "default": ""
+    },
+    "meetStatus": {
+      "type": "string",
+      "enum": [
+        "available",
+        "busy",
+        "away"
+      ],
+      "description": "Admin availability status for the virtual meeting room",
+      "default": "away"
     }
   },
   "required": [
