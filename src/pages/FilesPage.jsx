@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { FileUp, Loader2, Download, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import ClientDownloadableDocs from '@/components/ClientDownloadableDocs';
 import ClientServiceAgreement from '@/components/ClientServiceAgreement';
+import ClientPowerOfAttorney from '@/components/ClientPowerOfAttorney';
 import { toast } from 'sonner';
 
 export default function FilesPage() {
@@ -99,6 +100,7 @@ export default function FilesPage() {
       </div>
 
       <ClientServiceAgreement clientEmail={caseEmail} />
+      <ClientPowerOfAttorney clientEmail={caseEmail} />
       <ClientDownloadableDocs clientEmail={caseEmail} />
 
       {requests.length === 0 ? (

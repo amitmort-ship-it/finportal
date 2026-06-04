@@ -4,6 +4,7 @@ import { FileText, Download, Upload, Loader2, Plus, FolderOpen, CheckCircle2, XC
 import AdminDocumentRequest from './AdminDocumentRequest';
 import AdminDownloadableDocs from './AdminDownloadableDocs';
 import AdminServiceAgreement from './AdminServiceAgreement';
+import AdminPowerOfAttorney from './AdminPowerOfAttorney';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -453,6 +454,7 @@ export default function AdminViewDocuments({ selectedClient }) {
       </div>
 
       <AdminServiceAgreement selectedClient={selectedClient} />
+      <AdminPowerOfAttorney selectedClient={selectedClient} />
       <AdminDownloadableDocs selectedClient={selectedClient} />
 
       {requests.length === 0 ? (
