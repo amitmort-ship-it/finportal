@@ -16,11 +16,27 @@
     },
     "file_url": {
       "type": "string",
-      "description": "URL of the approval document"
+      "description": "URL of the primary approval document"
     },
     "file_name": {
       "type": "string",
-      "description": "Original file name"
+      "description": "Original file name of primary document"
+    },
+    "additional_files": {
+      "type": "array",
+      "description": "Additional document files for this approval",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_url": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
     },
     "notes": {
       "type": "string",

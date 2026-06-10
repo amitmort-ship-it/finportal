@@ -26,7 +26,7 @@ import {
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
 const nativeSelectClassName = 'mt-1 w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
 
-const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', ai_data: null };
+const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', additional_files: [], ai_data: null };
 
 const mergeParsedIntoForm = (currentForm, parsedResult) => {
   if (!parsedResult?.ai_data) return currentForm;
@@ -76,6 +76,8 @@ export default function AdminBankApprovals({ selectedClient }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editUploading, setEditUploading] = useState(false);
+  const [additionalUploading, setAdditionalUploading] = useState(false);
+  const [editAdditionalUploading, setEditAdditionalUploading] = useState(false);
   const [insightsForm, setInsightsForm] = useState({
     admin_summary: '',
     client_summary: '',
@@ -162,6 +164,37 @@ export default function AdminBankApprovals({ selectedClient }) {
       publish_to_client: !!sharedInsights.publish_to_client,
     });
   }, [approvals]);
+
+  const handleAdditionalFileUpload = async (e, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const setLoader = isEdit ? setEditAdditionalUploading : setAdditionalUploading;
+    const setTargetForm = isEdit ? setEditForm : setForm;
+
+    setLoader(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setTargetForm(prev => ({
+        ...prev,
+        additional_files: [...(prev.additional_files || []), { file_url, file_name: file.name }],
+      }));
+      toast.success('הקובץ הנוסף הועלה');
+    } catch {
+      toast.error('שגיאה בהעלאת הקובץ');
+    } finally {
+      setLoader(false);
+    }
+  };
+
+  const removeAdditionalFile = (idx, isEdit = false) => {
+    const setTargetForm = isEdit ? setEditForm : setForm;
+    setTargetForm(prev => ({
+      ...prev,
+      additional_files: (prev.additional_files || []).filter((_, i) => i !== idx),
+    }));
+  };
 
   const handleFileUpload = async (e, isEdit = false) => {
     const file = e.target.files?.[0];
@@ -267,6 +300,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       offer_expiry_date: a.offer_expiry_date || '',
       file_url: a.file_url || '',
       file_name: a.file_name || '',
+      additional_files: Array.isArray(a.additional_files) ? a.additional_files : [],
       ai_data: a.ai_data || null,
     });
   };
@@ -436,6 +470,25 @@ export default function AdminBankApprovals({ selectedClient }) {
                   {form.ai_data?.tracks?.length ? (
                     <p className="mt-2 text-xs text-emerald-600">זוהה תמהיל מוצע של {form.ai_data.tracks.length} מסלולים מהמסמך.</p>
                   ) : null}
+                </div>
+                <div>
+                  <Label>קבצים נוספים</Label>
+                  <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 transition-all">
+                    <input type="file" className="hidden" onChange={e => handleAdditionalFileUpload(e, false)} disabled={additionalUploading} />
+                    {additionalUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
+                    <span className="text-sm text-muted-foreground">הוסף קובץ נוסף</span>
+                  </label>
+                  {(form.additional_files || []).length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {form.additional_files.map((f, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs bg-muted/50 rounded px-2 py-1.5">
+                          <Download className="w-3 h-3 text-primary shrink-0" />
+                          <span className="flex-1 truncate">{f.file_name}</span>
+                          <button type="button" onClick={() => removeAdditionalFile(idx, false)} className="text-destructive hover:text-destructive/80"><X className="w-3 h-3" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button type="button" onClick={handleCreate} disabled={!form.client_email || !form.bank_name} className="w-full">הוסף אישור</Button>
             </div>
@@ -635,6 +688,25 @@ export default function AdminBankApprovals({ selectedClient }) {
                       <p className="mt-2 text-xs text-emerald-600">זוהה תמהיל מוצע של {editForm.ai_data.tracks.length} מסלולים מהמסמך.</p>
                     ) : null}
                   </div>
+                  <div>
+                    <Label className="text-xs">קבצים נוספים</Label>
+                    <label className="flex items-center gap-2 mt-1 border border-dashed border-border rounded-lg p-2 cursor-pointer hover:border-primary/50 transition-all">
+                      <input type="file" className="hidden" onChange={e => handleAdditionalFileUpload(e, true)} disabled={editAdditionalUploading} />
+                      {editAdditionalUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <span className="text-xs text-muted-foreground">הוסף קובץ נוסף</span>
+                    </label>
+                    {(editForm.additional_files || []).length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {editForm.additional_files.map((f, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-xs bg-muted/50 rounded px-2 py-1.5">
+                            <Download className="w-3 h-3 text-primary shrink-0" />
+                            <span className="flex-1 truncate">{f.file_name}</span>
+                            <button type="button" onClick={() => removeAdditionalFile(idx, true)} className="text-destructive hover:text-destructive/80"><X className="w-3 h-3" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Button type="button" size="sm" onClick={handleSaveEdit} className="gap-1"><Check className="w-3 h-3" />שמור</Button>
                     <Button type="button" size="sm" variant="outline" onClick={() => setEditingId(null)} className="gap-1"><X className="w-3 h-3" />ביטול</Button>
@@ -657,6 +729,15 @@ export default function AdminBankApprovals({ selectedClient }) {
                       <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
                         <Download className="w-3 h-3" />{a.file_name || 'הורד מסמך'}
                       </a>
+                    )}
+                    {Array.isArray(a.additional_files) && a.additional_files.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {a.additional_files.map((f, idx) => (
+                          <a key={idx} href={f.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                            <Download className="w-3 h-3" />{f.file_name || `קובץ ${idx + 1}`}
+                          </a>
+                        ))}
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">
