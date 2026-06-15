@@ -103,7 +103,10 @@ export default function AdminViewDocuments({ selectedClient }) {
           : Promise.resolve([]),
       ]);
 
-      const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
+      const normalizedClient = normalizeEmail(selectedClient);
+      const filtered = normalizedClient
+        ? data.filter((r) => normalizeEmail(r.client_email) === normalizedClient)
+        : data;
       const normalizedRequests = filtered.map((request) => ({
         ...request,
         uploaded_files: Array.isArray(request?.uploaded_files) ? request.uploaded_files : [],
@@ -463,6 +466,55 @@ export default function AdminViewDocuments({ selectedClient }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {uncategorized.length > 0 && (
+            <div className="md:col-span-3 rounded-xl border border-slate-200 bg-slate-50/40 flex flex-col">
+              <div className="px-4 py-3 rounded-t-xl font-bold text-sm text-slate-600 border-b border-slate-200 flex items-center justify-between">
+                <span>ללא קטגוריה</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600">{uncategorized.length}</span>
+              </div>
+              <div className="p-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                {uncategorized.map((req) => {
+                  const parsedContent = splitDescriptionAndReviewNotes(req);
+                  return (
+                    <div key={req.id} className="bg-white dark:bg-card rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        {editingTitles[req.id] !== undefined ? (
+                          <div className="flex items-center gap-1 flex-1">
+                            <Input value={editingTitles[req.id]} onChange={(e) => setEditingTitles((prev) => ({ ...prev, [req.id]: e.target.value }))} className="h-7 text-xs" onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(req.id); if (e.key === 'Escape') setEditingTitles((prev) => { const n = {...prev}; delete n[req.id]; return n; }); }} autoFocus />
+                            <Button type="button" size="sm" variant="ghost" className="h-7 px-1 text-xs" onClick={() => handleSaveTitle(req.id)}><Save className="w-3 h-3" /></Button>
+                          </div>
+                        ) : (
+                          <h3 className="font-medium text-sm leading-snug cursor-pointer hover:text-primary" onClick={() => setEditingTitles((prev) => ({ ...prev, [req.id]: req.title }))}>{req.title}</h3>
+                        )}
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${req.status === 'uploaded' ? 'bg-blue-50 text-blue-600' : req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : req.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                          {req.status === 'pending' ? 'ממתין' : req.status === 'uploaded' ? 'בדיקה' : req.status === 'approved' ? 'אושר' : 'תיקון'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{req.client_email}</div>
+                      {req.uploaded_files?.length > 0 && (
+                        <div className="space-y-1">
+                          {req.uploaded_files.map((file, idx) => (
+                            <a key={idx} href={file.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 p-1.5 rounded bg-muted/50 hover:bg-muted text-xs text-primary hover:underline transition-colors">
+                              <Download className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{file.file_name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      <div className="space-y-2 pt-2 border-t border-border">
+                        <Textarea value={reviewNotes[req.id] || ''} onChange={(e) => setReviewNotes((prev) => ({ ...prev, [req.id]: e.target.value }))} placeholder="הערה..." className="min-h-16 text-xs" />
+                        <div className="flex flex-col gap-1.5">
+                          <Button type="button" size="sm" variant="outline" onClick={() => handleSaveNotes(req.id)} className="gap-2 w-full text-xs h-8"><Save className="w-3 h-3" />שמור</Button>
+                          {(req.status === 'uploaded' || req.status === 'rejected') && <Button type="button" size="sm" onClick={() => handleStatusUpdate(req.id, 'approved')} className="gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-xs h-8"><CheckCircle2 className="w-3 h-3" />אשר</Button>}
+                          {(req.status === 'uploaded' || req.status === 'approved') && <Button type="button" size="sm" variant="destructive" onClick={() => handleStatusUpdate(req.id, 'rejected')} className="gap-2 w-full text-xs h-8"><XCircle className="w-3 h-3" />דחה</Button>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {CATEGORIES.map(cat => (
             <div key={cat} className={`rounded-xl border ${CATEGORY_STYLES[cat].color} flex flex-col`}>
               <div className={`px-4 py-3 rounded-t-xl font-bold text-sm ${CATEGORY_STYLES[cat].headerColor} border-b border-current/10 flex items-center justify-between`}>
