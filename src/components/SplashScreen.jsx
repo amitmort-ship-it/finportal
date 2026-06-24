@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 const LOGO_URL = 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/34451277e_1.png';
-const BG_URL = 'https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/3edc5346a_generated_image.png';
+// Brand colors: dark teal navy background, green + purple accent
 
 const ghostIcons = [
   { top: '8%', left: '12%', size: 52, delay: '0s', type: 0 },
@@ -62,10 +62,7 @@ export default function SplashScreen({ onDone }) {
       position: 'fixed', inset: 0, zIndex: 9999,
       opacity: phase === 'fade' ? 0 : 1,
       transition: 'opacity 0.6s ease',
-      background: '#0D0B2A',
-      backgroundImage: `url(${BG_URL})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      background: 'linear-gradient(160deg, #0A1E2E 0%, #0D2137 45%, #0E1A30 100%)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       overflow: 'hidden',
@@ -99,7 +96,7 @@ export default function SplashScreen({ onDone }) {
         {/* Glow orb */}
         <div style={{
           position: 'absolute', width: 280, height: 280, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0,220,255,0.18) 0%, rgba(180,0,255,0.22) 55%, transparent 75%)',
+          background: 'radial-gradient(circle, rgba(0,201,122,0.2) 0%, rgba(108,63,197,0.25) 55%, transparent 75%)',
           animation: 'splashOrbPulse 3s ease-in-out infinite',
           filter: 'blur(2px)',
         }} />
@@ -108,7 +105,7 @@ export default function SplashScreen({ onDone }) {
         <div style={{
           position: 'absolute', width: 270, height: 270, borderRadius: '50%',
           border: '2.5px solid transparent',
-          backgroundImage: 'linear-gradient(#0D0B2A, #0D0B2A), conic-gradient(from 0deg, #00E5FF, #BF00FF, #FF00AA, #00E5FF)',
+          backgroundImage: 'linear-gradient(#0D2137, #0D2137), conic-gradient(from 0deg, #00C97A, #6C3FC5, #00C97A)',
           backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box',
           animation: 'splashSpinRing 3s linear infinite',
         }} />
@@ -117,7 +114,7 @@ export default function SplashScreen({ onDone }) {
         <div style={{
           position: 'absolute', width: 295, height: 295, borderRadius: '50%',
           border: '1.5px solid transparent',
-          backgroundImage: 'linear-gradient(#0D0B2A, #0D0B2A), conic-gradient(from 180deg, rgba(0,229,255,0.3), rgba(191,0,255,0.3), rgba(0,229,255,0.3))',
+          backgroundImage: 'linear-gradient(#0A1E2E, #0A1E2E), conic-gradient(from 180deg, rgba(0,201,122,0.3), rgba(108,63,197,0.3), rgba(0,201,122,0.3))',
           backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box',
           animation: 'splashSpinReverse 5s linear infinite',
         }} />
@@ -157,9 +154,9 @@ export default function SplashScreen({ onDone }) {
       }}>
         <div style={{
           height: '100%', width: `${progress}%`,
-          background: 'linear-gradient(90deg, #00E5FF, #BF00FF)',
+          background: 'linear-gradient(90deg, #00C97A, #6C3FC5)',
           borderRadius: 99, transition: 'width 0.07s linear',
-          boxShadow: '0 0 8px rgba(0,229,255,0.7)',
+          boxShadow: '0 0 8px rgba(0,201,122,0.7)',
         }} />
       </div>
 
@@ -169,7 +166,7 @@ export default function SplashScreen({ onDone }) {
         {[0, 1, 2].map(i => (
           <div key={i} style={{
             width: 5, height: 5, borderRadius: '50%',
-            background: 'rgba(0,229,255,0.8)',
+            background: 'rgba(0,201,122,0.8)',
             animation: `splashDot 1.2s ${i * 0.2}s ease-in-out infinite`,
           }} />
         ))}
