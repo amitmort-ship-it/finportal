@@ -15,6 +15,7 @@ import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColor
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
 import AdminLeads from '@/components/admin/AdminLeads';
+import MobileQuickLinks from '@/components/admin/MobileQuickLinks';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import DailyQuoteCard from '@/components/admin/DailyQuoteCard';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -109,7 +110,29 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
+        {/* Mobile: horizontal scroll tabs */}
+        <div className="lg:hidden overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex gap-1 w-max">
+            {TAB_CONFIG.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Desktop: grid tabs */}
+        <TabsList className="hidden lg:grid w-full grid-cols-11">
           {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -121,26 +144,8 @@ export default function AdminPanel() {
           })}
         </TabsList>
 
-        <div className="grid grid-cols-2 gap-3 md:hidden mt-4 px-1">
-          {[
-            { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618', bg: 'bg-red-600', text: 'text-white' },
-            { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc', bg: 'bg-gray-900', text: 'text-white' },
-            { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients', bg: 'bg-green-600', text: 'text-white' },
-            { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi', bg: 'bg-blue-600', text: 'text-white' },
-            { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09', bg: 'bg-amber-600', text: 'text-white' },
-            { label: 'יומן', url: 'https://calendar.google.com/calendar/u/3/r/week', bg: 'bg-sky-500', text: 'text-white' },
-          ].map(({ label, url, bg, text }) => (
-            <a
-              key={label}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex items-center justify-center text-center px-4 py-3.5 rounded-2xl text-sm font-semibold shadow-md active:scale-95 transition-all min-h-[52px] ${bg} ${text}`}
-            >
-              {label}
-            </a>
-          ))}
-        </div>
+        {/* Mobile quick links — collapsed by default */}
+        <MobileQuickLinks />
 
         <TabsContent value="dashboard" className="space-y-6">
           <AdminNotifications />
