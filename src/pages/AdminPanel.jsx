@@ -14,6 +14,7 @@ import AdminTimelineEditor from '@/components/admin/AdminTimelineEditor';
 import AdminColorPicker, { useAdminPalette } from '@/components/admin/AdminColorPicker';
 import RefinanceMonitor from '@/components/admin/RefinanceMonitor';
 import AdminBusiness from '@/components/admin/AdminBusiness';
+import AdminLeads from '@/components/admin/AdminLeads';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import DailyQuoteCard from '@/components/admin/DailyQuoteCard';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -30,6 +31,7 @@ import {
   TrendingUp,
   X,
   GitBranch,
+  UserPlus,
 } from 'lucide-react';
 
 const TAB_CONFIG = [
@@ -42,6 +44,7 @@ const TAB_CONFIG = [
   { id: 'packages', label: 'תמהיל', icon: Package },
   { id: 'collaterals', label: 'בטחונות', icon: Lock },
   { id: 'timeline', label: 'טיימליין', icon: GitBranch },
+  { id: 'leads', label: 'לידומט', icon: UserPlus },
 ];
 
 export default function AdminPanel() {
@@ -106,7 +109,7 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
           {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -175,6 +178,10 @@ export default function AdminPanel() {
 
         <TabsContent value="timeline" className="space-y-6">
           <AdminTimelineEditor selectedClient={selectedClient} />
+        </TabsContent>
+
+        <TabsContent value="leads" className="space-y-6">
+          <AdminLeads />
         </TabsContent>
       </Tabs>
     </div>
