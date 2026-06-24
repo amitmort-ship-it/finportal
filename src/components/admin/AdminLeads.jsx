@@ -167,6 +167,10 @@ export default function AdminLeads() {
               <Label className="text-xs">מחיר (₪)</Label>
               <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" className="mt-1" dir="ltr" />
             </div>
+            <div className="flex items-center gap-2 mt-2">
+              <input type="checkbox" id="form-closed" checked={!!form.closed} onChange={e => setForm(f => ({ ...f, closed: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary cursor-pointer" />
+              <Label htmlFor="form-closed" className="text-xs cursor-pointer">ליד נסגר</Label>
+            </div>
           </div>
           <div>
             <Label className="text-xs">הערות</Label>
@@ -218,6 +222,7 @@ export default function AdminLeads() {
                           <th className="px-4 py-2 text-right font-medium">סוג משכנתא</th>
                           <th className="px-4 py-2 text-right font-medium">מחיר</th>
                           <th className="px-4 py-2 text-right font-medium">הערות</th>
+                          <th className="px-4 py-2 text-right font-medium">סגירה</th>
                           <th className="px-4 py-2"></th>
                         </tr>
                       </thead>
@@ -235,6 +240,19 @@ export default function AdminLeads() {
                             <td className="px-4 py-2.5 text-xs">{lead.mortgage_type || '—'}</td>
                             <td className="px-4 py-2.5 text-xs font-medium text-emerald-700">{fmt(lead.price)}</td>
                             <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[180px] truncate">{lead.notes || '—'}</td>
+                            <td className="px-4 py-2.5">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const updated = { ...lead, closed: !lead.closed };
+                                  setLeads(prev => prev.map(l => l.id === lead.id ? updated : l));
+                                  await base44.entities.Lead.update(lead.id, { closed: !lead.closed });
+                                }}
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${lead.closed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                              >
+                                {lead.closed ? 'נסגר ✓' : 'פתוח'}
+                              </button>
+                            </td>
                             <td className="px-4 py-2.5">
                               <button type="button" onClick={() => handleDelete(lead.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                                 <Trash2 className="w-3.5 h-3.5" />
