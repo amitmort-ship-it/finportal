@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -9,6 +10,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { base44 } from '@/api/base44Client';
 import ResponsiveLayout from './components/ResponsiveLayout';
+import SplashScreen from './components/SplashScreen';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const FilesPage = lazy(() => import('./pages/FilesPage'));
@@ -82,22 +84,27 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  const [splashDone, setSplashDone] = useState(false);
+
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+    <>
+      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            <Router>
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </>
   )
 }
 
