@@ -294,11 +294,20 @@ export default function AdminViewDocuments({ selectedClient }) {
     'משותף': { color: 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-950/10', headerColor: 'text-emerald-700 dark:text-emerald-300', badgeBg: 'bg-emerald-100 text-emerald-700' },
   };
 
+  // Show only requests that have content: any uploaded files, a non-empty title that differs from the default,
+  // or a status other than pending (i.e. the admin has acted on them).
+  const activeRequests = requests.filter(r => {
+    const hasFiles = Array.isArray(r.uploaded_files) && r.uploaded_files.length > 0;
+    const hasNonPendingStatus = r.status && r.status !== 'pending';
+    const hasTitle = r.title && r.title.trim().length > 0;
+    return hasFiles || hasNonPendingStatus || hasTitle;
+  });
+
   const grouped = CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = requests.filter(r => r.category === cat);
+    acc[cat] = activeRequests.filter(r => r.category === cat);
     return acc;
   }, {});
-  const uncategorized = requests.filter(r => !r.category);
+  const uncategorized = activeRequests.filter(r => !r.category);
 
   return (
     <div>
@@ -460,7 +469,7 @@ export default function AdminViewDocuments({ selectedClient }) {
       <AdminPowerOfAttorney selectedClient={selectedClient} />
       <AdminDownloadableDocs selectedClient={selectedClient} />
 
-      {requests.length === 0 ? (
+      {activeRequests.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
           אין בקשות מסמכים
         </div>
@@ -515,16 +524,14 @@ export default function AdminViewDocuments({ selectedClient }) {
               </div>
             </div>
           )}
-          {CATEGORIES.map(cat => (
+          {CATEGORIES.filter(cat => grouped[cat]?.length > 0).map(cat => (
             <div key={cat} className={`rounded-xl border ${CATEGORY_STYLES[cat].color} flex flex-col`}>
               <div className={`px-4 py-3 rounded-t-xl font-bold text-sm ${CATEGORY_STYLES[cat].headerColor} border-b border-current/10 flex items-center justify-between`}>
                 <span>{cat}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_STYLES[cat].badgeBg}`}>{grouped[cat]?.length || 0}</span>
               </div>
               <div className="p-3 space-y-3 flex-1">
-                {grouped[cat]?.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-muted-foreground">אין בקשות בקטגוריה זו</div>
-                ) : grouped[cat]?.map((req) => {
+                {grouped[cat]?.map((req) => {
                   const parsedContent = splitDescriptionAndReviewNotes(req);
                   return (
                     <div key={req.id} className="bg-white dark:bg-card rounded-lg border border-border p-3 space-y-2">
