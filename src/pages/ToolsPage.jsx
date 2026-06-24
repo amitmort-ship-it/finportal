@@ -37,6 +37,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { useSearchParams } from 'react-router-dom';
+import SavingsVsLoanCalculator from '@/components/SavingsVsLoanCalculator';
 
 function formatCurrency(value) {
   const rounded = Math.round(Number(value || 0));
@@ -1511,6 +1512,13 @@ export default function ToolsPage() {
       icon: Landmark,
       tone: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/25 dark:border-amber-900/50 dark:text-amber-300',
     },
+    {
+      id: 'savings-vs-loan',
+      title: 'הלוואה או משיכה מחיסכון?',
+      description: 'השוואה בין עלות הלוואה לבין עלות אבדן התשואה מחיסכון, כולל ריבית דריבית ומס רווח הון.',
+      icon: PiggyBank,
+      tone: 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300',
+    },
   ];
 
   return (
@@ -1568,6 +1576,7 @@ export default function ToolsPage() {
       {activeTool === 'compound-interest' ? <CompoundInterestCalculator /> : null}
       {activeTool === 'loan-comparison' ? <LoanComparisonCalculator /> : null}
       {activeTool === 'property-purchase-costs' ? <PropertyPurchaseCostsCalculator /> : null}
+      {activeTool === 'savings-vs-loan' ? <SavingsVsLoanCalculator /> : null}
     </div>
   );
 }
