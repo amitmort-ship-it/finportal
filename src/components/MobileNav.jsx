@@ -31,6 +31,7 @@ export default function MobileNav() {
   const items = isAdmin
     ? [...navItems, { path: '/simulations', label: 'סימולציות', icon: LineChart }, { path: '/document-analyzer', label: 'ניתוח AI', icon: ScanSearch }, { path: '/admin', label: 'ניהול', icon: Settings }]
     : navItems;
+  // document-analyzer is inside the admin-only array above, so non-admins never see it
 
   return (
     <div

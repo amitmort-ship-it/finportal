@@ -27,6 +27,7 @@ const adminItems = [
   { path: '/document-analyzer', label: 'ניתוח מסמכים AI', icon: ScanSearch },
   { path: '/admin', label: 'ניהול', icon: Settings },
 ];
+// adminItems are already only rendered for admins via the isAdmin check below
 
 export default function ResponsiveLayout() {
   const location = useLocation();
