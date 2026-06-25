@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Trash2, Send, Bot, User, Paperclip, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export default function DocumentAnalyzerPage() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -93,6 +96,8 @@ export default function DocumentAnalyzerPage() {
       sendMessage();
     }
   };
+
+  if (user?.role !== 'admin') return <Navigate to="/" replace />;
 
   return (
     <div className="flex h-[calc(100vh-120px)] gap-4" dir="rtl">
