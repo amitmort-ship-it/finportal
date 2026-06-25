@@ -23,6 +23,7 @@ const ClientFiles = lazy(() => import('./pages/ClientFiles'));
 const JoinCasePage = lazy(() => import('./pages/JoinCasePage'));
 const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 const MortgageSimulationsPage = lazy(() => import('./pages/MortgageSimulationsPage'));
+const DocumentAnalyzerPage = lazy(() => import('./pages/DocumentAnalyzerPage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -74,6 +75,7 @@ const AuthenticatedApp = () => {
           <Route path="/my-files" element={<ClientFiles />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/simulations" element={<MortgageSimulationsPage />} />
+          <Route path="/document-analyzer" element={<DocumentAnalyzerPage />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/join-case" element={<JoinCasePage />} />
         </Route>
