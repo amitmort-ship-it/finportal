@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart, User, StickyNote } from 'lucide-react';
+import { FileText, Building2, Shield, LayoutDashboard, Settings, Package, Calculator, LineChart, User, StickyNote, ScanSearch } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useState } from 'react';
 import MobileNotesModal from './MobileNotesModal';
@@ -29,7 +29,7 @@ export default function MobileNav() {
   const [notesOpen, setNotesOpen] = useState(false);
 
   const items = isAdmin
-    ? [...navItems, { path: '/simulations', label: 'סימולציות', icon: LineChart }, { path: '/admin', label: 'ניהול', icon: Settings }]
+    ? [...navItems, { path: '/simulations', label: 'סימולציות', icon: LineChart }, { path: '/document-analyzer', label: 'ניתוח AI', icon: ScanSearch }, { path: '/admin', label: 'ניהול', icon: Settings }]
     : navItems;
 
   return (
