@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Send, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function TelegramSummary() {
-  const [chatId, setChatId] = useState('');
+  const [chatId, setChatId] = useState('-5485105895');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
