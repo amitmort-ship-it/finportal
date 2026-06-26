@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Trash2, Send, Bot, User, Paperclip, X } from 'lucide-react';
+import { Upload, FileText, Trash2, Send, Bot, User, Paperclip, X, Pencil, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export default function DocumentAnalyzerPage() {
@@ -15,8 +15,11 @@ export default function DocumentAnalyzerPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [editingConvId, setEditingConvId] = useState(null);
+  const [editingName, setEditingName] = useState('');
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const editInputRef = useRef(null);
 
   useEffect(() => {
     loadConversations();
@@ -90,6 +93,25 @@ export default function DocumentAnalyzerPage() {
     });
   };
 
+  const startEditName = (conv, e) => {
+    e.stopPropagation();
+    setEditingConvId(conv.id);
+    setEditingName(conv.metadata?.name || '');
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const saveConvName = async (convId) => {
+    if (!editingName.trim()) return;
+    await base44.agents.updateConversation(convId, { metadata: { name: editingName.trim() } });
+    setEditingConvId(null);
+    await loadConversations();
+  };
+
+  const handleEditKeyDown = (e, convId) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveConvName(convId); }
+    if (e.key === 'Escape') setEditingConvId(null);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -109,17 +131,40 @@ export default function DocumentAnalyzerPage() {
         </Button>
         <div className="flex-1 overflow-y-auto space-y-1">
           {conversations.map(conv => (
-            <button
+            <div
               key={conv.id}
-              onClick={() => selectConversation(conv)}
-              className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-colors truncate ${
+              onClick={() => editingConvId !== conv.id && selectConversation(conv)}
+              className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-1 group cursor-pointer ${
                 activeConversation?.id === conv.id
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-muted text-foreground'
               }`}
             >
-              {conv.metadata?.name || 'שיחה'}
-            </button>
+              {editingConvId === conv.id ? (
+                <div className="flex items-center gap-1 flex-1" onClick={e => e.stopPropagation()}>
+                  <input
+                    ref={editInputRef}
+                    value={editingName}
+                    onChange={e => setEditingName(e.target.value)}
+                    onKeyDown={e => handleEditKeyDown(e, conv.id)}
+                    className="flex-1 bg-transparent border-b border-current outline-none text-sm min-w-0"
+                  />
+                  <button onClick={() => saveConvName(conv.id)}>
+                    <Check className="w-3.5 h-3.5 shrink-0" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span className="flex-1 truncate text-right">{conv.metadata?.name || 'שיחה'}</span>
+                  <button
+                    onClick={e => startEditName(conv, e)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </>
+              )}
+            </div>
           ))}
         </div>
       </div>
