@@ -18,6 +18,7 @@ import AdminLeads from '@/components/admin/AdminLeads';
 import MobileQuickLinks from '@/components/admin/MobileQuickLinks';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import DailyQuoteCard from '@/components/admin/DailyQuoteCard';
+import TelegramSummary from '@/components/admin/TelegramSummary';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import {
@@ -149,6 +150,7 @@ export default function AdminPanel() {
 
         <TabsContent value="dashboard" className="space-y-6">
           <AdminNotifications />
+          <TelegramSummary />
           <RefinanceMonitor />
           <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); }} />
         </TabsContent>
