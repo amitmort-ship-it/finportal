@@ -102,9 +102,13 @@ export default function DocumentAnalyzerPage() {
 
   const saveConvName = async (convId) => {
     if (!editingName.trim()) return;
-    await base44.agents.updateConversation(convId, { metadata: { name: editingName.trim() } });
+    const newName = editingName.trim();
+    await base44.agents.updateConversation(convId, { metadata: { name: newName } });
     setEditingConvId(null);
-    await loadConversations();
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, metadata: { ...c.metadata, name: newName } } : c));
+    if (activeConversation?.id === convId) {
+      setActiveConversation(prev => ({ ...prev, metadata: { ...prev.metadata, name: newName } }));
+    }
   };
 
   const handleEditKeyDown = (e, convId) => {
