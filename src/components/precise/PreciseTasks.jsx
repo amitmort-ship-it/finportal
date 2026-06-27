@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ImagePlus, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
 
-const CATEGORIES = ['פיתוח', 'מרון', 'שוטף', 'דוחות חודשיים'];
+const CATEGORIES = ['פיתוח', 'רון', 'שוטף', 'דוחות חודשיים'];
 const STATUS_COLORS = {
   'פתוח': 'bg-red-100 text-red-700',
   'בתהליך': 'bg-yellow-100 text-yellow-700',
