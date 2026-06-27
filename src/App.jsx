@@ -24,6 +24,7 @@ const JoinCasePage = lazy(() => import('./pages/JoinCasePage'));
 const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 const MortgageSimulationsPage = lazy(() => import('./pages/MortgageSimulationsPage'));
 const DocumentAnalyzerPage = lazy(() => import('./pages/DocumentAnalyzerPage'));
+const PreciseAIPage = lazy(() => import('./pages/PreciseAIPage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/simulations" element={<MortgageSimulationsPage />} />
           <Route path="/document-analyzer" element={<DocumentAnalyzerPage />} />
+          <Route path="/precise-ai" element={<PreciseAIPage />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/join-case" element={<JoinCasePage />} />
         </Route>
