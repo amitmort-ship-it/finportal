@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PreciseTasks from '@/components/precise/PreciseTasks';
 import PreciseKnowledge from '@/components/precise/PreciseKnowledge';
 import PreciseContracts from '@/components/precise/PreciseContracts';
-import { Bot, BookOpen, FileSignature } from 'lucide-react';
+import { Bot, BookOpen, FileSignature, Mail, Wrench } from 'lucide-react';
 
 export default function PreciseAIPage() {
   const { user } = useAuth();
@@ -19,6 +19,26 @@ export default function PreciseAIPage() {
           PreciseAI
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">ניהול משימות, התכתבויות וידע</p>
+        <div className="flex gap-2 mt-3">
+          <a
+            href="https://outlook.office.com/mail/?realm=preciseai.ai&exsvurl=1&ll-cc=1033&modurl=0&url=%2fowa%2f%3frealm%253dpreciseai.ai%2526exsvurl%253d1%2526ll-cc%253d1033%2526modurl%253d0%2526login_hint%253damitk%252540preciseai.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Outlook
+          </a>
+          <a
+            href="https://preciseai.retool.com/folders/Prod%20Latest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+          >
+            <Wrench className="w-4 h-4" />
+            Retool
+          </a>
+        </div>
       </div>
 
       <Tabs defaultValue="tasks" className="w-full">
