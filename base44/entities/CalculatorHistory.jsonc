@@ -1,0 +1,47 @@
+{
+  "name": "CalculatorHistory",
+  "type": "object",
+  "properties": {
+    "calculator_id": {
+      "type": "string",
+      "description": "Which calculator (e.g. compound-interest, loan-comparison)"
+    },
+    "label": {
+      "type": "string",
+      "description": "Optional user label for this simulation"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "The form inputs at save time"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short human-readable summary of results"
+    }
+  },
+  "required": [
+    "calculator_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import CalculatorHistory from '@/components/CalculatorHistory';
 import { PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -331,6 +332,18 @@ export default function SavingsVsLoanCalculator() {
           </div>
         </div>
       </div>
+      <CalculatorHistory
+        calculatorId="savings-vs-loan"
+        getCurrentInputs={() => form}
+        getSummary={() => {
+          const l = calcLoanCost({ amount: form.amount, annualRate: form.loanRate, months: form.months });
+          const s = calcSavingsOpportunityCost({ amount: form.amount, annualRate: form.savingsRate, months: form.months });
+          const netOpp = s.opportunityCost * 0.75;
+          const cheaper = l.totalInterest <= netOpp ? 'הלוואה' : 'משיכה מחסכון';
+          return `סכום: ${fmt(sanitize(form.amount))} | ריבית הלוואה: ${form.loanRate}% | ריבית חסכון: ${form.savingsRate}% | מסקנה: ${cheaper}`;
+        }}
+        onRestore={(inputs) => setForm(inputs)}
+      />
     </div>
   );
 }

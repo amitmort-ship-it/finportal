@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/chart';
 import { useSearchParams } from 'react-router-dom';
 import SavingsVsLoanCalculator from '@/components/SavingsVsLoanCalculator';
+import CalculatorHistory from '@/components/CalculatorHistory';
 
 function formatCurrency(value) {
   const rounded = Math.round(Number(value || 0));
@@ -356,6 +357,11 @@ function CompoundInterestCalculator() {
     years: 10,
     compoundingFrequency: 'monthly',
   });
+  const getCurrentInputs = () => form;
+  const getSummary = () => {
+    const r = calculateCompoundInterest(form);
+    return `סכום עתידי: ${formatCurrency(r.finalBalance)} | רווח: ${formatCurrency(r.totalInterest)} | שנים: ${form.years}`;
+  };
 
   const results = useMemo(() => calculateCompoundInterest(form), [form]);
 
@@ -606,6 +612,12 @@ function CompoundInterestCalculator() {
         </div>
       </div>
 
+      <CalculatorHistory
+        calculatorId="compound-interest"
+        getCurrentInputs={getCurrentInputs}
+        getSummary={getSummary}
+        onRestore={(inputs) => setForm(inputs)}
+      />
       <CalculatorDisclaimer />
     </div>
   );
@@ -698,6 +710,7 @@ function LoanInputCard({ loan, index, onChange, onToggleExisting }) {
 function LoanComparisonCalculator() {
   const isMobile = useIsMobile();
   const [loans, setLoans] = useState([
+
     {
       id: 'loan-1',
       name: 'הלוואה 1',
@@ -1210,6 +1223,18 @@ function LoanComparisonCalculator() {
         </div>
       </div>
 
+      <CalculatorHistory
+        calculatorId="loan-comparison"
+        getCurrentInputs={() => loans}
+        getSummary={() => {
+          const active = loans.filter(l => l.enabled).map(l => {
+            const m = calculateLoanMetrics(l);
+            return `${l.name}: ${formatCurrency(m.monthlyPayment)}/חודש`;
+          });
+          return active.join(' | ');
+        }}
+        onRestore={(savedLoans) => setLoans(savedLoans)}
+      />
       <CalculatorDisclaimer />
     </div>
   );
@@ -1477,6 +1502,15 @@ function PropertyPurchaseCostsCalculator() {
         </div>
       </div>
 
+      <CalculatorHistory
+        calculatorId="property-purchase-costs"
+        getCurrentInputs={() => form}
+        getSummary={() => {
+          const r = calculatePropertyPurchaseCosts(form);
+          return `מחיר נכס: ${formatCurrency(r.propertyPrice)} | עלויות נלוות: ${formatCurrency(r.totalAdditionalCosts)} | סה"כ: ${formatCurrency(r.totalDealCost)}`;
+        }}
+        onRestore={(inputs) => setForm(inputs)}
+      />
       <CalculatorDisclaimer text="הנתונים המוצגים במחשבון זה מהווים הערכה כללית בלבד. העלויות בפועל עשויות להשתנות בהתאם לסוג העסקה, נותני השירות, תנאי הבנק והוראות המס העדכניות." />
     </div>
   );
