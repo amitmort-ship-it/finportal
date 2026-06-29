@@ -233,11 +233,13 @@ export default function AdminBusiness() {
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
+  const [newIncomeMonthKey, setNewIncomeMonthKey] = useState(getCurrentMonthKey());
   const [selectedDealId, setSelectedDealId] = useState('');
   const [editingIncomeId, setEditingIncomeId] = useState(null);
   const [editIncomeValue, setEditIncomeValue] = useState('');
   const [editIncomeSource, setEditIncomeSource] = useState('');
   const [editIncomeCategory, setEditIncomeCategory] = useState('משכנתאות');
+  const [editIncomeMonthKey, setEditIncomeMonthKey] = useState('');
   const [newFixedName, setNewFixedName] = useState('');
   const [newFixedAmount, setNewFixedAmount] = useState('');
   const [newVarName, setNewVarName] = useState('');
@@ -369,6 +371,10 @@ export default function AdminBusiness() {
     const tax = amount * taxRate;
     const linkedDeal = selectedDealId ? dealLog.find((deal) => String(deal.id) === String(selectedDealId)) : null;
     const now = new Date();
+    // Determine the target month
+    const targetMonthKey = newIncomeMonthKey || getCurrentMonthKey();
+    const [mYear, mMonth] = targetMonthKey.split('-').map(Number);
+    const targetDate = new Date(mYear, mMonth - 1, 1);
     const entry = {
       id: Date.now(),
       gross: amount,
@@ -377,8 +383,8 @@ export default function AdminBusiness() {
       source: linkedDeal?.clientName || newIncomeSource.trim() || 'לא צוין',
       category: linkedDeal?.category || newIncomeCategory,
       date: now.toLocaleDateString('he-IL'),
-      month: getMonthLabelFromDate(now),
-      monthKey: getCurrentMonthKey(),
+      month: getMonthLabelFromDate(targetDate),
+      monthKey: targetMonthKey,
       createdAt: now.toISOString(),
       dealId: linkedDeal?.id || null,
     };
@@ -413,6 +419,7 @@ export default function AdminBusiness() {
     setNewIncome('');
     setNewIncomeSource('');
     setNewIncomeCategory('משכנתאות');
+    setNewIncomeMonthKey(getCurrentMonthKey());
     setSelectedDealId('');
     toast.success(`הכנסה של ${fmt(amount)} נרשמה. נטו למאגר: ${fmt(net)}`);
   };
@@ -449,6 +456,7 @@ export default function AdminBusiness() {
     setEditIncomeValue(String(entry.gross || ''));
     setEditIncomeSource(entry.source === 'לא צוין' ? '' : (entry.source || ''));
     setEditIncomeCategory(entry.category || 'משכנתאות');
+    setEditIncomeMonthKey(entry.monthKey || getCurrentMonthKey());
   };
 
   const handleCancelEditIncome = () => {
@@ -456,6 +464,7 @@ export default function AdminBusiness() {
     setEditIncomeValue('');
     setEditIncomeSource('');
     setEditIncomeCategory('משכנתאות');
+    setEditIncomeMonthKey('');
   };
 
   const handleSaveIncomeEdit = (id) => {
@@ -467,6 +476,10 @@ export default function AdminBusiness() {
     const net = amount * (1 - taxRate);
     const tax = amount * taxRate;
 
+    const targetMonthKey = editIncomeMonthKey || getCurrentMonthKey();
+    const [mYear, mMonth] = targetMonthKey.split('-').map(Number);
+    const targetDate = new Date(mYear, mMonth - 1, 1);
+
     const next = incomeLog.map((entry) => (
       entry.id === id
         ? {
@@ -476,6 +489,8 @@ export default function AdminBusiness() {
             tax,
             source: editIncomeSource.trim() || 'לא צוין',
             category: editIncomeCategory,
+            monthKey: targetMonthKey,
+            month: getMonthLabelFromDate(targetDate),
           }
         : entry
     ));
@@ -1142,6 +1157,8 @@ export default function AdminBusiness() {
           <select value={newIncomeCategory} onChange={(e) => setNewIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
             {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+          <Label>שייך לחודש</Label>
+          <input type="month" value={newIncomeMonthKey} onChange={(e) => setNewIncomeMonthKey(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" dir="ltr" />
           <Button className="w-full gap-2" onClick={handleAddIncome} disabled={!newIncome}>
             <Plus className="w-4 h-4" />
             הוסף הכנסה
@@ -1684,12 +1701,13 @@ export default function AdminBusiness() {
               <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                 {editingIncomeId === entry.id ? (
                   <div className="space-y-3">
-                    <div className="grid md:grid-cols-3 gap-2">
+                    <div className="grid md:grid-cols-4 gap-2">
                       <Input type="number" value={editIncomeValue} onChange={(e) => setEditIncomeValue(e.target.value)} placeholder="סכום גולמי" dir="ltr" />
                       <Input value={editIncomeSource} onChange={(e) => setEditIncomeSource(e.target.value)} placeholder="ממי / שם הלקוח" />
                       <select value={editIncomeCategory} onChange={(e) => setEditIncomeCategory(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
                         {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
+                      <input type="month" value={editIncomeMonthKey} onChange={(e) => setEditIncomeMonthKey(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" dir="ltr" title="שייך לחודש" />
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <Button size="sm" onClick={() => handleSaveIncomeEdit(entry.id)}>שמור</Button>
