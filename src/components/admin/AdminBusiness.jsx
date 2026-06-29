@@ -262,6 +262,7 @@ export default function AdminBusiness() {
   const [editDealPaid, setEditDealPaid] = useState('');
   const [editDealCategory, setEditDealCategory] = useState('משכנתאות');
   const [editDealBucket, setEditDealBucket] = useState(DEAL_BUCKETS[0]);
+  const [editDealRag, setEditDealRag] = useState('');
   const [importingDeals, setImportingDeals] = useState(false);
   const [notionSetupLoading, setNotionSetupLoading] = useState(false);
   const [notionSyncLoading, setNotionSyncLoading] = useState(false);
@@ -565,6 +566,7 @@ export default function AdminBusiness() {
     setEditDealPaid(String(deal.paidAmount || ''));
     setEditDealCategory(deal.category || 'משכנתאות');
     setEditDealBucket(deal.bucket || DEAL_BUCKETS[0]);
+    setEditDealRag(deal.rag_status || '');
   };
 
   const handleCancelEditDeal = () => {
@@ -574,6 +576,7 @@ export default function AdminBusiness() {
     setEditDealPaid('');
     setEditDealCategory('משכנתאות');
     setEditDealBucket(DEAL_BUCKETS[0]);
+    setEditDealRag('');
   };
 
   const handleSaveDealEdit = (id) => {
@@ -592,6 +595,7 @@ export default function AdminBusiness() {
             paidAmount: clampedPaidAmount,
             category: editDealCategory,
             bucket: deal.isFrozen ? editDealBucket : remaining === 0 ? 'שולם מלא' : clampedPaidAmount > 0 ? 'שולם חלקית' : editDealBucket,
+            rag_status: editDealRag,
             updatedAt: new Date().toISOString(),
           }
         : deal
@@ -1379,6 +1383,7 @@ export default function AdminBusiness() {
                     </PopoverContent>
                   </Popover>
                 </th>
+                <th className="py-2 text-right font-medium">R/Y/G</th>
                 <th className="py-2 text-right font-medium">סה"כ עסקה</th>
                 <th className="py-2 text-right font-medium">נגבה</th>
                 <th className="py-2 text-right font-medium">יתרה</th>
@@ -1459,6 +1464,20 @@ export default function AdminBusiness() {
                       )}
                     </td>
                     <td className="py-3">
+                      {editingDealId === deal.id ? (
+                        <select value={editDealRag} onChange={(e) => setEditDealRag(e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                          <option value="">—</option>
+                          <option value="green">🟢 ירוק</option>
+                          <option value="yellow">🟡 צהוב</option>
+                          <option value="red">🔴 אדום</option>
+                        </select>
+                      ) : (
+                        <span className="text-lg leading-none">
+                          {deal.rag_status === 'green' ? '🟢' : deal.rag_status === 'yellow' ? '🟡' : deal.rag_status === 'red' ? '🔴' : '—'}
+                        </span>
+                      )}
+                    </td>
+                     <td className="py-3">
                       {editingDealId === deal.id ? (
                         <Input type="number" value={editDealTotal} onChange={(e) => setEditDealTotal(e.target.value)} dir="ltr" />
                       ) : (
