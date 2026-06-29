@@ -1303,7 +1303,7 @@ export default function AdminBusiness() {
         </div>
 
         <div className="max-h-[540px] overflow-auto rounded-2xl border border-border">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead className="sticky top-0 z-10 bg-muted/40 backdrop-blur">
               <tr className="border-b border-border text-muted-foreground">
                 <th className="py-2 text-right font-medium">#</th>
@@ -1420,7 +1420,7 @@ export default function AdminBusiness() {
             <tbody>
               {filteredDeals.length === 0 && (
                 <tr>
-                  <td colSpan="9" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
+                  <td colSpan="10" className="py-6 text-center text-muted-foreground">אין עסקאות להצגה</td>
                 </tr>
               )}
               {filteredDeals.map((deal, index) => {
