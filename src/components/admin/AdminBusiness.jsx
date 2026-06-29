@@ -1538,6 +1538,55 @@ export default function AdminBusiness() {
         </div>
       </div>
 
+      {/* === RAG SUMMARY === */}
+      {dealLog.length > 0 && (() => {
+        const ragGroups = { green: [], yellow: [], red: [], none: [] };
+        dealLog.forEach((deal) => {
+          const key = ['green','yellow','red'].includes(deal.rag_status) ? deal.rag_status : 'none';
+          ragGroups[key].push(deal);
+        });
+        const ragConfig = [
+          { key: 'green', emoji: '🟢', label: 'ירוק', count: ragGroups.green.length, amount: ragGroups.green.reduce((s,d) => s + Number(d.totalAmount||0), 0), color: '#22c55e', bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50', text: 'text-emerald-700 dark:text-emerald-300' },
+          { key: 'yellow', emoji: '🟡', label: 'צהוב', count: ragGroups.yellow.length, amount: ragGroups.yellow.reduce((s,d) => s + Number(d.totalAmount||0), 0), color: '#eab308', bg: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/25 dark:border-yellow-900/50', text: 'text-yellow-700 dark:text-yellow-300' },
+          { key: 'red', emoji: '🔴', label: 'אדום', count: ragGroups.red.length, amount: ragGroups.red.reduce((s,d) => s + Number(d.totalAmount||0), 0), color: '#ef4444', bg: 'bg-red-50 border-red-200 dark:bg-red-950/25 dark:border-red-900/50', text: 'text-red-700 dark:text-red-300' },
+        ];
+        const total = ragGroups.green.length + ragGroups.yellow.length + ragGroups.red.length;
+        const totalAmount = ragConfig.reduce((s, r) => s + r.amount, 0);
+        if (total === 0) return null;
+        return (
+          <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-4">
+            <h3 className="font-bold text-foreground">חלוקת סיכונים — R/Y/G</h3>
+            {/* Bar chart */}
+            <div className="space-y-2">
+              {ragConfig.map((r) => {
+                const pct = total > 0 ? Math.round((r.count / total) * 100) : 0;
+                return (
+                  <div key={r.key} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{r.emoji} {r.label}</span>
+                      <span className="text-muted-foreground text-xs">{r.count} עסקאות · {pct}%</span>
+                    </div>
+                    <div className="h-4 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: r.color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Summary cards */}
+            <div className="grid grid-cols-3 gap-3">
+              {ragConfig.map((r) => (
+                <div key={r.key} className={`rounded-xl border p-4 ${r.bg}`}>
+                  <p className={`text-sm font-semibold ${r.text}`}>{r.emoji} {r.label}</p>
+                  <p className={`text-xl font-bold mt-1 ${r.text}`}>{r.count}</p>
+                  <p className={`text-xs mt-0.5 opacity-80 ${r.text}`}>{fmt(r.amount)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* === INCOME CHART === */}
       {monthlyChart.length > 0 && (
         <div className="bg-card rounded-xl border border-border shadow-sm p-5">
