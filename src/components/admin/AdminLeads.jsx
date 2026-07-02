@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ChevronDown, ChevronUp, Users2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Users2, Pencil, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SOURCES = ['המלצות', 'לקוח חוזר', 'פרסום', 'היכרות אישית', 'אחר'];
@@ -29,6 +29,7 @@ const emptyForm = {
 };
 
 const selectClass = 'mt-1 w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
+const inlineSelectClass = 'w-full h-8 rounded border border-input bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring';
 
 function fmt(num) {
   if (!num) return '—';
@@ -55,6 +56,9 @@ export default function AdminLeads() {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [collapsedMonths, setCollapsedMonths] = useState({});
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -102,11 +106,50 @@ export default function AdminLeads() {
     }
   };
 
+  const handleStartEdit = (lead) => {
+    setEditingId(lead.id);
+    setEditForm({
+      date: lead.date || '',
+      client_name: lead.client_name || '',
+      phone: lead.phone || '',
+      source: lead.source || '',
+      mortgage_type: lead.mortgage_type || '',
+      price: lead.price ? String(lead.price) : '',
+      notes: lead.notes || '',
+      closed: !!lead.closed,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  const handleSaveEdit = async (id) => {
+    if (!editForm.client_name.trim() || !editForm.date) {
+      toast.error('שם לקוח ותאריך הם שדות חובה');
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const payload = { ...editForm };
+      if (payload.price) payload.price = Number(payload.price);
+      else { payload.price = null; }
+      await base44.entities.Lead.update(id, payload);
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, ...payload } : l));
+      toast.success('הליד עודכן');
+      handleCancelEdit();
+    } catch {
+      toast.error('שגיאה בעדכון הליד');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const toggleMonth = (key) => {
     setCollapsedMonths(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Group by month
   const grouped = {};
   for (const lead of leads) {
     const key = getMonthKey(lead.date);
@@ -227,39 +270,97 @@ export default function AdminLeads() {
                         </tr>
                       </thead>
                       <tbody>
-                        {monthLeads.map((lead, idx) => (
-                          <tr key={lead.id} className={`border-b border-border last:border-0 ${idx % 2 === 0 ? '' : 'bg-muted/10'}`}>
-                            <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap" dir="ltr">{lead.date}</td>
-                            <td className="px-4 py-2.5 font-medium whitespace-nowrap">{lead.client_name}</td>
-                            <td className="px-4 py-2.5 text-xs text-muted-foreground" dir="ltr">{lead.phone || '—'}</td>
-                            <td className="px-4 py-2.5">
-                              {lead.source ? (
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_COLORS[lead.source] || 'bg-slate-100 text-slate-600'}`}>{lead.source}</span>
-                              ) : '—'}
-                            </td>
-                            <td className="px-4 py-2.5 text-xs">{lead.mortgage_type || '—'}</td>
-                            <td className="px-4 py-2.5 text-xs font-medium text-emerald-700">{fmt(lead.price)}</td>
-                            <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[180px] truncate">{lead.notes || '—'}</td>
-                            <td className="px-4 py-2.5">
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const updated = { ...lead, closed: !lead.closed };
-                                  setLeads(prev => prev.map(l => l.id === lead.id ? updated : l));
-                                  await base44.entities.Lead.update(lead.id, { closed: !lead.closed });
-                                }}
-                                className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${lead.closed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                              >
-                                {lead.closed ? 'נסגר ✓' : 'פתוח'}
-                              </button>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <button type="button" onClick={() => handleDelete(lead.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {monthLeads.map((lead, idx) => {
+                          const isEditing = editingId === lead.id;
+                          return (
+                            <tr key={lead.id} className={`border-b border-border last:border-0 ${isEditing ? 'bg-primary/5' : idx % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                              <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap" dir="ltr">
+                                {isEditing
+                                  ? <Input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="h-8 text-xs w-32" dir="ltr" />
+                                  : lead.date}
+                              </td>
+                              <td className="px-4 py-2.5 font-medium whitespace-nowrap">
+                                {isEditing
+                                  ? <Input value={editForm.client_name} onChange={e => setEditForm(f => ({ ...f, client_name: e.target.value }))} className="h-8 text-xs w-32" />
+                                  : lead.client_name}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs text-muted-foreground" dir="ltr">
+                                {isEditing
+                                  ? <Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} className="h-8 text-xs w-28" dir="ltr" />
+                                  : (lead.phone || '—')}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {isEditing ? (
+                                  <select value={editForm.source} onChange={e => setEditForm(f => ({ ...f, source: e.target.value }))} className={inlineSelectClass}>
+                                    <option value="">—</option>
+                                    {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                ) : lead.source ? (
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_COLORS[lead.source] || 'bg-slate-100 text-slate-600'}`}>{lead.source}</span>
+                                ) : '—'}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs">
+                                {isEditing ? (
+                                  <select value={editForm.mortgage_type} onChange={e => setEditForm(f => ({ ...f, mortgage_type: e.target.value }))} className={inlineSelectClass}>
+                                    <option value="">—</option>
+                                    {MORTGAGE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                  </select>
+                                ) : (lead.mortgage_type || '—')}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs font-medium text-emerald-700">
+                                {isEditing
+                                  ? <Input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} className="h-8 text-xs w-24" dir="ltr" />
+                                  : fmt(lead.price)}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[180px]">
+                                {isEditing
+                                  ? <Input value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className="h-8 text-xs w-40" />
+                                  : <span className="truncate block">{lead.notes || '—'}</span>}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {isEditing ? (
+                                  <label className="flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" checked={!!editForm.closed} onChange={e => setEditForm(f => ({ ...f, closed: e.target.checked }))} className="w-4 h-4 accent-primary" />
+                                    <span className="text-xs">נסגר</span>
+                                  </label>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const updated = { ...lead, closed: !lead.closed };
+                                      setLeads(prev => prev.map(l => l.id === lead.id ? updated : l));
+                                      await base44.entities.Lead.update(lead.id, { closed: !lead.closed });
+                                    }}
+                                    className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${lead.closed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                                  >
+                                    {lead.closed ? 'נסגר ✓' : 'פתוח'}
+                                  </button>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {isEditing ? (
+                                  <div className="flex items-center gap-1">
+                                    <button type="button" onClick={() => handleSaveEdit(lead.id)} disabled={editSaving} className="text-emerald-600 hover:text-emerald-800 transition-colors">
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                    <button type="button" onClick={handleCancelEdit} className="text-muted-foreground hover:text-foreground transition-colors">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5">
+                                    <button type="button" onClick={() => handleStartEdit(lead)} className="text-muted-foreground hover:text-primary transition-colors">
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button type="button" onClick={() => handleDelete(lead.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
