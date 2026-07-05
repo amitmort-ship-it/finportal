@@ -32,6 +32,7 @@ const emptyForm = {
   referrer_name: '',
   mortgage_type: '',
   price: '',
+  closed_amount: '',
   notes: '',
 };
 
@@ -92,6 +93,8 @@ export default function AdminLeads() {
       const payload = { ...form };
       if (payload.price) payload.price = Number(payload.price);
       else delete payload.price;
+      if (payload.closed_amount) payload.closed_amount = Number(payload.closed_amount);
+      else delete payload.closed_amount;
       await base44.entities.Lead.create(payload);
       toast.success('ליד נוסף בהצלחה');
       setForm({ ...emptyForm });
@@ -124,6 +127,7 @@ export default function AdminLeads() {
       referrer_name: lead.referrer_name || '',
       mortgage_type: lead.mortgage_type || '',
       price: lead.price ? String(lead.price) : '',
+      closed_amount: lead.closed_amount ? String(lead.closed_amount) : '',
       notes: lead.notes || '',
       closed: !!lead.closed,
     });
@@ -144,6 +148,8 @@ export default function AdminLeads() {
       const payload = { ...editForm };
       if (payload.price) payload.price = Number(payload.price);
       else { payload.price = null; }
+      if (payload.closed_amount) payload.closed_amount = Number(payload.closed_amount);
+      else { payload.closed_amount = 0; }
       await base44.entities.Lead.update(id, payload);
       setLeads(prev => prev.map(l => l.id === id ? { ...l, ...payload } : l));
       toast.success('הליד עודכן');
@@ -225,6 +231,10 @@ export default function AdminLeads() {
               <Label className="text-xs">מחיר (₪)</Label>
               <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" className="mt-1" dir="ltr" />
             </div>
+            <div>
+              <Label className="text-xs">סכום שנסגר (₪)</Label>
+              <Input type="number" value={form.closed_amount} onChange={e => setForm(f => ({ ...f, closed_amount: e.target.value }))} placeholder="0" className="mt-1" dir="ltr" />
+            </div>
             <div className="flex items-center gap-2 mt-2">
               <input type="checkbox" id="form-closed" checked={!!form.closed} onChange={e => setForm(f => ({ ...f, closed: e.target.checked }))} className="w-4 h-4 rounded border-input accent-primary cursor-pointer" />
               <Label htmlFor="form-closed" className="text-xs cursor-pointer">ליד נסגר</Label>
@@ -250,6 +260,7 @@ export default function AdminLeads() {
             const monthLeads = grouped[monthKey];
             const isCollapsed = collapsedMonths[monthKey];
             const totalRevenue = monthLeads.reduce((sum, l) => sum + (l.price || 0), 0);
+            const totalClosedAmount = monthLeads.reduce((sum, l) => sum + (l.closed_amount || 0), 0);
 
             return (
               <div key={monthKey} className="rounded-xl border border-border bg-card overflow-hidden">
@@ -262,7 +273,10 @@ export default function AdminLeads() {
                     <span className="font-bold text-foreground">{getMonthLabel(monthKey)}</span>
                     <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{monthLeads.length} לידים</span>
                     {totalRevenue > 0 && (
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{fmt(totalRevenue)}</span>
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">סה"כ {fmt(totalRevenue)}</span>
+                    )}
+                    {totalClosedAmount > 0 && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">נסגר {fmt(totalClosedAmount)}</span>
                     )}
                   </div>
                   {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
@@ -280,6 +294,7 @@ export default function AdminLeads() {
                           <th className="px-4 py-2 text-right font-medium">ממליץ</th>
                           <th className="px-4 py-2 text-right font-medium">סוג משכנתא</th>
                           <th className="px-4 py-2 text-right font-medium">מחיר</th>
+                          <th className="px-4 py-2 text-right font-medium">נסגר ₪</th>
                           <th className="px-4 py-2 text-right font-medium">הערות</th>
                           <th className="px-4 py-2 text-right font-medium">סגירה</th>
                           <th className="px-4 py-2"></th>
@@ -334,6 +349,11 @@ export default function AdminLeads() {
                                 {isEditing
                                   ? <Input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} className="h-8 text-xs w-24" dir="ltr" />
                                   : fmt(lead.price)}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs font-medium text-primary">
+                                {isEditing
+                                  ? <Input type="number" value={editForm.closed_amount} onChange={e => setEditForm(f => ({ ...f, closed_amount: e.target.value }))} className="h-8 text-xs w-24" dir="ltr" />
+                                  : fmt(lead.closed_amount)}
                               </td>
                               <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[180px]">
                                 {isEditing
@@ -434,6 +454,10 @@ export default function AdminLeads() {
                 <div>
                   <span className="text-xs text-muted-foreground">מחיר</span>
                   <p className="font-medium text-emerald-700">{fmt(viewLead.price)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">סכום שנסגר</span>
+                  <p className="font-medium text-primary">{fmt(viewLead.closed_amount)}</p>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground">סטטוס</span>
