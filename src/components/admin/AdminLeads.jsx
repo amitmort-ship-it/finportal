@@ -275,9 +275,7 @@ export default function AdminLeads() {
                     {totalRevenue > 0 && (
                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">סה"כ {fmt(totalRevenue)}</span>
                     )}
-                    {totalClosedAmount > 0 && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">נסגר {fmt(totalClosedAmount)}</span>
-                    )}
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">נסגר {fmt(totalClosedAmount)}</span>
                   </div>
                   {isCollapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
                 </button>
