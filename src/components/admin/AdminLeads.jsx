@@ -4,8 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ChevronDown, ChevronUp, Users2, Pencil, Check, X } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Users2, Pencil, Check, X, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const SOURCES = ['המלצות', 'לקוח חוזר', 'פרסום', 'היכרות אישית', 'אחר'];
 const MORTGAGE_TYPES = ['ראשונה', 'משפרי דיור', 'מחזור', 'נכס להשקעה', 'מסחרי', 'אחר'];
@@ -23,6 +29,7 @@ const emptyForm = {
   client_name: '',
   phone: '',
   source: '',
+  referrer_name: '',
   mortgage_type: '',
   price: '',
   notes: '',
@@ -59,6 +66,7 @@ export default function AdminLeads() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
+  const [viewLead, setViewLead] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -113,6 +121,7 @@ export default function AdminLeads() {
       client_name: lead.client_name || '',
       phone: lead.phone || '',
       source: lead.source || '',
+      referrer_name: lead.referrer_name || '',
       mortgage_type: lead.mortgage_type || '',
       price: lead.price ? String(lead.price) : '',
       notes: lead.notes || '',
@@ -194,11 +203,17 @@ export default function AdminLeads() {
             </div>
             <div>
               <Label className="text-xs">איך הגיע</Label>
-              <select value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} className={selectClass}>
+              <select value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value, referrer_name: e.target.value === 'המלצות' ? f.referrer_name : '' }))} className={selectClass}>
                 <option value="">בחר מקור</option>
                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
+            {form.source === 'המלצות' && (
+              <div>
+                <Label className="text-xs">מי המליץ</Label>
+                <Input value={form.referrer_name} onChange={e => setForm(f => ({ ...f, referrer_name: e.target.value }))} placeholder="שם הממליץ" className="mt-1" />
+              </div>
+            )}
             <div>
               <Label className="text-xs">סוג משכנתא</Label>
               <select value={form.mortgage_type} onChange={e => setForm(f => ({ ...f, mortgage_type: e.target.value }))} className={selectClass}>
@@ -262,6 +277,7 @@ export default function AdminLeads() {
                           <th className="px-4 py-2 text-right font-medium">שם</th>
                           <th className="px-4 py-2 text-right font-medium">טלפון</th>
                           <th className="px-4 py-2 text-right font-medium">מקור</th>
+                          <th className="px-4 py-2 text-right font-medium">ממליץ</th>
                           <th className="px-4 py-2 text-right font-medium">סוג משכנתא</th>
                           <th className="px-4 py-2 text-right font-medium">מחיר</th>
                           <th className="px-4 py-2 text-right font-medium">הערות</th>
@@ -291,13 +307,20 @@ export default function AdminLeads() {
                               </td>
                               <td className="px-4 py-2.5">
                                 {isEditing ? (
-                                  <select value={editForm.source} onChange={e => setEditForm(f => ({ ...f, source: e.target.value }))} className={inlineSelectClass}>
+                                  <select value={editForm.source} onChange={e => setEditForm(f => ({ ...f, source: e.target.value, referrer_name: e.target.value === 'המלצות' ? f.referrer_name : '' }))} className={inlineSelectClass}>
                                     <option value="">—</option>
                                     {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
                                   </select>
                                 ) : lead.source ? (
                                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_COLORS[lead.source] || 'bg-slate-100 text-slate-600'}`}>{lead.source}</span>
                                 ) : '—'}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs whitespace-nowrap">
+                                {isEditing ? (
+                                  editForm.source === 'המלצות'
+                                    ? <Input value={editForm.referrer_name} onChange={e => setEditForm(f => ({ ...f, referrer_name: e.target.value }))} className="h-8 text-xs w-28" placeholder="שם ממליץ" />
+                                    : <span className="text-muted-foreground">—</span>
+                                ) : (lead.source === 'המלצות' ? (lead.referrer_name || '—') : '—')}
                               </td>
                               <td className="px-4 py-2.5 text-xs">
                                 {isEditing ? (
@@ -349,6 +372,9 @@ export default function AdminLeads() {
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-1.5">
+                                    <button type="button" onClick={() => setViewLead(lead)} title="פתח ליד" className="text-muted-foreground hover:text-accent transition-colors">
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
                                     <button type="button" onClick={() => handleStartEdit(lead)} className="text-muted-foreground hover:text-primary transition-colors">
                                       <Pencil className="w-3.5 h-3.5" />
                                     </button>
@@ -370,6 +396,66 @@ export default function AdminLeads() {
           })}
         </div>
       )}
+
+      <Dialog open={!!viewLead} onOpenChange={(open) => !open && setViewLead(null)}>
+        <DialogContent dir="rtl" className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-right">פרטי הליד</DialogTitle>
+          </DialogHeader>
+          {viewLead && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-xs text-muted-foreground">תאריך</span>
+                  <p className="font-medium" dir="ltr">{viewLead.date || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">שם הלקוח</span>
+                  <p className="font-medium">{viewLead.client_name || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">טלפון</span>
+                  <p className="font-medium" dir="ltr">{viewLead.phone || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">מקור</span>
+                  <p className="font-medium">{viewLead.source || '—'}</p>
+                </div>
+                {viewLead.source === 'המלצות' && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">מי המליץ</span>
+                    <p className="font-medium">{viewLead.referrer_name || '—'}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-xs text-muted-foreground">סוג משכנתא</span>
+                  <p className="font-medium">{viewLead.mortgage_type || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">מחיר</span>
+                  <p className="font-medium text-emerald-700">{fmt(viewLead.price)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">סטטוס</span>
+                  <p className="font-medium">{viewLead.closed ? 'נסגר ✓' : 'פתוח'}</p>
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground">הערות</span>
+                <div className="mt-1 rounded-lg border border-border bg-muted/30 p-3 whitespace-pre-wrap break-words text-foreground">
+                  {viewLead.notes || 'אין הערות'}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => { setViewLead(null); handleStartEdit(viewLead); }} className="gap-1.5">
+                  <Pencil className="w-3.5 h-3.5" /> ערוך
+                </Button>
+                <Button type="button" size="sm" onClick={() => setViewLead(null)}>סגור</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
