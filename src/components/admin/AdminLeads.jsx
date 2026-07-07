@@ -16,6 +16,9 @@ import {
 const SOURCES = ['המלצות', 'לקוח חוזר', 'פרסום', 'היכרות אישית', 'אחר'];
 const MORTGAGE_TYPES = ['ראשונה', 'משפרי דיור', 'מחזור', 'נכס להשקעה', 'מסחרי', 'אחר'];
 
+const MONTHLY_GOAL_CLOSURES = 4;
+const MONTHLY_GOAL_AMOUNT = 20000;
+
 const SOURCE_COLORS = {
   'המלצות': 'bg-emerald-100 text-emerald-700',
   'לקוח חוזר': 'bg-blue-100 text-blue-700',
@@ -173,6 +176,13 @@ export default function AdminLeads() {
   }
   const sortedMonths = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
+  const currentMonthKey = getMonthKey(new Date().toISOString());
+  const currentMonthLeads = grouped[currentMonthKey] || [];
+  const currentMonthClosedCount = currentMonthLeads.filter(l => l.closed).length;
+  const currentMonthClosedAmount = currentMonthLeads.reduce((sum, l) => sum + (l.closed_amount || 0), 0);
+  const closuresPct = Math.min(100, Math.round((currentMonthClosedCount / MONTHLY_GOAL_CLOSURES) * 100));
+  const amountPct = Math.min(100, Math.round((currentMonthClosedAmount / MONTHLY_GOAL_AMOUNT) * 100));
+
   if (loading) {
     return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
   }
@@ -190,6 +200,43 @@ export default function AdminLeads() {
           {showForm ? 'סגור' : 'ליד חדש'}
         </Button>
       </div>
+
+      {(() => {
+        const closuresDone = currentMonthClosedCount >= MONTHLY_GOAL_CLOSURES;
+        const amountDone = currentMonthClosedAmount >= MONTHLY_GOAL_AMOUNT;
+        return (
+          <div className="bg-card border border-border rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Users2 className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold">יעדים — {getMonthLabel(currentMonthKey)}</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-muted-foreground">סגירות</span>
+                  <span className={`font-semibold ${closuresDone ? 'text-emerald-600' : 'text-foreground'}`}>
+                    {currentMonthClosedCount} / {MONTHLY_GOAL_CLOSURES} {closuresDone && '✓'}
+                  </span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${closuresDone ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${closuresPct}%` }} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-muted-foreground">סך סגירות ₪</span>
+                  <span className={`font-semibold ${amountDone ? 'text-emerald-600' : 'text-foreground'}`}>
+                    {fmt(currentMonthClosedAmount) === '—' ? '₪0' : fmt(currentMonthClosedAmount)} / {fmt(MONTHLY_GOAL_AMOUNT)} {amountDone && '✓'}
+                  </span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${amountDone ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${amountPct}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {showForm && (
         <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-4">
