@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen, User, Eye, ScanSearch, Bot } from 'lucide-react';
+import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen, User, Eye, ScanSearch, Bot, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
@@ -36,13 +36,14 @@ export default function ResponsiveLayout() {
   const isAdmin = user?.role === 'admin';
   const hasMultipleCases = !isAdmin && allCases?.length > 1;
   const [showCasePicker, setShowCasePicker] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   return (
     <div dir="rtl" className="min-h-screen bg-background">
-      <aside className="hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-50 shadow-sm h-screen overflow-y-auto">
+      <aside className={`hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-50 shadow-sm h-screen overflow-y-auto transition-transform duration-300 ${sidebarHidden ? 'translate-x-full' : 'translate-x-0'}`}>
         <div className="p-4 border-b border-border">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -57,7 +58,17 @@ export default function ResponsiveLayout() {
                 <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
               </div>
             </div>
-            <ThemeToggle className="shrink-0" />
+            <div className="flex items-center gap-1 shrink-0">
+              <ThemeToggle className="shrink-0" />
+              <button
+                type="button"
+                onClick={() => setSidebarHidden(true)}
+                title="הסתר סיידבר"
+                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <PanelRightClose className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
 
@@ -203,6 +214,18 @@ export default function ResponsiveLayout() {
         </div>
       </aside>
 
+      {sidebarHidden && (
+        <button
+          type="button"
+          onClick={() => setSidebarHidden(false)}
+          title="הצג סיידבר"
+          className="hidden md:flex fixed top-4 right-4 z-50 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <PanelRightOpen className="w-4 h-4" />
+          הצג תפריט
+        </button>
+      )}
+
       <header
         className="md:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-40"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -253,10 +276,10 @@ export default function ResponsiveLayout() {
       </header>
 
       <main
-        className={`md:mr-64 ${hasMultipleCases ? 'pt-32' : 'pt-24'} md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto`}
+        className={`${sidebarHidden ? 'md:mr-0' : 'md:mr-64'} ${hasMultipleCases ? 'pt-32' : 'pt-24'} md:pt-0 pb-20 md:pb-0 h-screen overflow-y-auto transition-all duration-300`}
         ref={(el) => el && location.pathname && el.scrollTo(0, 0)}
       >
-        <div className="pointer-events-none fixed inset-0 md:right-64 flex items-center justify-center opacity-[0.04] z-0">
+        <div className={`pointer-events-none fixed inset-0 ${sidebarHidden ? '' : 'md:right-64'} flex items-center justify-center opacity-[0.04] z-0`}>
           <img
             src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png"
             alt=""
