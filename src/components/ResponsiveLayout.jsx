@@ -45,17 +45,17 @@ export default function ResponsiveLayout() {
     <div dir="rtl" className="min-h-screen bg-background">
       <aside className={`hidden md:flex w-64 bg-card border-l border-border flex-col fixed right-0 top-0 bottom-0 z-50 shadow-sm h-screen overflow-y-auto transition-transform duration-300 ${sidebarHidden ? 'translate-x-full' : 'translate-x-0'}`}>
         <div className="p-4 border-b border-border">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
               <img
                 src="https://media.base44.com/images/public/69c2ce93ab0a8ed34c65a4a8/9fa9af368_Group112.png"
                 alt="לוגו"
-                className="h-10 w-auto object-contain"
+                className="h-9 w-9 object-contain shrink-0"
                 loading="lazy"
               />
-              <div>
-                <h1 className="text-sm font-bold text-foreground leading-tight">עמית ייעוץ ופיננסים</h1>
-                <p className="text-xs text-muted-foreground">ניהול משכנתא</p>
+              <div className="min-w-0">
+                <h1 className="text-sm font-bold text-foreground leading-tight truncate">עמית ייעוץ ופיננסים</h1>
+                <p className="text-[11px] text-muted-foreground leading-tight">ניהול משכנתא</p>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -64,13 +64,18 @@ export default function ResponsiveLayout() {
                 type="button"
                 onClick={() => setSidebarHidden(true)}
                 title="הסתר סיידבר"
-                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 <PanelRightClose className="w-4 h-4" />
               </button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 truncate">{user?.full_name || user?.email}</p>
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5">
+            <div className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
+              {(user?.full_name || user?.email || '?').trim().charAt(0)}
+            </div>
+            <p className="text-xs text-muted-foreground truncate flex-1">{user?.full_name || user?.email}</p>
+          </div>
 
           {isAdmin && <AdminClientViewPicker />}
 
