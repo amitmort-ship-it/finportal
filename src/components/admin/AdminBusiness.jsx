@@ -932,8 +932,9 @@ export default function AdminBusiness() {
     });
     return Object.values(map)
       .sort((a, b) => a.key.localeCompare(b.key))
-      .slice(-6);
-  }, [incomeLog]);
+      .slice(-6)
+      .map((d) => ({ ...d, realNet: Math.max(0, d.net - totalMonthlyExpenses) }));
+  }, [incomeLog, totalMonthlyExpenses]);
 
   const historicalMonths = useMemo(() => {
     const grouped = historicalIncomeLog.reduce((acc, entry) => {
@@ -1604,10 +1605,10 @@ export default function AdminBusiness() {
       {/* === INCOME TREND CHART === */}
       {monthlyChart.length > 0 && (() => {
         const trend = monthlyChart.length >= 2
-          ? monthlyChart[monthlyChart.length - 1].net - monthlyChart[monthlyChart.length - 2].net
+          ? monthlyChart[monthlyChart.length - 1].realNet - monthlyChart[monthlyChart.length - 2].realNet
           : 0;
-        const trendPct = monthlyChart.length >= 2 && monthlyChart[monthlyChart.length - 2].net > 0
-          ? Math.round((trend / monthlyChart[monthlyChart.length - 2].net) * 100)
+        const trendPct = monthlyChart.length >= 2 && monthlyChart[monthlyChart.length - 2].realNet > 0
+          ? Math.round((trend / monthlyChart[monthlyChart.length - 2].realNet) * 100)
           : null;
         return (
           <div className="bg-card rounded-xl border border-border shadow-sm p-5">
@@ -1627,9 +1628,9 @@ export default function AdminBusiness() {
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} reversed />
                 <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={52} orientation="right" />
-                <Tooltip formatter={(v) => [fmt(v), 'נטו']} />
+                <Tooltip formatter={(v) => [fmt(v), 'נטו אחרי הוצאות']} />
                 <ReferenceLine y={SALARY_TARGET} stroke="#6366f1" strokeDasharray="4 2" label={{ value: 'יעד', position: 'insideTopRight', fontSize: 11, fill: '#6366f1' }} />
-                <Bar dataKey="net" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={60} />
+                <Bar dataKey="realNet" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={60} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1859,7 +1860,8 @@ export default function AdminBusiness() {
                   <th className="py-2 text-right font-medium">עסקאות</th>
                   <th className="py-2 text-right font-medium">גולמי</th>
                   <th className="py-2 text-right font-medium">מיסים</th>
-                  <th className="py-2 text-right font-medium">נטו</th>
+                  <th className="py-2 text-right font-medium">נטו (אחרי מס)</th>
+                  <th className="py-2 text-right font-medium">נטו אחרי הוצאות</th>
                 </tr>
               </thead>
               <tbody>
@@ -1869,7 +1871,8 @@ export default function AdminBusiness() {
                     <td className="py-3 text-muted-foreground">{month.deals}</td>
                     <td className="py-3 text-foreground">{fmt(month.gross)}</td>
                     <td className="py-3 text-red-600">{fmt(month.tax)}</td>
-                    <td className="py-3 text-emerald-600 font-semibold">{fmt(month.net)}</td>
+                    <td className="py-3 text-muted-foreground">{fmt(month.net)}</td>
+                    <td className="py-3 text-emerald-600 font-semibold">{fmt(Math.max(0, month.net - totalMonthlyExpenses))}</td>
                   </tr>
                 ))}
               </tbody>
