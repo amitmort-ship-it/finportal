@@ -915,10 +915,24 @@ export default function AdminBusiness() {
   const monthlyChart = useMemo(() => {
     const map = {};
     incomeLog.forEach((e) => {
-      const label = getEntryMonthLabel(e);
-      map[label] = (map[label] || 0) + e.net;
+      const key = getEntryMonthKey(e);
+      if (!key) return;
+      if (!map[key]) {
+        const [y, m] = key.split('-').map(Number);
+        const date = new Date(y, m - 1, 1);
+        map[key] = {
+          key,
+          month: date.toLocaleString('he-IL', { month: 'short', year: '2-digit' }),
+          net: 0,
+          gross: 0,
+        };
+      }
+      map[key].net += e.net || 0;
+      map[key].gross += e.gross || 0;
     });
-    return Object.entries(map).map(([month, net]) => ({ month, net }));
+    return Object.values(map)
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .slice(-6);
   }, [incomeLog]);
 
   const historicalMonths = useMemo(() => {
@@ -1587,22 +1601,40 @@ export default function AdminBusiness() {
         );
       })()}
 
-      {/* === INCOME CHART === */}
-      {monthlyChart.length > 0 && (
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-          <h3 className="font-bold text-foreground mb-4">הכנסות נטו לפי חודש</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={monthlyChart} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={52} />
-              <Tooltip formatter={(v) => [fmt(v), 'נטו']} />
-              <ReferenceLine y={SALARY_TARGET} stroke="#6366f1" strokeDasharray="4 2" label={{ value: 'יעד', position: 'insideTopRight', fontSize: 11, fill: '#6366f1' }} />
-              <Bar dataKey="net" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={60} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {/* === INCOME TREND CHART === */}
+      {monthlyChart.length > 0 && (() => {
+        const trend = monthlyChart.length >= 2
+          ? monthlyChart[monthlyChart.length - 1].net - monthlyChart[monthlyChart.length - 2].net
+          : 0;
+        const trendPct = monthlyChart.length >= 2 && monthlyChart[monthlyChart.length - 2].net > 0
+          ? Math.round((trend / monthlyChart[monthlyChart.length - 2].net) * 100)
+          : null;
+        return (
+          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <h3 className="font-bold text-foreground">מגמת הכנסות — 6 חודשים אחרונים</h3>
+              </div>
+              {monthlyChart.length >= 2 && (
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${trend >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300'}`}>
+                  {trend >= 0 ? '▲' : '▼'} {trendPct !== null ? `${trendPct}%` : fmt(Math.abs(trend))} מול חודש קודם
+                </span>
+              )}
+            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={monthlyChart} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} reversed />
+                <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={52} orientation="right" />
+                <Tooltip formatter={(v) => [fmt(v), 'נטו']} />
+                <ReferenceLine y={SALARY_TARGET} stroke="#6366f1" strokeDasharray="4 2" label={{ value: 'יעד', position: 'insideTopRight', fontSize: 11, fill: '#6366f1' }} />
+                <Bar dataKey="net" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={60} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      })()}
 
       {/* === CATEGORY BREAKDOWN === */}
       {incomeLog.length > 0 && (
