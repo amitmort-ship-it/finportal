@@ -204,8 +204,8 @@ export default function AdminCollaterals({ selectedClient }) {
                         {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
                         {c.handler && <p className="text-xs text-muted-foreground">מטפל: <span className="font-medium text-foreground">{c.handler}</span></p>}
                         {c.admin_file_url ? (
-                          <a href={c.admin_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                            <Download className="w-3 h-3" />{c.admin_file_name || 'מסמך לחתימה'}
+                          <a href={c.admin_file_url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-1 text-xs text-primary hover:underline">
+                            <Download className="w-3 h-3 shrink-0 mt-0.5" /><span className="break-all">{c.admin_file_name || 'מסמך לחתימה'}</span>
                           </a>
                         ) : <span className="text-xs text-muted-foreground">לא הועלה מסמך</span>}
                         {/* Client uploaded files (new multi-file array) */}
@@ -213,14 +213,14 @@ export default function AdminCollaterals({ selectedClient }) {
                           <div className="space-y-1">
                             <span className="text-xs font-medium text-emerald-700">קבצים שהועלו על ידי הלקוח:</span>
                             {c.client_files.map((f, idx) => (
-                              <a key={idx} href={f.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
-                                <Download className="w-3 h-3 shrink-0" />{f.file_name || `קובץ ${idx + 1}`}
+                              <a key={idx} href={f.file_url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-1 text-xs text-emerald-600 hover:underline">
+                                <Download className="w-3 h-3 shrink-0 mt-0.5" /><span className="break-all">{f.file_name || `קובץ ${idx + 1}`}</span>
                               </a>
                             ))}
                           </div>
                         ) : c.client_file_url ? (
-                          <a href={c.client_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline">
-                            <Download className="w-3 h-3" />{c.client_file_name || 'מסמך חתום'}
+                          <a href={c.client_file_url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-1 text-xs text-emerald-600 hover:underline">
+                            <Download className="w-3 h-3 shrink-0 mt-0.5" /><span className="break-all">{c.client_file_name || 'מסמך חתום'}</span>
                           </a>
                         ) : <span className="text-xs text-muted-foreground block">הלקוח טרם העלה</span>}
                         <div className="flex items-center gap-2 pt-1">
