@@ -59,7 +59,7 @@ ${expensesList.join('\n') || '- אין הוצאות רשומות'}
   "vat_reserve": { "amount": <מספר - כמה להפריש למע"מ>, "explanation": "<הסבר קצר>" },
   "income_tax_reserve": { "amount": <מספר - כמה להפריש למס הכנסה>, "explanation": "<הסבר קצר>" },
   "total_reserve": <סכום כולל להפרשה>,
-  "net_after_reserves": <נטו אחרי הפרשות>,
+  "net_after_reserves": <נטו אחרי הפרשות — חישוב: הכנסה גולמית פחות מע"מ להפרשה פחות מס הכנסה להפרשה פחות סך ההוצאות החודשיות>,
   "tax_tips": [
     { "title": "<כותרת עצה>", "body": "<הסבר מפורט>", "priority": "high|medium|low" }
   ],
@@ -188,6 +188,17 @@ ${expensesList.join('\n') || '- אין הוצאות רשומות'}
                   </p>
                   <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">{fmt(result.net_after_reserves)}</p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400">סה"כ להפרשה: {fmt(result.total_reserve)}</p>
+                  {/* Transparent calculation breakdown */}
+                  <div className="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-900/40 text-xs text-emerald-700 dark:text-emerald-400 space-y-0.5 leading-relaxed">
+                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1">כיצד חושב?</p>
+                    <p>גולמי: {fmt(incomeLog.reduce((s,e) => s+(e.gross||0), 0))}</p>
+                    <p>פחות מע"מ: −{fmt(result.vat_reserve?.amount)}</p>
+                    <p>פחות מס הכנסה: −{fmt(result.income_tax_reserve?.amount)}</p>
+                    <p>פחות הוצאות: −{fmt(totalMonthlyExpenses)}</p>
+                    <p className="font-bold border-t border-emerald-300 dark:border-emerald-800 pt-1 mt-1">
+                      = {fmt(incomeLog.reduce((s,e) => s+(e.gross||0), 0) - (result.vat_reserve?.amount||0) - (result.income_tax_reserve?.amount||0) - totalMonthlyExpenses)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
