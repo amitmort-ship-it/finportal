@@ -39,7 +39,7 @@ import {
 } from 'recharts';
 
 const SALARY_TARGET = 25000;
-const MONTHLY_GROSS_TARGET = 51500;
+const DEFAULT_MONTHLY_GROSS_TARGET = 51500;
 const DEFAULT_TAX_BUFFER_RATE = 0.29;
 const DEFAULT_HITECH_TAX_RATE = 0.16;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
@@ -231,6 +231,7 @@ export default function AdminBusiness() {
   const [freeNotes, setFreeNotes] = useState('');
   const [taxBufferRate, setTaxBufferRate] = useState(DEFAULT_TAX_BUFFER_RATE);
   const [hitechTaxRate, setHitechTaxRate] = useState(DEFAULT_HITECH_TAX_RATE);
+  const [monthlyGrossTarget, setMonthlyGrossTarget] = useState(DEFAULT_MONTHLY_GROSS_TARGET);
 
   // Input state
   const [newIncome, setNewIncome] = useState('');
@@ -304,6 +305,7 @@ export default function AdminBusiness() {
           setFreeNotes(r.freeNotes ?? '');
           setTaxBufferRate(r.taxBufferRate ?? DEFAULT_TAX_BUFFER_RATE);
           setHitechTaxRate(r.hitechTaxRate ?? DEFAULT_HITECH_TAX_RATE);
+          setMonthlyGrossTarget(r.monthlyGrossTarget ?? DEFAULT_MONTHLY_GROSS_TARGET);
         } else {
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
           setDealLog(Array.isArray(localDealLog) ? localDealLog : []);
@@ -349,6 +351,7 @@ export default function AdminBusiness() {
       freeNotes,
       taxBufferRate,
       hitechTaxRate,
+      monthlyGrossTarget,
       ...patch,
     };
 
@@ -870,8 +873,8 @@ export default function AdminBusiness() {
     [variableExpenses]
   );
   const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
-  const monthlyGrossTargetGap = Math.max(0, MONTHLY_GROSS_TARGET - totalGross);
-  const monthlyGrossTargetOver = Math.max(0, totalGross - MONTHLY_GROSS_TARGET);
+  const monthlyGrossTargetGap = Math.max(0, monthlyGrossTarget - totalGross);
+  const monthlyGrossTargetOver = Math.max(0, totalGross - monthlyGrossTarget);
   const openDeals = useMemo(
     () => dealLog.filter((deal) => !deal.isFrozen && Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0) > 0),
     [dealLog]
@@ -1140,11 +1143,11 @@ export default function AdminBusiness() {
         </h3>
         <GaugeBar
           value={totalGross}
-          max={MONTHLY_GROSS_TARGET}
+          max={monthlyGrossTarget}
           color="bg-blue-500"
           label="התקדמות ליעד הברוטו"
           valueLabel={fmt(totalGross)}
-          sublabel={`יעד: ${fmt(MONTHLY_GROSS_TARGET)}`}
+          sublabel={`יעד: ${fmt(monthlyGrossTarget)}`}
         />
         <GaugeBar
           value={pipelineForecast}
@@ -1210,6 +1213,21 @@ export default function AdminBusiness() {
             <Label>תיקים פעילים (ידני) — מבטל חישוב אוטומטי</Label>
             <Input type="number" value={manualActiveCount} onChange={(e) => { setManualActiveCount(e.target.value); persist({ manualActiveCount: e.target.value }); }} dir="ltr" className="mt-1" placeholder="ריק = חישוב אוטומטי" min="0" />
           </div>
+          <div>
+            <Label>יעד ברוטו חודשי (₪)</Label>
+            <Input
+              type="number"
+              value={monthlyGrossTarget}
+              onChange={(e) => {
+                const val = Math.max(0, Number(e.target.value));
+                setMonthlyGrossTarget(val);
+                persist({ monthlyGrossTarget: val });
+              }}
+              dir="ltr"
+              className="mt-1"
+              placeholder="51500"
+            />
+          </div>
           <div className="pt-3 border-t border-border">
             <p className="text-xs font-semibold text-muted-foreground mb-2">שיעורי מס</p>
             <div className="grid grid-cols-2 gap-2">
@@ -1253,19 +1271,19 @@ export default function AdminBusiness() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">מה לעשות עכשיו?</h3>
           <div className="space-y-2 text-sm">
-            {totalGross < MONTHLY_GROSS_TARGET * 0.5 && (
+            {totalGross < monthlyGrossTarget * 0.5 && (
               <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-red-700 dark:bg-red-950/25 dark:text-red-300">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>החודש עדיין רחוק מיעד הברוטו — יש לתעדף סגירת עסקאות.</span>
               </div>
             )}
-            {totalGross >= MONTHLY_GROSS_TARGET * 0.5 && totalGross < MONTHLY_GROSS_TARGET && (
+            {totalGross >= monthlyGrossTarget * 0.5 && totalGross < monthlyGrossTarget && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-700 dark:bg-amber-950/25 dark:text-amber-300">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>אתה מתקרב ליעד הברוטו החודשי — להמשיך לעבוד על הצנרת.</span>
               </div>
             )}
-            {totalGross >= MONTHLY_GROSS_TARGET && (
+            {totalGross >= monthlyGrossTarget && (
               <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300">
                 <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>יעד הברוטו החודשי הושג — אפשר להתמקד בצמיחה.</span>
