@@ -3,8 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 
-const TAX_BUFFER_RATE = 0.26;
-const HITECH_TAX_RATE = 0.12;
+const TAX_BUFFER_RATE = 0.29;
+const HITECH_TAX_RATE = 0.16;
 const TARGET_NET_AFTER_EXPENSES = 25000;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 
