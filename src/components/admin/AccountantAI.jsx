@@ -11,20 +11,35 @@ export default function AccountantAI({ incomeLog, fixedExpenses, variableExpense
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [currentMonthGross, setCurrentMonthGross] = useState(0);
 
   const handleAnalyze = async () => {
     setLoading(true);
     setResult(null);
     setExpanded(true);
 
+    // Filter to current month only
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentMonthLog = incomeLog.filter((e) => {
+      if (e.monthKey) return e.monthKey === currentMonthKey;
+      if (e.createdAt) {
+        const d = new Date(e.createdAt);
+        const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return k === currentMonthKey;
+      }
+      return false;
+    });
+
     // Build a financial summary to send to the AI
-    const totalGross = incomeLog.reduce((s, e) => s + (e.gross || 0), 0);
-    const totalNet = incomeLog.reduce((s, e) => s + (e.net || 0), 0);
-    const totalTax = incomeLog.reduce((s, e) => s + (e.tax || 0), 0);
+    const totalGross = currentMonthLog.reduce((s, e) => s + (e.gross || 0), 0);
+    setCurrentMonthGross(totalGross);
+    const totalNet = currentMonthLog.reduce((s, e) => s + (e.net || 0), 0);
+    const totalTax = currentMonthLog.reduce((s, e) => s + (e.tax || 0), 0);
 
     // Category breakdown
     const categoryMap = {};
-    incomeLog.forEach((e) => {
+    currentMonthLog.forEach((e) => {
       const cat = e.category || 'משכנתאות';
       if (!categoryMap[cat]) categoryMap[cat] = 0;
       categoryMap[cat] += e.gross || 0;
@@ -191,12 +206,12 @@ ${expensesList.join('\n') || '- אין הוצאות רשומות'}
                   {/* Transparent calculation breakdown */}
                   <div className="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-900/40 text-xs text-emerald-700 dark:text-emerald-400 space-y-0.5 leading-relaxed">
                     <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1">כיצד חושב?</p>
-                    <p>גולמי: {fmt(incomeLog.reduce((s,e) => s+(e.gross||0), 0))}</p>
+                    <p>גולמי (החודש): {fmt(currentMonthGross)}</p>
                     <p>פחות מע"מ: −{fmt(result.vat_reserve?.amount)}</p>
                     <p>פחות מס הכנסה: −{fmt(result.income_tax_reserve?.amount)}</p>
                     <p>פחות הוצאות: −{fmt(totalMonthlyExpenses)}</p>
                     <p className="font-bold border-t border-emerald-300 dark:border-emerald-800 pt-1 mt-1">
-                      = {fmt(incomeLog.reduce((s,e) => s+(e.gross||0), 0) - (result.vat_reserve?.amount||0) - (result.income_tax_reserve?.amount||0) - totalMonthlyExpenses)}
+                      = {fmt(currentMonthGross - (result.vat_reserve?.amount||0) - (result.income_tax_reserve?.amount||0) - totalMonthlyExpenses)}
                     </p>
                   </div>
                 </div>
