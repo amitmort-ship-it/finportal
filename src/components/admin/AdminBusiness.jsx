@@ -39,7 +39,7 @@ import {
 
 const SALARY_TARGET = 25000;
 const MONTHLY_GROSS_TARGET = 51500;
-const TAX_BUFFER_RATE = 0.26;
+const TAX_BUFFER_RATE = 0.29;
 const HITECH_TAX_RATE = 0.12;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
@@ -1162,7 +1162,7 @@ export default function AdminBusiness() {
         {/* Add Income */}
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
-          <p className="text-xs text-muted-foreground">הכנסות כאן נספרות לחודש הנוכחי בלבד. הייטק מחושב ב־12% מס, שאר הקטגוריות ב־26%.</p>
+          <p className="text-xs text-muted-foreground">הכנסות כאן נספרות לחודש הנוכחי בלבד. הייטק מחושב ב־12% מס, שאר הקטגוריות ב־29%.</p>
           <Label>סכום גולמי (₪)</Label>
           <Input type="number" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} placeholder="למשל: 15000" dir="ltr" />
           <Label>ממי / שם הלקוח</Label>
