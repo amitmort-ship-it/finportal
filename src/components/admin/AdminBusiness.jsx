@@ -39,8 +39,8 @@ import {
 
 const SALARY_TARGET = 25000;
 const MONTHLY_GROSS_TARGET = 51500;
-const TAX_BUFFER_RATE = 0.29;
-const HITECH_TAX_RATE = 0.16;
+const DEFAULT_TAX_BUFFER_RATE = 0.29;
+const DEFAULT_HITECH_TAX_RATE = 0.16;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
@@ -96,8 +96,8 @@ function fmt(n) {
   return `₪${Math.round(n || 0).toLocaleString('he-IL')}`;
 }
 
-function getTaxRateForCategory(category) {
-  return category === 'הייטק' ? HITECH_TAX_RATE : TAX_BUFFER_RATE;
+function getTaxRateForCategory(category, taxBufferRate, hitechTaxRate) {
+  return category === 'הייטק' ? hitechTaxRate : taxBufferRate;
 }
 
 function getDealStatus(deal) {
@@ -228,6 +228,8 @@ export default function AdminBusiness() {
   const [assetsValue, setAssetsValue] = useState(0);
   const [manualActiveCount, setManualActiveCount] = useState('');
   const [freeNotes, setFreeNotes] = useState('');
+  const [taxBufferRate, setTaxBufferRate] = useState(DEFAULT_TAX_BUFFER_RATE);
+  const [hitechTaxRate, setHitechTaxRate] = useState(DEFAULT_HITECH_TAX_RATE);
 
   // Input state
   const [newIncome, setNewIncome] = useState('');
@@ -299,6 +301,8 @@ export default function AdminBusiness() {
           setAssetsValue(r.assetsValue ?? 0);
           setManualActiveCount(r.manualActiveCount ?? '');
           setFreeNotes(r.freeNotes ?? '');
+          setTaxBufferRate(r.taxBufferRate ?? DEFAULT_TAX_BUFFER_RATE);
+          setHitechTaxRate(r.hitechTaxRate ?? DEFAULT_HITECH_TAX_RATE);
         } else {
           const localDealLog = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
           setDealLog(Array.isArray(localDealLog) ? localDealLog : []);
@@ -342,6 +346,8 @@ export default function AdminBusiness() {
       assetsValue,
       manualActiveCount,
       freeNotes,
+      taxBufferRate,
+      hitechTaxRate,
       ...patch,
     };
 
@@ -367,7 +373,7 @@ export default function AdminBusiness() {
   const handleAddIncome = () => {
     const amount = Number(String(newIncome).replace(/,/g, ''));
     if (!amount || amount <= 0) return;
-    const taxRate = getTaxRateForCategory(newIncomeCategory);
+    const taxRate = getTaxRateForCategory(newIncomeCategory, taxBufferRate, hitechTaxRate);
     const net = amount * (1 - taxRate);
     const tax = amount * taxRate;
     const linkedDeal = selectedDealId ? dealLog.find((deal) => String(deal.id) === String(selectedDealId)) : null;
@@ -473,7 +479,7 @@ export default function AdminBusiness() {
     if (!amount || amount <= 0) return;
     const currentEntry = incomeLog.find((entry) => entry.id === id);
 
-    const taxRate = getTaxRateForCategory(editIncomeCategory);
+    const taxRate = getTaxRateForCategory(editIncomeCategory, taxBufferRate, hitechTaxRate);
     const net = amount * (1 - taxRate);
     const tax = amount * taxRate;
 
@@ -1162,7 +1168,7 @@ export default function AdminBusiness() {
         {/* Add Income */}
         <div className="bg-card rounded-xl border border-border shadow-sm p-5 space-y-3">
           <h3 className="font-bold text-foreground">קליטת הכנסה מתיק</h3>
-          <p className="text-xs text-muted-foreground">הכנסות כאן נספרות לחודש הנוכחי בלבד. הייטק מחושב ב־16% מס, שאר הקטגוריות ב־29%.</p>
+          <p className="text-xs text-muted-foreground">הכנסות כאן נספרות לחודש הנוכחי בלבד. הייטק מחושב ב־{Math.round(hitechTaxRate * 100)}% מס, שאר הקטגוריות ב־{Math.round(taxBufferRate * 100)}%.</p>
           <Label>סכום גולמי (₪)</Label>
           <Input type="number" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} placeholder="למשל: 15000" dir="ltr" />
           <Label>ממי / שם הלקוח</Label>
@@ -1202,6 +1208,43 @@ export default function AdminBusiness() {
           <div>
             <Label>תיקים פעילים (ידני) — מבטל חישוב אוטומטי</Label>
             <Input type="number" value={manualActiveCount} onChange={(e) => { setManualActiveCount(e.target.value); persist({ manualActiveCount: e.target.value }); }} dir="ltr" className="mt-1" placeholder="ריק = חישוב אוטומטי" min="0" />
+          </div>
+          <div className="pt-3 border-t border-border">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">שיעורי מס</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">מס רגיל (%)</Label>
+                <Input
+                  type="number"
+                  value={Math.round(taxBufferRate * 100)}
+                  onChange={(e) => {
+                    const val = Math.min(100, Math.max(0, Number(e.target.value))) / 100;
+                    setTaxBufferRate(val);
+                    persist({ taxBufferRate: val });
+                  }}
+                  dir="ltr"
+                  className="mt-1"
+                  min="0" max="100" step="1"
+                  placeholder="29"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">מס הייטק (%)</Label>
+                <Input
+                  type="number"
+                  value={Math.round(hitechTaxRate * 100)}
+                  onChange={(e) => {
+                    const val = Math.min(100, Math.max(0, Number(e.target.value))) / 100;
+                    setHitechTaxRate(val);
+                    persist({ hitechTaxRate: val });
+                  }}
+                  dir="ltr"
+                  className="mt-1"
+                  min="0" max="100" step="1"
+                  placeholder="16"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1788,7 +1831,7 @@ export default function AdminBusiness() {
       </div>
 
       {/* === SIMULATION === */}
-      <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} />
+      <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} taxBufferRate={taxBufferRate} hitechTaxRate={hitechTaxRate} />
 
       {/* === INCOME LOG === */}
       {currentMonthIncomeLog.length > 0 && (

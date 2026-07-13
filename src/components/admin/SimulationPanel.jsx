@@ -3,8 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 
-const TAX_BUFFER_RATE = 0.29;
-const HITECH_TAX_RATE = 0.16;
+const DEFAULT_TAX_BUFFER_RATE = 0.29;
+const DEFAULT_HITECH_TAX_RATE = 0.16;
 const TARGET_NET_AFTER_EXPENSES = 25000;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 
@@ -33,11 +33,11 @@ function asNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getTaxRateForCategory(category) {
-  return category === 'הייטק' ? HITECH_TAX_RATE : TAX_BUFFER_RATE;
+function getTaxRateForCategory(category, taxBufferRate, hitechTaxRate) {
+  return category === 'הייטק' ? hitechTaxRate : taxBufferRate;
 }
 
-export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, variableExpenses, activeVariableMonthly }) {
+export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, variableExpenses, activeVariableMonthly, taxBufferRate = DEFAULT_TAX_BUFFER_RATE, hitechTaxRate = DEFAULT_HITECH_TAX_RATE }) {
   const [open, setOpen] = useState(true);
   const [catInputs, setCatInputs] = useState(INITIAL_CATEGORY_INPUTS);
 
@@ -64,14 +64,15 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
   const categoryBreakdown = useMemo(() => (
     INCOME_CATEGORIES.reduce((accumulator, category) => {
       const gross = asNumber(catInputs[category]);
-      const taxRate = getTaxRateForCategory(category);
+      const taxRate = getTaxRateForCategory(category, taxBufferRate, hitechTaxRate);
+
       const tax = gross * taxRate;
       const net = gross - tax;
 
       accumulator[category] = { gross, taxRate, tax, net };
       return accumulator;
     }, {})
-  ), [catInputs]);
+  ), [catInputs, taxBufferRate, hitechTaxRate]);
 
   const totalGross = useMemo(
     () => INCOME_CATEGORIES.reduce((sum, category) => sum + (categoryBreakdown[category]?.gross || 0), 0),
@@ -92,7 +93,7 @@ export default function SimulationPanel({ fixedExpenses, monthlyFixedTotal, vari
   const isPositive = afterExpenses >= 0;
   const otherCategoriesNet = (categoryBreakdown['כ.ד']?.net || 0) + (categoryBreakdown['הייטק']?.net || 0) + (categoryBreakdown['אחר']?.net || 0);
   const requiredMortgageNet = Math.max(0, TARGET_NET_AFTER_EXPENSES + totalExpenses - otherCategoriesNet);
-  const requiredMortgageGross = requiredMortgageNet / (1 - TAX_BUFFER_RATE);
+  const requiredMortgageGross = requiredMortgageNet / (1 - taxBufferRate);
   const currentMortgageGross = categoryBreakdown['משכנתאות']?.gross || 0;
   const mortgageGapGross = requiredMortgageGross - currentMortgageGross;
 
