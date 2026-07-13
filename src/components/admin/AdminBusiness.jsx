@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import SimulationPanel from './SimulationPanel';
+import AccountantAI from './AccountantAI';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1829,6 +1830,16 @@ export default function AdminBusiness() {
           dir="rtl"
         />
       </div>
+
+      {/* === ACCOUNTANT AI === */}
+      <AccountantAI
+        incomeLog={incomeLog}
+        fixedExpenses={fixedExpenses}
+        variableExpenses={variableExpenses}
+        taxBufferRate={taxBufferRate}
+        hitechTaxRate={hitechTaxRate}
+        totalMonthlyExpenses={totalMonthlyExpenses}
+      />
 
       {/* === SIMULATION === */}
       <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} taxBufferRate={taxBufferRate} hitechTaxRate={hitechTaxRate} />
