@@ -472,7 +472,7 @@ export default function AdminBusiness() {
     if (dealStatusFilter !== 'all' && status !== dealStatusFilter) return false;
     if (dealSearch.trim() && !String(d.clientName || '').toLowerCase().includes(dealSearch.trim().toLowerCase())) return false;
     return true;
-  }), [dealLog, hidePaidDeals, dealStatusFilter, dealSearch]);
+  }).sort((a, b) => String(a.clientName || '').localeCompare(String(b.clientName || ''), 'he')), [dealLog, hidePaidDeals, dealStatusFilter, dealSearch]);
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
   const targetPct = Math.min(100, monthlyGrossTarget > 0 ? Math.round((totalGross / monthlyGrossTarget) * 100) : 0);
