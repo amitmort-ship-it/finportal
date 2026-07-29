@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, getAccessToken } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -105,23 +105,27 @@ export default function DocumentAnalyzerPage() {
   const saveConvName = async (convId) => {
     if (!editingName.trim()) return;
     const newName = editingName.trim();
+    const accessToken = getAccessToken();
     try {
       const res = await fetch(`/api/apps/${appParams.appId}/agents/conversations/${convId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(appParams.token ? { 'Authorization': `Bearer ${appParams.token}` } : {}),
-          'X-App-Id': String(appParams.appId),
+          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({ metadata: { name: newName } }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}: ${errText}`);
+      }
       setEditingConvId(null);
       setConversations(prev => prev.map(c => c.id === convId ? { ...c, metadata: { ...c.metadata, name: newName } } : c));
       if (activeConversation?.id === convId) {
         setActiveConversation(prev => ({ ...prev, metadata: { ...prev.metadata, name: newName } }));
       }
     } catch (err) {
+      console.error('saveConvName error:', err);
       toast.error('שגיאה בעדכון שם השיחה');
     }
   };
