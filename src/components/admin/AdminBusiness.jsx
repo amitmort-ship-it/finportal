@@ -156,6 +156,7 @@ export default function AdminBusiness() {
   const [dealStatusFilter, setDealStatusFilter] = useState('all');
   const [hidePaidDeals, setHidePaidDeals] = useState(true);
   const [importingDeals, setImportingDeals] = useState(false);
+  const [dealMonthFilter, setDealMonthFilter] = useState('');
 
   // Expense input
   const [newFixedName, setNewFixedName] = useState('');
@@ -466,13 +467,36 @@ export default function AdminBusiness() {
     }, {});
     return Object.values(g).sort((a, b) => String(b.key).localeCompare(String(a.key), 'he'));
   }, [historicalIncomeLog]);
+  const dealMonthKey = (d) => {
+    if (!d?.createdAt) return null;
+    const p = new Date(d.createdAt);
+    if (Number.isNaN(p.getTime())) return null;
+    return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}`;
+  };
+  const availableDealMonths = useMemo(() => {
+    const map = {};
+    dealLog.forEach(d => {
+      const k = dealMonthKey(d);
+      if (!k) return;
+      if (!map[k]) { const [y, m] = k.split('-').map(Number); map[k] = { key: k, label: new Date(y, m - 1, 1).toLocaleString('he-IL', { month: 'long', year: 'numeric' }), count: 0, total: 0 }; }
+      map[k].count++; map[k].total += Number(d.totalAmount || 0);
+    });
+    return Object.values(map).sort((a, b) => b.key.localeCompare(a.key));
+  }, [dealLog]);
   const filteredDeals = useMemo(() => dealLog.filter(d => {
     const status = getDealStatus(d);
     if (hidePaidDeals && status === 'שולם מלא') return false;
     if (dealStatusFilter !== 'all' && status !== dealStatusFilter) return false;
+    if (dealMonthFilter && dealMonthKey(d) !== dealMonthFilter) return false;
     if (dealSearch.trim() && !String(d.clientName || '').toLowerCase().includes(dealSearch.trim().toLowerCase())) return false;
     return true;
-  }).sort((a, b) => String(a.clientName || '').localeCompare(String(b.clientName || ''), 'he')), [dealLog, hidePaidDeals, dealStatusFilter, dealSearch]);
+  }).sort((a, b) => String(a.clientName || '').localeCompare(String(b.clientName || ''), 'he')), [dealLog, hidePaidDeals, dealStatusFilter, dealMonthFilter, dealSearch]);
+  const filteredDealsMonthSummary = useMemo(() => {
+    const count = filteredDeals.length;
+    const total = filteredDeals.reduce((s, d) => s + Number(d.totalAmount || 0), 0);
+    const paid = filteredDeals.reduce((s, d) => s + Number(d.paidAmount || 0), 0);
+    return { count, total, paid };
+  }, [filteredDeals]);
 
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
   const targetPct = Math.min(100, monthlyGrossTarget > 0 ? Math.round((totalGross / monthlyGrossTarget) * 100) : 0);
@@ -720,6 +744,10 @@ export default function AdminBusiness() {
               {/* Filters + CSV */}
               <div className="flex flex-wrap items-center gap-2">
                 <Input value={dealSearch} onChange={e => setDealSearch(e.target.value)} placeholder="חיפוש לקוח..." className="flex-1 min-w-[160px]" />
+                <select value={dealMonthFilter} onChange={e => setDealMonthFilter(e.target.value)} className={`${selectCls} w-auto`}>
+                  <option value="">כל החודשים</option>
+                  {availableDealMonths.map(m => <option key={m.key} value={m.key}>{m.label} ({m.count})</option>)}
+                </select>
                 <select value={dealStatusFilter} onChange={e => setDealStatusFilter(e.target.value)} className={`${selectCls} w-auto`}>
                   <option value="all">כל הסטטוסים</option>
                   <option value="ממתין לתשלום">ממתין לתשלום</option>
@@ -730,6 +758,9 @@ export default function AdminBusiness() {
                 <Button type="button" variant={hidePaidDeals ? 'secondary' : 'outline'} size="sm" onClick={() => setHidePaidDeals(v => !v)}>
                   {hidePaidDeals ? `הצג נסגרו (${paidDealsCount})` : 'הסתר נסגרו'}
                 </Button>
+                {(dealMonthFilter || dealStatusFilter !== 'all' || dealSearch.trim()) && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setDealMonthFilter(''); setDealStatusFilter('all'); setDealSearch(''); }}>נקה</Button>
+                )}
                 <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="sm" onClick={handleDownloadDealsTemplate}><Download className="w-3.5 h-3.5" /></Button>
                   <label className="cursor-pointer inline-flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs hover:bg-accent">
@@ -738,6 +769,13 @@ export default function AdminBusiness() {
                   </label>
                   <Button type="button" variant="outline" size="sm" onClick={handleExportDeals} disabled={!dealLog.length}><Download className="w-3.5 h-3.5" /></Button>
                 </div>
+              </div>
+
+              {/* Month/filter summary */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-center"><p className="text-xs text-muted-foreground">עסקאות</p><p className="text-lg font-bold text-foreground">{filteredDealsMonthSummary.count}</p></div>
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-center"><p className="text-xs text-muted-foreground">סה"כ עסקאות</p><p className="text-lg font-bold text-violet-600">{fmt(filteredDealsMonthSummary.total)}</p></div>
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-center"><p className="text-xs text-muted-foreground">סה"כ נגבה</p><p className="text-lg font-bold text-emerald-600">{fmt(filteredDealsMonthSummary.paid)}</p></div>
               </div>
 
               {/* Deal cards grid */}
