@@ -26,7 +26,7 @@ import {
 const BANKS = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק טפחות', 'הבנק הבינלאומי', 'חוץ בנקאי'];
 const nativeSelectClassName = 'mt-1 w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
 
-const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', additional_files: [], ai_data: null };
+const emptyForm = { client_email: '', bank_name: '', approval_title: '', notes: '', amount: '', monthly_payment: '', mortgage_years: '', offer_expiry_date: '', file_url: '', file_name: '', additional_files: [], ai_data: null, mix_file_url: '', mix_file_name: '' };
 
 const mergeParsedIntoForm = (currentForm, parsedResult) => {
   if (!parsedResult?.ai_data) return currentForm;
@@ -78,6 +78,8 @@ export default function AdminBankApprovals({ selectedClient }) {
   const [editUploading, setEditUploading] = useState(false);
   const [additionalUploading, setAdditionalUploading] = useState(false);
   const [editAdditionalUploading, setEditAdditionalUploading] = useState(false);
+  const [mixUploading, setMixUploading] = useState(false);
+  const [editMixUploading, setEditMixUploading] = useState(false);
   const [insightsForm, setInsightsForm] = useState({
     admin_summary: '',
     client_summary: '',
@@ -196,6 +198,35 @@ export default function AdminBankApprovals({ selectedClient }) {
     }));
   };
 
+  const handleMixFileUpload = async (e, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const setLoader = isEdit ? setEditMixUploading : setMixUploading;
+    const setTargetForm = isEdit ? setEditForm : setForm;
+
+    setLoader(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setTargetForm(prev => ({
+        ...prev,
+        mix_file_url: file_url,
+        mix_file_name: file.name,
+      }));
+      toast.success('תמהיל המשכנתא הועלה');
+    } catch {
+      toast.error('שגיאה בהעלאת התמהיל');
+    } finally {
+      setLoader(false);
+    }
+  };
+
+  const removeMixFile = (isEdit = false) => {
+    const setTargetForm = isEdit ? setEditForm : setForm;
+    setTargetForm(prev => ({ ...prev, mix_file_url: '', mix_file_name: '' }));
+  };
+
   const handleFileUpload = async (e, isEdit = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -302,6 +333,8 @@ export default function AdminBankApprovals({ selectedClient }) {
       file_name: a.file_name || '',
       additional_files: Array.isArray(a.additional_files) ? a.additional_files : [],
       ai_data: a.ai_data || null,
+      mix_file_url: a.mix_file_url || '',
+      mix_file_name: a.mix_file_name || '',
     });
   };
 
@@ -487,6 +520,21 @@ export default function AdminBankApprovals({ selectedClient }) {
                           <button type="button" onClick={() => removeAdditionalFile(idx, false)} className="text-destructive hover:text-destructive/80"><X className="w-3 h-3" /></button>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>תמהיל משכנתא ספציפי</Label>
+                  <label className="flex items-center gap-2 mt-1 border border-dashed border-primary/40 rounded-lg p-3 cursor-pointer hover:border-primary/60 transition-all bg-primary/5">
+                    <input type="file" className="hidden" onChange={e => handleMixFileUpload(e, false)} disabled={mixUploading} />
+                    {mixUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-primary" />}
+                    <span className="text-sm text-foreground">{form.mix_file_name || 'העלה תמהיל משכנתא'}</span>
+                  </label>
+                  {form.mix_file_url && (
+                    <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 rounded px-2 py-1.5">
+                      <Download className="w-3 h-3 text-primary shrink-0" />
+                      <span className="flex-1 truncate">{form.mix_file_name}</span>
+                      <button type="button" onClick={() => removeMixFile(false)} className="text-destructive hover:text-destructive/80"><X className="w-3 h-3" /></button>
                     </div>
                   )}
                 </div>
@@ -707,6 +755,21 @@ export default function AdminBankApprovals({ selectedClient }) {
                       </div>
                     )}
                   </div>
+                  <div>
+                    <Label className="text-xs">תמהיל משכנתא ספציפי</Label>
+                    <label className="flex items-center gap-2 mt-1 border border-dashed border-primary/40 rounded-lg p-2 cursor-pointer hover:border-primary/60 transition-all bg-primary/5">
+                      <input type="file" className="hidden" onChange={e => handleMixFileUpload(e, true)} disabled={editMixUploading} />
+                      {editMixUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-primary" />}
+                      <span className="text-xs text-foreground">{editForm.mix_file_name || 'העלה תמהיל משכנתא'}</span>
+                    </label>
+                    {editForm.mix_file_url && (
+                      <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 rounded px-2 py-1.5">
+                        <Download className="w-3 h-3 text-primary shrink-0" />
+                        <span className="flex-1 truncate">{editForm.mix_file_name}</span>
+                        <button type="button" onClick={() => removeMixFile(true)} className="text-destructive hover:text-destructive/80"><X className="w-3 h-3" /></button>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Button type="button" size="sm" onClick={handleSaveEdit} className="gap-1"><Check className="w-3 h-3" />שמור</Button>
                     <Button type="button" size="sm" variant="outline" onClick={() => setEditingId(null)} className="gap-1"><X className="w-3 h-3" />ביטול</Button>
@@ -738,6 +801,11 @@ export default function AdminBankApprovals({ selectedClient }) {
                           </a>
                         ))}
                       </div>
+                    )}
+                    {a.mix_file_url && (
+                      <a href={a.mix_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
+                        <Download className="w-3 h-3" />תמהיל משכנתא: {a.mix_file_name || 'הורד'}
+                      </a>
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">

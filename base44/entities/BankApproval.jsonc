@@ -59,6 +59,14 @@
       "format": "date",
       "description": "Date when the offer expires"
     },
+    "mix_file_url": {
+      "type": "string",
+      "description": "URL of the specific mortgage mix (\u05ea\u05de\u05d4\u05d9\u05dc) document for this approval"
+    },
+    "mix_file_name": {
+      "type": "string",
+      "description": "Original file name of the mortgage mix document"
+    },
     "ai_data": {
       "type": "object",
       "description": "AI analysis data and structured info"
