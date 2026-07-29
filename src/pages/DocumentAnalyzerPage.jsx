@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Trash2, Send, Bot, User, Paperclip, X, Pencil, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 export default function DocumentAnalyzerPage() {
   const { user } = useAuth();
@@ -103,11 +104,17 @@ export default function DocumentAnalyzerPage() {
   const saveConvName = async (convId) => {
     if (!editingName.trim()) return;
     const newName = editingName.trim();
-    await base44.agents.updateConversation(convId, { metadata: { name: newName } });
-    setEditingConvId(null);
-    setConversations(prev => prev.map(c => c.id === convId ? { ...c, metadata: { ...c.metadata, name: newName } } : c));
-    if (activeConversation?.id === convId) {
-      setActiveConversation(prev => ({ ...prev, metadata: { ...prev.metadata, name: newName } }));
+    const existing = conversations.find(c => c.id === convId);
+    const existingMeta = existing?.metadata || {};
+    try {
+      await base44.agents.updateConversation(convId, { metadata: { ...existingMeta, name: newName } });
+      setEditingConvId(null);
+      setConversations(prev => prev.map(c => c.id === convId ? { ...c, metadata: { ...c.metadata, name: newName } } : c));
+      if (activeConversation?.id === convId) {
+        setActiveConversation(prev => ({ ...prev, metadata: { ...prev.metadata, name: newName } }));
+      }
+    } catch (err) {
+      toast.error('שגיאה בעדכון שם השיחה');
     }
   };
 
