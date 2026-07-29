@@ -16,6 +16,7 @@ function normalize(value) {
 export default function ClientSearchFilter({ onSelect, placeholder, selectedValue = '' }) {
   const [clients, setClients] = useState([]);
   const [query, setQuery] = useState('');
+  const [activeOnly, setActiveOnly] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -48,6 +49,14 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
     };
   }, []);
 
+  const isClientActive = (client) =>
+    !client?.access_blocked && !client?.treatment_ended_at;
+
+  const visibleClients = useMemo(
+    () => (activeOnly ? clients.filter(isClientActive) : clients),
+    [clients, activeOnly],
+  );
+
   const selectedClient = useMemo(
     () => clients.find((client) => client.email === selectedValue) || null,
     [clients, selectedValue],
@@ -66,12 +75,12 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
 
   const clientOptions = useMemo(
     () =>
-      clients.map((client) => ({
+      visibleClients.map((client) => ({
         key: client.id || client.email,
         email: client.email,
         label: getClientLabel(client),
       })),
-    [clients],
+    [visibleClients],
   );
 
   const handleChange = (value) => {
@@ -110,6 +119,15 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
         autoComplete="off"
       />
       <ChevronDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <label className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none w-fit">
+        <input
+          type="checkbox"
+          checked={activeOnly}
+          onChange={(e) => setActiveOnly(e.target.checked)}
+          className="h-3.5 w-3.5 accent-primary"
+        />
+        פעילים בלבד
+      </label>
       <datalist id={dataListId}>
         {clientOptions.map((client) => (
           <option key={client.key} value={client.label} />
