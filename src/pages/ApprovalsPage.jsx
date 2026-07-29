@@ -5,6 +5,7 @@ import BankApprovalCard from '../components/BankApprovalCard';
 import { Building2 } from 'lucide-react';
 import ApprovalsComparisonTable from '../components/ApprovalsComparisonTable';
 import ApprovalsInsightsPanel from '../components/ApprovalsInsightsPanel';
+import ApprovalSummaryCards from '../components/ApprovalSummaryCards';
 import { getSharedApprovalInsights } from '@/lib/approvalInsights';
 import { BANK_LOGOS } from '../components/BankApprovalCard';
 
@@ -49,7 +50,8 @@ export default function ApprovalsPage() {
           <p className="text-sm text-muted-foreground">כאן יופיעו ההצעות לאחר סריקת המסמכים</p>
         </div>
       ) : (
-        <div className="space-y-12">
+        <div className="space-y-10">
+          <ApprovalSummaryCards approvals={approvals} />
           <ApprovalsComparisonTable approvals={approvals} title="השוואת הצעות ותמהיל מוצע" />
           <ApprovalsInsightsPanel insights={publishedInsights} />
 

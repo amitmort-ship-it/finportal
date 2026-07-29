@@ -1,4 +1,4 @@
-import { AlertTriangle, BarChart3, Info } from 'lucide-react';
+import { AlertTriangle, BarChart3, Info, CheckCircle2, ArrowLeftCircle } from 'lucide-react';
 
 function normalizeList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
@@ -86,6 +86,27 @@ export default function ApprovalsInsightsPanel({ insights, title = 'תובנות
             </div>
           </div>
         ) : null}
+
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="mb-3 flex items-center gap-2 font-medium text-foreground">
+            <ArrowLeftCircle className="w-4 h-4 text-primary" />
+            הצעדים הבאים
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 text-sm text-foreground">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <span>נבחרו ההצעות המומלצות — נמשיך למשא ומתן עם הבנקים המובילים.</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-foreground">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <span>נשווה את התמהילים ונוודא שמתאימים למטרות שלך.</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-foreground">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <span>נסכם יחד את ההחלטה הסופית ונתחיל בתהליך החתימה.</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
