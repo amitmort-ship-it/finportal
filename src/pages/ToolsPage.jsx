@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Calculator,
   ChevronRight,
+  Globe,
   Landmark,
   PiggyBank,
   Scale,
@@ -39,6 +40,7 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import SavingsVsLoanCalculator from '@/components/SavingsVsLoanCalculator';
 import CalculatorHistory from '@/components/CalculatorHistory';
+import ForexDashboard from '@/components/ForexDashboard';
 
 function formatCurrency(value) {
   const rounded = Math.round(Number(value || 0));
@@ -1553,6 +1555,13 @@ export default function ToolsPage() {
       icon: PiggyBank,
       tone: 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300',
     },
+    {
+      id: 'forex-dashboard',
+      title: 'דשבורד מט"ח ומדדים כלכליים',
+      description: 'שערי חליפין בזמן אמת (דולר, אירו, לירה, ביטקוין), ריבית בנק ישראל, מדד המחירים לצרכן ומחשבון המרה מתקדם.',
+      icon: Globe,
+      tone: 'bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950/25 dark:border-cyan-900/50 dark:text-cyan-300',
+    },
   ];
 
   return (
@@ -1611,6 +1620,7 @@ export default function ToolsPage() {
       {activeTool === 'loan-comparison' ? <LoanComparisonCalculator /> : null}
       {activeTool === 'property-purchase-costs' ? <PropertyPurchaseCostsCalculator /> : null}
       {activeTool === 'savings-vs-loan' ? <SavingsVsLoanCalculator /> : null}
+      {activeTool === 'forex-dashboard' ? <ForexDashboard /> : null}
     </div>
   );
 }
