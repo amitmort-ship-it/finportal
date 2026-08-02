@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { base44 } from '@/api/base44Client';
 
 const FIAT_CURRENCIES = ['USD', 'EUR', 'GBP'];
 const ALL_CURRENCIES = ['ILS', 'USD', 'EUR', 'GBP', 'BTC'];
@@ -41,8 +42,6 @@ const CONSERVATIVE_OPTIONS = [
   { value: 0.05, label: 'שמרני 5%' },
   { value: 0.10, label: 'שמרני 10%' },
 ];
-
-const LS_KEY = 'forex_dashboard_manual_v1';
 
 function fmtNum(n, digits = 2) {
   return Number(n || 0).toLocaleString('he-IL', { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -126,11 +125,8 @@ function RateCard({ code, rate, change, history, lastUpdate, loading }) {
   );
 }
 
-// ---- Indicator Card (manual / editable) ----
-function IndicatorCard({ icon: Icon, title, value, suffix, subtitle, editable, onSave, tone }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(value ?? ''));
-  useEffect(() => { setDraft(String(value ?? '')); }, [value]);
+// ---- Indicator Card (auto-fetched) ----
+function IndicatorCard({ icon: Icon, title, value, suffix, subtitle, tone, loading }) {
   return (
     <div className={`rounded-2xl border p-4 space-y-2 ${tone || 'bg-card border-border'}`}>
       <div className="flex items-center justify-between">
@@ -138,31 +134,12 @@ function IndicatorCard({ icon: Icon, title, value, suffix, subtitle, editable, o
           {Icon && <Icon className="w-4 h-4 text-muted-foreground" />}
           <p className="text-sm font-medium text-foreground">{title}</p>
         </div>
-        {editable && !editing && (
-          <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">ערוך</button>
-        )}
+        {loading && <RefreshCw className="w-3.5 h-3.5 text-muted-foreground animate-spin" />}
       </div>
-      {editing ? (
-        <div className="flex gap-2">
-          <Input
-            type="number"
-            step="0.01"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="h-8 text-sm"
-            dir="ltr"
-          />
-          <Button size="sm" className="h-8" onClick={() => { onSave(Number(draft)); setEditing(false); }}>שמור</Button>
-          <Button size="sm" variant="outline" className="h-8" onClick={() => setEditing(false)}>ביטול</Button>
-        </div>
-      ) : (
-        <>
-          <p className="text-2xl font-bold text-foreground leading-none">
-            {value != null ? `${value}${suffix || ''}` : '—'}
-          </p>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-        </>
-      )}
+      <p className="text-2xl font-bold text-foreground leading-none">
+        {loading ? '—' : value != null ? `${value}${suffix || ''}` : '—'}
+      </p>
+      {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
     </div>
   );
 }
@@ -173,25 +150,28 @@ export default function ForexDashboard() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Manual indicators
-  const [manual, setManual] = useState(() => {
+  // Economic indicators (auto-fetched)
+  const [indicators, setIndicators] = useState(null);
+  const [indicatorsLoading, setIndicatorsLoading] = useState(true);
+  const [indicatorsError, setIndicatorsError] = useState(null);
+
+  const fetchIndicators = useCallback(async () => {
+    setIndicatorsLoading(true);
+    setIndicatorsError(null);
     try {
-      const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-      return {
-        boiRate: saved.boiRate ?? 4.5,
-        primeRate: saved.primeRate ?? 5.97,
-        cpiValue: saved.cpiValue ?? 108.5,
-        cpiMonthly: saved.cpiMonthly ?? 0.3,
-        cpiAnnual: saved.cpiAnnual ?? 3.2,
-      };
-    } catch {
-      return { boiRate: 4.5, primeRate: 5.97, cpiValue: 108.5, cpiMonthly: 0.3, cpiAnnual: 3.2 };
+      const res = await base44.functions.invoke('getEconomicIndicators', {});
+      const data = res.data || res;
+      setIndicators(data);
+    } catch (err) {
+      setIndicatorsError('שגיאה בטעינת מדדים כלכליים');
+    } finally {
+      setIndicatorsLoading(false);
     }
-  });
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(manual));
-  }, [manual]);
+    fetchIndicators();
+  }, [fetchIndicators]);
 
   // Converter state
   const [convAmount, setConvAmount] = useState('100');
@@ -206,6 +186,7 @@ export default function ForexDashboard() {
   const fetchAll = useCallback(async () => {
     setRefreshing(true);
     setError(null);
+    fetchIndicators();
     try {
       // --- Fiat via Frankfurter ---
       const endDate = new Date();
@@ -345,8 +326,8 @@ export default function ForexDashboard() {
         </div>
         <div className="flex items-center gap-3">
           {lastUpdateText && <span className="text-xs text-muted-foreground">עדכון אחרון: {lastUpdateText}</span>}
-          <Button variant="outline" size="sm" className="gap-2" onClick={fetchAll} disabled={refreshing}>
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="sm" className="gap-2" onClick={fetchAll} disabled={refreshing || indicatorsLoading}>
+            <RefreshCw className={`w-4 h-4 ${refreshing || indicatorsLoading ? 'animate-spin' : ''}`} />
             רענן
           </Button>
         </div>
@@ -386,50 +367,56 @@ export default function ForexDashboard() {
           <Landmark className="w-4 h-4 text-primary" />
           מדדים כלכליים — השוק הישראלי
         </h3>
+        {indicatorsError && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/25 dark:border-amber-900/50 p-3 mb-3">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800 dark:text-amber-200">{indicatorsError}</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <IndicatorCard
             icon={Landmark}
             title="ריבית בנק ישראל"
-            value={manual.boiRate}
+            value={indicators?.boiRate ?? null}
             suffix="%"
-            subtitle="שיעור ריבית נומינלית"
-            editable
+            subtitle={indicators?.boiDate ? `עדכון אחרון: ${indicators.boiDate}` : 'שיעור ריבית נומינלית'}
+            loading={indicatorsLoading}
             tone="bg-blue-50 border-blue-200 dark:bg-blue-950/25 dark:border-blue-900/50"
-            onSave={(v) => setManual((p) => ({ ...p, boiRate: v }))}
           />
           <IndicatorCard
             icon={Landmark}
             title="ריבית פריים"
-            value={manual.primeRate}
+            value={indicators?.primeRate ?? null}
             suffix="%"
-            subtitle="ריבית בנקאית בסיסית"
-            editable
+            subtitle="ריבית בנקאית בסיסית (BOI + 1.5%)"
+            loading={indicatorsLoading}
             tone="bg-violet-50 border-violet-200 dark:bg-violet-950/25 dark:border-violet-900/50"
-            onSave={(v) => setManual((p) => ({ ...p, primeRate: v }))}
           />
           <IndicatorCard
             icon={BarChart3}
             title="מדד המחירים לצרכן"
-            value={manual.cpiValue}
-            subtitle={`שינוי חודשי: ${manual.cpiMonthly}% · שנתי: ${manual.cpiAnnual}%`}
-            editable
+            value={indicators?.cpi?.value ?? null}
+            subtitle={
+              indicators?.cpi
+                ? `שינוי חודשי: ${indicators.cpi.monthlyChange}% · שנתי: ${indicators.cpi.annualChange}%`
+                : null
+            }
+            loading={indicatorsLoading}
             tone="bg-amber-50 border-amber-200 dark:bg-amber-950/25 dark:border-amber-900/50"
-            onSave={(v) => setManual((p) => ({ ...p, cpiValue: v }))}
           />
           <IndicatorCard
             icon={BarChart3}
             title="שינוי שנתי CPI"
-            value={manual.cpiAnnual}
+            value={indicators?.cpi?.annualChange ?? null}
             suffix="%"
-            subtitle="אינפלציה שנתית"
-            editable
+            subtitle={indicators?.cpi ? `${indicators.cpi.monthDesc} ${indicators.cpi.year}` : 'אינפלציה שנתית'}
+            loading={indicatorsLoading}
             tone="bg-emerald-50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-900/50"
-            onSave={(v) => setManual((p) => ({ ...p, cpiAnnual: v }))}
           />
         </div>
         <div className="flex items-start gap-2 mt-2 text-xs text-muted-foreground">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          <p>נתוני ריבית ומדד מתעדכנים ידנית. לחץ על "ערוך" בכל כרטיסייה לעדכון. הערכים נשמרים באופן מקומי בדפדפן.</p>
+          <p>נתוני ריבית ומדד מתעדכנים אוטומטית מבנק ישראל והלמ"ס. מקורות: CBS API (מדד מחירים), חיפוש רשת (ריבית בנק ישראל).</p>
         </div>
       </div>
 
@@ -528,7 +515,7 @@ export default function ForexDashboard() {
       </div>
 
       <div className="text-xs text-muted-foreground leading-6">
-        מקורות: Frankfurter API (מט"ח), CoinGecko (BTC). נתוני ריבית ומדד מחירים מתעדכנים ידנית. הנתונים להערכה בלבד ואינם מהווים ייעוץ מקצועי.
+        מקורות: Frankfurter API (מט"ח), CoinGecko (BTC), CBS API (מדד מחירים לצרכן), חיפוש רשת (ריבית בנק ישראל). הנתונים להערכה בלבד ואינם מהווים ייעוץ מקצועי.
       </div>
     </div>
   );
