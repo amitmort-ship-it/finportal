@@ -198,7 +198,7 @@ export default function ForexDashboard() {
       await Promise.all(
         FIAT_CURRENCIES.map(async (cur) => {
           try {
-            const url = `https://api.frankfurter.app/${fmtD(startDate)}..${fmtD(endDate)}?from=${cur}&to=ILS`;
+            const url = `https://api.frankfurter.dev/v1/${fmtD(startDate)}..${fmtD(endDate)}?base=${cur}&symbols=ILS`;
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
@@ -215,33 +215,33 @@ export default function ForexDashboard() {
         })
       );
 
-      // --- BTC via CoinGecko ---
+      // --- BTC via Binance (BTCUSDT), converted to ILS using USD rate ---
       let btcResult = { rate: null, change: null, history: [], lastUpdate: null };
       try {
-        const [priceRes, chartRes] = await Promise.all([
-          fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=ils&include_24hr_change=true&include_last_updated_at=true'),
-          fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=ils&days=30'),
+        const usdIlsRate = fiatResults.USD?.rate || null;
+        const [tickerRes, klinesRes] = await Promise.all([
+          fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+          fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=30'),
         ]);
-        if (priceRes.ok) {
-          const priceJson = await priceRes.json();
-          const btc = priceJson.bitcoin;
-          if (btc) {
-            const rate = btc.ils;
-            const change = btc.ils_24h_change || 0; // 24h change in %
-            const ts = btc.last_updated_at;
-            btcResult.rate = rate;
-            btcResult.change = change;
-            btcResult.lastUpdate = ts ? new Date(ts * 1000).toLocaleDateString('he-IL') : null;
+        if (tickerRes.ok) {
+          const ticker = await tickerRes.json();
+          const btcUsdPrice = Number(ticker.lastPrice);
+          const btcUsdChange = Number(ticker.priceChangePercent);
+          if (btcUsdPrice) {
+            btcResult.change = btcUsdChange;
+            btcResult.lastUpdate = new Date(ticker.closeTime).toLocaleDateString('he-IL');
+            if (usdIlsRate) {
+              btcResult.rate = btcUsdPrice * usdIlsRate;
+            }
           }
         }
-        if (chartRes.ok) {
-          const chartJson = await chartRes.json();
-          // Sample hourly data to ~daily points for consistent sparkline density
-          const allPrices = chartJson.prices || [];
+        if (klinesRes.ok) {
+          const klines = await klinesRes.json();
+          const allPrices = (klines || []).map((k) => Number(k[4])); // close price at index 4
           const step = Math.max(1, Math.floor(allPrices.length / 30));
           btcResult.history = allPrices
             .filter((_, i) => i % step === 0)
-            .map(([, p]) => p);
+            .map((p) => (usdIlsRate ? p * usdIlsRate : p));
         }
       } catch {
         // keep nulls
