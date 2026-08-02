@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import PageTransition from './PageTransition';
 import { useAuth } from '@/lib/AuthContext';
 import MobileNav from './MobileNav';
-import { LogOut, MessageCircle, Package, Calculator, LineChart, ChevronDown, FolderOpen, User, Eye, ScanSearch, Bot, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { LogOut, MessageCircle, Package, Calculator, ChevronDown, FolderOpen, User, Eye, ScanSearch, Bot, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
@@ -23,7 +23,6 @@ const navItems = [
 ];
 
 const adminItems = [
-  { path: '/simulations', label: 'סימולציות', icon: LineChart },
   { path: '/document-analyzer', label: 'ניתוח מסמכים AI', icon: ScanSearch },
   { path: '/precise-ai', label: 'PreciseAI', icon: Bot },
   { path: '/admin', label: 'ניהול', icon: Settings },
