@@ -24,7 +24,7 @@ export default function AdminFileRequests({ selectedClient }) {
     ]);
     const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
     setRequests(filtered);
-    setReviewNotes(Object.fromEntries(filtered.map((request) => [request.id, request.admin_review_notes || ''])));
+    setReviewNotes(Object.fromEntries(filtered.map((request) => [request.id, request.admin_notes || ''])));
     const userList = clientRes.data?.profiles || [];
     setUsers(userList);
     setLoading(false);
@@ -46,7 +46,7 @@ export default function AdminFileRequests({ selectedClient }) {
   const handleStatusUpdate = async (id, status) => {
     await base44.entities.FileRequest.update(id, {
       status,
-      admin_review_notes: reviewNotes[id] || '',
+      admin_notes: reviewNotes[id] || '',
     });
     toast.success('הסטטוס עודכן');
     load();
@@ -54,7 +54,7 @@ export default function AdminFileRequests({ selectedClient }) {
 
   const handleNotesSave = async (id) => {
     await base44.entities.FileRequest.update(id, {
-      admin_review_notes: reviewNotes[id] || '',
+      admin_notes: reviewNotes[id] || '',
     });
     toast.success('ההערה נשמרה');
     load();
@@ -212,9 +212,9 @@ export default function AdminFileRequests({ selectedClient }) {
                   </div>
                 )}
 
-                {req.admin_review_notes ? (
+                {req.admin_notes ? (
                   <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground whitespace-pre-line">
-                    <span className="font-medium text-foreground">הערת בדיקה:</span> {req.admin_review_notes}
+                    <span className="font-medium text-foreground">הערת בדיקה:</span> {req.admin_notes}
                   </div>
                 ) : null}
               </div>
