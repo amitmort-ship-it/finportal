@@ -25,7 +25,7 @@ const DEFAULT_HITECH_TAX_RATE = 0.16;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
-const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
+const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'מילואים', 'אחר'];
 const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
 const DEAL_LOG_STORAGE_KEY = 'admin_business_deal_log_v1';
@@ -54,7 +54,7 @@ function getEntryMonthLabel(entry) {
   return 'חודש לא ידוע';
 }
 function fmt(n) { return `₪${Math.round(n || 0).toLocaleString('he-IL')}`; }
-function getTaxRateForCategory(cat, tbr, htr) { return cat === 'הייטק' ? htr : tbr; }
+function getTaxRateForCategory(cat, tbr, htr) { return cat === 'הייטק' ? htr : cat === 'מילואים' ? 0 : tbr; }
 function getDealStatus(deal) {
   if (deal?.isFrozen) return 'מוקפאת';
   const r = Math.max(0, Number(deal?.totalAmount || 0) - Number(deal?.paidAmount || 0));
@@ -134,9 +134,11 @@ export default function AdminBusiness() {
   const [taxBufferRate, setTaxBufferRate] = useState(DEFAULT_TAX_BUFFER_RATE);
   const [hitechTaxRate, setHitechTaxRate] = useState(DEFAULT_HITECH_TAX_RATE);
   const [monthlyGrossTarget, setMonthlyGrossTarget] = useState(DEFAULT_MONTHLY_GROSS_TARGET);
+  const [miluimDayValue, setMiluimDayValue] = useState(0);
 
   // Income input
   const [newIncome, setNewIncome] = useState('');
+  const [newIncomeDays, setNewIncomeDays] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
   const [newIncomeMonthKey, setNewIncomeMonthKey] = useState(getCurrentMonthKey());
@@ -200,6 +202,7 @@ export default function AdminBusiness() {
           setTaxBufferRate(r.taxBufferRate ?? DEFAULT_TAX_BUFFER_RATE);
           setHitechTaxRate(r.hitechTaxRate ?? DEFAULT_HITECH_TAX_RATE);
           setMonthlyGrossTarget(r.monthlyGrossTarget ?? DEFAULT_MONTHLY_GROSS_TARGET);
+          setMiluimDayValue(r.miluimDayValue ?? 0);
         } else {
           const localDL = JSON.parse(localStorage.getItem(DEAL_LOG_STORAGE_KEY) || '[]');
           setDealLog(Array.isArray(localDL) ? localDL : []);
@@ -221,7 +224,7 @@ export default function AdminBusiness() {
   }, [dealLog, dealLogHydrated]);
 
   const persist = (patch) => {
-    const data = { incomeLog, dealLog, fixedExpenses, variableExpenses, avgDealSize, manualPipeline, assetsValue, manualActiveCount, freeNotes, taxBufferRate, hitechTaxRate, monthlyGrossTarget, ...patch };
+    const data = { incomeLog, dealLog, fixedExpenses, variableExpenses, avgDealSize, manualPipeline, assetsValue, manualActiveCount, freeNotes, taxBufferRate, hitechTaxRate, monthlyGrossTarget, miluimDayValue, ...patch };
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       setSaving(true);
@@ -240,19 +243,30 @@ export default function AdminBusiness() {
 
   // === Income handlers ===
   const handleAddIncome = () => {
-    const amount = Number(String(newIncome).replace(/,/g, ''));
-    if (!amount || amount <= 0) return;
+    const isMiluim = newIncomeCategory === 'מילואים';
+    let amount;
+    let miluimDays = null;
+    if (isMiluim) {
+      miluimDays = Number(String(newIncomeDays).replace(/,/g, ''));
+      if (!miluimDays || miluimDays <= 0) return;
+      amount = miluimDays * (Number(miluimDayValue) || 0);
+      if (!amount || amount <= 0) { toast.error('הגדר תחילה שווי יום מילואים בהגדרות'); return; }
+    } else {
+      amount = Number(String(newIncome).replace(/,/g, ''));
+      if (!amount || amount <= 0) return;
+    }
     const taxRate = getTaxRateForCategory(newIncomeCategory, taxBufferRate, hitechTaxRate);
-    const linkedDeal = selectedDealId ? dealLog.find(d => String(d.id) === String(selectedDealId)) : null;
+    const linkedDeal = (!isMiluim && selectedDealId) ? dealLog.find(d => String(d.id) === String(selectedDealId)) : null;
     const now = new Date();
     const targetMonthKey = newIncomeMonthKey || getCurrentMonthKey();
     const [mY, mM] = targetMonthKey.split('-').map(Number);
     const entry = {
       id: Date.now(), gross: amount, net: amount * (1 - taxRate), tax: amount * taxRate,
-      source: linkedDeal?.clientName || newIncomeSource.trim() || 'לא צוין',
+      source: isMiluim ? 'שירות מילואים' : (linkedDeal?.clientName || newIncomeSource.trim() || 'לא צוין'),
       category: linkedDeal?.category || newIncomeCategory,
       date: now.toLocaleDateString('he-IL'), month: getMonthLabelFromDate(new Date(mY, mM - 1, 1)),
       monthKey: targetMonthKey, createdAt: now.toISOString(), dealId: linkedDeal?.id || null,
+      ...(miluimDays ? { miluimDays } : {}),
     };
     const nextIncome = [...incomeLog, entry];
     let nextDeals = dealLog;
@@ -267,9 +281,9 @@ export default function AdminBusiness() {
     setIncomeLog(nextIncome);
     if (linkedDeal) setDealLog(nextDeals);
     persist({ incomeLog: nextIncome, dealLog: nextDeals });
-    setNewIncome(''); setNewIncomeSource(''); setNewIncomeCategory('משכנתאות');
+    setNewIncome(''); setNewIncomeSource(''); setNewIncomeCategory('משכנתאות'); setNewIncomeDays('');
     setNewIncomeMonthKey(getCurrentMonthKey()); setSelectedDealId('');
-    toast.success(`הכנסה של ${fmt(amount)} נרשמה`);
+    toast.success(`הכנסה של ${fmt(amount)} נרשמה${isMiluim ? ` (${miluimDays} ימים)` : ''}`);
   };
 
   const handleRemoveIncome = (id) => {
@@ -607,7 +621,7 @@ export default function AdminBusiness() {
                     {INCOME_CATEGORIES.map(cat => {
                       const val = categoryTotals[cat] || 0;
                       const pct = totalNet > 0 ? Math.round((val / totalNet) * 100) : 0;
-                      const cls = { 'משכנתאות': 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/25 dark:border-blue-900/50 dark:text-blue-300', 'כ.ד': 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/25 dark:border-emerald-900/50 dark:text-emerald-300', 'הייטק': 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300', 'אחר': 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-950/70 dark:border-slate-800 dark:text-slate-300' };
+                      const cls = { 'משכנתאות': 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/25 dark:border-blue-900/50 dark:text-blue-300', 'כ.ד': 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/25 dark:border-emerald-900/50 dark:text-emerald-300', 'הייטק': 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/25 dark:border-violet-900/50 dark:text-violet-300', 'מילואים': 'bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950/25 dark:border-cyan-900/50 dark:text-cyan-300', 'אחר': 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-950/70 dark:border-slate-800 dark:text-slate-300' };
                       return <div key={cat} className={`rounded-xl border p-3 ${cls[cat] || cls['אחר']}`}><p className="text-xs font-semibold">{cat}</p><p className="text-lg font-bold mt-0.5">{fmt(val)}</p><p className="text-xs opacity-70">{pct}%</p></div>;
                     })}
                   </div>
@@ -639,15 +653,24 @@ export default function AdminBusiness() {
               {/* Add income form */}
               <div className="bg-muted/20 rounded-xl p-4 space-y-3 border border-border">
                 <h3 className="font-bold text-foreground text-sm">קליטת הכנסה</h3>
-                <p className="text-xs text-muted-foreground">הייטק: {Math.round(hitechTaxRate * 100)}% מס · שאר: {Math.round(taxBufferRate * 100)}%</p>
+                <p className="text-xs text-muted-foreground">הייטק: {Math.round(hitechTaxRate * 100)}% מס · שאר: {Math.round(taxBufferRate * 100)}% · מילואים: פטור ממס ומע"ם</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div><Label className="text-xs mb-1">סכום גולמי (₪)</Label><Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="15000" dir="ltr" className="mt-1" /></div>
-                  <div><Label className="text-xs mb-1">שם הלקוח / מקור</Label><Input value={newIncomeSource} onChange={e => setNewIncomeSource(e.target.value)} placeholder="ישראל ישראלי" className="mt-1" /></div>
-                  <div><Label className="text-xs mb-1">שייך לעסקה</Label><select value={selectedDealId} onChange={e => setSelectedDealId(e.target.value)} className={`${selectCls} mt-1`}><option value="">ללא קישור</option>{openDealsOptions.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}</select></div>
+                  {newIncomeCategory === 'מילואים' ? (
+                    <>
+                      <div><Label className="text-xs mb-1">מספר ימי מילואים</Label><Input type="number" value={newIncomeDays} onChange={e => setNewIncomeDays(e.target.value)} placeholder="5" dir="ltr" className="mt-1" min="0" /></div>
+                      <div><Label className="text-xs mb-1">חישוב אוטומטי</Label><div className="h-9 rounded-md border border-input bg-muted/30 px-3 flex items-center text-sm text-foreground mt-1">{newIncomeDays && miluimDayValue ? `${newIncomeDays} × ${fmt(miluimDayValue)} = ${fmt(Number(newIncomeDays) * miluimDayValue)}` : miluimDayValue ? `שווי יום: ${fmt(miluimDayValue)}` : 'הגדר שווי יום בהגדרות'}</div></div>
+                    </>
+                  ) : (
+                    <>
+                      <div><Label className="text-xs mb-1">סכום גולמי (₪)</Label><Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="15000" dir="ltr" className="mt-1" /></div>
+                      <div><Label className="text-xs mb-1">שם הלקוח / מקור</Label><Input value={newIncomeSource} onChange={e => setNewIncomeSource(e.target.value)} placeholder="ישראל ישראלי" className="mt-1" /></div>
+                      <div><Label className="text-xs mb-1">שייך לעסקה</Label><select value={selectedDealId} onChange={e => setSelectedDealId(e.target.value)} className={`${selectCls} mt-1`}><option value="">ללא קישור</option>{openDealsOptions.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}</select></div>
+                    </>
+                  )}
                   <div><Label className="text-xs mb-1">קטגוריה</Label><select value={newIncomeCategory} onChange={e => setNewIncomeCategory(e.target.value)} className={`${selectCls} mt-1`}>{INCOME_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
                   <div className="sm:col-span-2"><Label className="text-xs mb-1">חודש</Label><input type="month" value={newIncomeMonthKey} onChange={e => setNewIncomeMonthKey(e.target.value)} className={`${selectCls} mt-1`} dir="ltr" /></div>
                 </div>
-                <Button className="w-full gap-2" onClick={handleAddIncome} disabled={!newIncome}><Plus className="w-4 h-4" />הוסף הכנסה</Button>
+                <Button className="w-full gap-2" onClick={handleAddIncome} disabled={newIncomeCategory === 'מילואים' ? !newIncomeDays : !newIncome}><Plus className="w-4 h-4" />הוסף הכנסה</Button>
               </div>
 
               {/* Current month log */}
@@ -676,6 +699,7 @@ export default function AdminBusiness() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-foreground">{fmt(entry.gross)}</span>
                                 <span className="text-xs rounded-full bg-muted px-2 py-0.5">{entry.category}</span>
+                                {entry.miluimDays && <span className="text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.5">{entry.miluimDays} ימים</span>}
                               </div>
                               {entry.source && entry.source !== 'לא צוין' && <p className="text-sm text-primary mt-0.5">{entry.source}</p>}
                             </div>
@@ -913,6 +937,7 @@ export default function AdminBusiness() {
                 <div><Label>צנרת ידנית (₪) — מבטל אוטומטי</Label><Input type="number" value={manualPipeline} onChange={e => { setManualPipeline(e.target.value); persist({ manualPipeline: Number(e.target.value) }); }} dir="ltr" className="mt-1" placeholder="0 = אוטומטי" /></div>
                 <div><Label>שווי נכסים מניבים (₪)</Label><Input type="number" value={assetsValue} onChange={e => { setAssetsValue(e.target.value); persist({ assetsValue: Number(e.target.value) }); }} dir="ltr" className="mt-1" /></div>
                 <div><Label>תיקים פעילים (ידני)</Label><Input type="number" value={manualActiveCount} onChange={e => { setManualActiveCount(e.target.value); persist({ manualActiveCount: e.target.value }); }} dir="ltr" className="mt-1" placeholder="ריק = אוטומטי" min="0" /></div>
+                <div><Label>שווי יום מילואים אחד (₪)</Label><Input type="number" value={miluimDayValue} onChange={e => { const v = Math.max(0, Number(e.target.value)); setMiluimDayValue(v); persist({ miluimDayValue: v }); }} dir="ltr" className="mt-1" placeholder="0" min="0" /><p className="text-xs text-muted-foreground mt-1">משמש לחישוב אוטומטי של הכנסת מילואים — פטור ממס הכנסה ומע"ם</p></div>
               </div>
               <div className="rounded-xl border border-border p-4 space-y-3">
                 <p className="text-sm font-semibold text-foreground">שיעורי מס</p>
