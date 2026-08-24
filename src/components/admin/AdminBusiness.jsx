@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine,
+  ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
 
 const SALARY_TARGET = 25000;
@@ -26,6 +26,7 @@ const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחו
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'מילואים', 'אחר'];
+const CATEGORY_COLORS = { 'משכנתאות': '#3b82f6', 'כ.ד': '#10b981', 'הייטק': '#8b5cf6', 'מילואים': '#06b6d4', 'אחר': '#64748b' };
 const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
 const DEAL_LOG_STORAGE_KEY = 'admin_business_deal_log_v1';
@@ -467,8 +468,10 @@ export default function AdminBusiness() {
     const m = {};
     incomeLog.forEach(e => {
       const k = getEntryMonthKey(e); if (!k) return;
-      if (!m[k]) { const [y, mo] = k.split('-').map(Number); m[k] = { key: k, month: new Date(y, mo - 1, 1).toLocaleString('he-IL', { month: 'short', year: '2-digit' }), net: 0, gross: 0 }; }
+      if (!m[k]) { const [y, mo] = k.split('-').map(Number); m[k] = { key: k, month: new Date(y, mo - 1, 1).toLocaleString('he-IL', { month: 'short', year: '2-digit' }), net: 0, gross: 0 }; INCOME_CATEGORIES.forEach(c => { m[k][`cat_${c}`] = 0; }); }
       m[k].net += e.net || 0; m[k].gross += e.gross || 0;
+      const cat = INCOME_CATEGORIES.includes(e.category) ? e.category : 'אחר';
+      m[k][`cat_${cat}`] = (m[k][`cat_${cat}`] || 0) + (e.net || 0);
     });
     return Object.values(m).sort((a, b) => a.key.localeCompare(b.key)).slice(-6).map(d => ({ ...d, realNet: Math.max(0, d.net - totalMonthlyExpenses) }));
   }, [incomeLog, totalMonthlyExpenses]);
@@ -597,9 +600,12 @@ export default function AdminBusiness() {
                       <CartesianGrid vertical={false} strokeDasharray="3 3" />
                       <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} reversed />
                       <YAxis tickFormatter={v => `₪${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={44} orientation="right" />
-                      <Tooltip formatter={v => [fmt(v), 'נטו']} />
+                      <Tooltip formatter={v => fmt(v)} contentStyle={{ fontSize: 11 }} />
                       <ReferenceLine y={SALARY_TARGET} stroke="#6366f1" strokeDasharray="4 2" label={{ value: 'יעד', position: 'insideTopRight', fontSize: 10, fill: '#6366f1' }} />
-                      <Bar dataKey="realNet" fill="#3b82f6" radius={[5, 5, 0, 0]} maxBarSize={56} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      {INCOME_CATEGORIES.map((cat, i) => (
+                        <Bar key={cat} dataKey={`cat_${cat}`} name={cat} stackId="a" fill={CATEGORY_COLORS[cat] || '#64748b'} maxBarSize={56} radius={i === INCOME_CATEGORIES.length - 1 ? [5, 5, 0, 0] : [0, 0, 0, 0]} />
+                      ))}
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
