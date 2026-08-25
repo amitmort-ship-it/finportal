@@ -6,13 +6,12 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import {
   Droplets, TrendingUp, AlertTriangle, Wallet, Plus, CheckCircle2,
-  Clock, Info, Trash2, Repeat, CreditCard, Power,
+  Clock, Info, Trash2, Repeat, CreditCard, Power, ChevronDown,
   Download, Upload, RefreshCw, Link2, Settings, BarChart2,
-  Briefcase, StickyNote, Sparkles, ListTodo, CalendarClock,
+  FileText, Briefcase, StickyNote,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -26,7 +25,6 @@ const DEFAULT_HITECH_TAX_RATE = 0.16;
 const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
-const OVERDUE_DAYS = 30;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'מילואים', 'אחר'];
 const CATEGORY_COLORS = { 'משכנתאות': '#3b82f6', 'כ.ד': '#10b981', 'הייטק': '#8b5cf6', 'מילואים': '#06b6d4', 'אחר': '#64748b' };
 const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
@@ -62,9 +60,6 @@ function getDealStatus(deal) {
   if (deal?.isFrozen) return 'מוקפאת';
   const r = Math.max(0, Number(deal?.totalAmount || 0) - Number(deal?.paidAmount || 0));
   return r === 0 ? 'שולם מלא' : Number(deal?.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
-}
-function getDealRemaining(deal) {
-  return Math.max(0, Number(deal?.totalAmount || 0) - Number(deal?.paidAmount || 0));
 }
 function escapeCsvValue(v) {
   const s = String(v ?? '');
@@ -111,20 +106,16 @@ function GaugeBar({ value, max, color, label, sublabel, valueLabel }) {
 }
 
 const TABS = [
-  { id: 'today', label: 'היום', icon: Sparkles },
-  { id: 'month', label: 'החודש', icon: BarChart2 },
+  { id: 'overview', label: 'סקירה', icon: BarChart2 },
+  { id: 'income', label: 'הכנסות', icon: Wallet },
   { id: 'deals', label: 'עסקאות', icon: Briefcase },
-  { id: 'expenses', label: 'הוצאות והגדרות', icon: CreditCard },
-];
-
-const CAPTURE_TYPES = [
-  { id: 'income', label: 'הכנסה' },
-  { id: 'expense', label: 'הוצאה' },
-  { id: 'payment', label: 'תשלום עסקה' },
+  { id: 'expenses', label: 'הוצאות', icon: CreditCard },
+  { id: 'notes', label: 'הערות', icon: StickyNote },
+  { id: 'settings', label: 'הגדרות', icon: Settings },
 ];
 
 export default function AdminBusiness() {
-  const [activeTab, setActiveTab] = useState('today');
+  const [activeTab, setActiveTab] = useState('overview');
   const [stages, setStages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,18 +137,13 @@ export default function AdminBusiness() {
   const [monthlyGrossTarget, setMonthlyGrossTarget] = useState(DEFAULT_MONTHLY_GROSS_TARGET);
   const [miluimDayValue, setMiluimDayValue] = useState(0);
 
-  // Quick-capture bar (always visible — income / one-off expense / deal payment)
-  const [captureType, setCaptureType] = useState('income');
+  // Income input
   const [newIncome, setNewIncome] = useState('');
   const [newIncomeDays, setNewIncomeDays] = useState('');
   const [newIncomeSource, setNewIncomeSource] = useState('');
   const [newIncomeCategory, setNewIncomeCategory] = useState('משכנתאות');
   const [newIncomeMonthKey, setNewIncomeMonthKey] = useState(getCurrentMonthKey());
   const [selectedDealId, setSelectedDealId] = useState('');
-  const [quickExpenseName, setQuickExpenseName] = useState('');
-  const [quickExpenseAmount, setQuickExpenseAmount] = useState('');
-
-  // Income log inline edit (in the "החודש" tab)
   const [editingIncomeId, setEditingIncomeId] = useState(null);
   const [editIncomeValue, setEditIncomeValue] = useState('');
   const [editIncomeSource, setEditIncomeSource] = useState('');
@@ -175,7 +161,7 @@ export default function AdminBusiness() {
   const [importingDeals, setImportingDeals] = useState(false);
   const [dealMonthFilter, setDealMonthFilter] = useState('');
 
-  // Expense input (full form, in the "הוצאות והגדרות" tab)
+  // Expense input
   const [newFixedName, setNewFixedName] = useState('');
   const [newFixedAmount, setNewFixedAmount] = useState('');
   const [newVarName, setNewVarName] = useState('');
@@ -254,13 +240,6 @@ export default function AdminBusiness() {
       } catch { toast.error('שגיאה בשמירת הנתונים'); }
       finally { setSaving(false); }
     }, 600);
-  };
-
-  // === Quick-capture: switch type, reset only the capture-bar fields ===
-  const switchCaptureType = (type) => {
-    setCaptureType(type);
-    setNewIncome(''); setNewIncomeDays(''); setNewIncomeSource(''); setNewIncomeCategory('משכנתאות'); setSelectedDealId('');
-    setQuickExpenseName(''); setQuickExpenseAmount('');
   };
 
   // === Income handlers ===
@@ -404,28 +383,11 @@ export default function AdminBusiness() {
   const handlePayInstallment = (id) => { const n = variableExpenses.map(e => e.id === id ? { ...e, paidInstallments: Math.min(e.paidInstallments + 1, e.installments) } : e); setVariableExpenses(n); persist({ variableExpenses: n }); };
   const handleRemoveVariable = (id) => { const n = variableExpenses.filter(e => e.id !== id); setVariableExpenses(n); persist({ variableExpenses: n }); };
 
-  // Quick-capture "הוצאה" — a fast one-off expense (single installment). Multi-installment
-  // purchases still go through the full form below, in "הוצאות והגדרות".
-  const handleQuickAddExpense = () => {
-    const amount = Number(String(quickExpenseAmount).replace(/,/g, ''));
-    if (!quickExpenseName.trim() || !amount) return;
-    const entry = { id: Date.now(), name: quickExpenseName.trim(), totalAmount: amount, installments: 1, installmentAmount: amount, paidInstallments: 0, startDate: new Date().toLocaleDateString('he-IL') };
-    const next = [...variableExpenses, entry];
-    setVariableExpenses(next); persist({ variableExpenses: next });
-    setQuickExpenseName(''); setQuickExpenseAmount('');
-    toast.success(`הוצאה נוספה — ${fmt(amount)}`);
-  };
-
-  const handleQuickAdd = () => {
-    if (captureType === 'income' || captureType === 'payment') { handleAddIncome(); return; }
-    handleQuickAddExpense();
-  };
-
   // === CSV ===
   const downloadCsvFile = (rows, filename) => {
     const csv = rows.map(r => r.map(escapeCsvValue).join(',')).join('\n');
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
   const handleExportDeals = () => {
@@ -438,7 +400,7 @@ export default function AdminBusiness() {
     if (!file) return;
     setImportingDeals(true);
     try {
-      const text = (await file.text()).replace(/^﻿/, '').trim();
+      const text = (await file.text()).replace(/^\uFEFF/, '').trim();
       const lines = text.split(/\r?\n/).filter(Boolean);
       if (lines.length < 2) throw new Error('אין שורות');
       const headers = parseCsvLine(lines[0]);
@@ -480,10 +442,8 @@ export default function AdminBusiness() {
   // === Derived ===
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
   const currentMonthLabel = useMemo(() => getMonthLabelFromDate(new Date()), []);
-  const todayLabel = useMemo(() => new Date().toLocaleDateString('he-IL'), []);
   const currentMonthIncomeLog = useMemo(() => incomeLog.filter(e => getEntryMonthKey(e) === currentMonthKey || e?.month === currentMonthLabel), [incomeLog, currentMonthKey, currentMonthLabel]);
   const historicalIncomeLog = useMemo(() => incomeLog.filter(e => !(getEntryMonthKey(e) === currentMonthKey || e?.month === currentMonthLabel)), [incomeLog, currentMonthKey, currentMonthLabel]);
-  const todaysIncomeLog = useMemo(() => incomeLog.filter(e => e.date === todayLabel), [incomeLog, todayLabel]);
   const totalGross = useMemo(() => currentMonthIncomeLog.reduce((s, e) => s + e.gross, 0), [currentMonthIncomeLog]);
   const totalNet = useMemo(() => currentMonthIncomeLog.reduce((s, e) => s + e.net, 0), [currentMonthIncomeLog]);
   const totalTax = useMemo(() => currentMonthIncomeLog.reduce((s, e) => s + e.tax, 0), [currentMonthIncomeLog]);
@@ -492,9 +452,9 @@ export default function AdminBusiness() {
   const totalMonthlyExpenses = monthlyFixedTotal + activeVariableMonthly;
   const monthlyGrossTargetGap = Math.max(0, monthlyGrossTarget - totalGross);
   const monthlyGrossTargetOver = Math.max(0, totalGross - monthlyGrossTarget);
-  const openDeals = useMemo(() => dealLog.filter(d => !d.isFrozen && getDealRemaining(d) > 0), [dealLog]);
-  const openDealsOptions = useMemo(() => openDeals.map(d => ({ id: d.id, label: `${d.clientName} · יתרה ${fmt(getDealRemaining(d))}` })), [openDeals]);
-  const openDealsTotal = useMemo(() => openDeals.reduce((s, d) => s + getDealRemaining(d), 0), [openDeals]);
+  const openDeals = useMemo(() => dealLog.filter(d => !d.isFrozen && Number(d.totalAmount || 0) - Number(d.paidAmount || 0) > 0), [dealLog]);
+  const openDealsOptions = useMemo(() => openDeals.map(d => ({ id: d.id, label: `${d.clientName} · יתרה ${fmt(Number(d.totalAmount || 0) - Number(d.paidAmount || 0))}` })), [openDeals]);
+  const openDealsTotal = useMemo(() => openDeals.reduce((s, d) => s + Math.max(0, Number(d.totalAmount || 0) - Number(d.paidAmount || 0)), 0), [openDeals]);
   const frozenDealsCount = useMemo(() => dealLog.filter(d => d.isFrozen).length, [dealLog]);
   const paidDealsCount = useMemo(() => dealLog.filter(d => getDealStatus(d) === 'שולם מלא').length, [dealLog]);
   const activeCount = useMemo(() => {
@@ -558,48 +518,7 @@ export default function AdminBusiness() {
   const isHighWorkload = activeCount >= HIGH_WORKLOAD_THRESHOLD;
   const targetPct = Math.min(100, monthlyGrossTarget > 0 ? Math.round((totalGross / monthlyGrossTarget) * 100) : 0);
 
-  // "מה לעשות היום" — deals that have been open (unfrozen, unpaid) for a while
-  const overdueDeals = useMemo(() => {
-    const cutoff = Date.now() - OVERDUE_DAYS * 24 * 60 * 60 * 1000;
-    return openDeals.filter(d => {
-      const ts = new Date(d.updatedAt || d.createdAt || 0).getTime();
-      return ts && ts < cutoff;
-    });
-  }, [openDeals]);
-  const overdueDealsTotal = useMemo(() => overdueDeals.reduce((s, d) => s + getDealRemaining(d), 0), [overdueDeals]);
-
-  // Most recently touched active cases (best-effort — falls back to created_date if no updated_date)
-  const recentActiveStages = useMemo(() => {
-    return [...stages]
-      .filter(s => ACTIVE_STAGES.includes(s.current_stage))
-      .sort((a, b) => new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0))
-      .slice(0, 2);
-  }, [stages]);
-
-  // One computed, concrete insight instead of a list of generic threshold tips
-  const insight = useMemo(() => {
-    if (monthlyGrossTargetGap <= 0) {
-      return {
-        headline: `יעד הושג ✓ — עברתם ב-${fmt(monthlyGrossTargetOver)} מהיעד החודשי`,
-        detail: `סה"כ ${fmt(totalGross)} ברוטו מתוך יעד של ${fmt(monthlyGrossTarget)}. אפשר להתמקד בצנרת לחודש הבא.`,
-      };
-    }
-    const size = avgDealSize || 8000;
-    const dealsNeeded = Math.max(1, Math.ceil(monthlyGrossTargetGap / size));
-    const topOpenDeal = [...openDeals].sort((a, b) => getDealRemaining(b) - getDealRemaining(a))[0];
-    const push = topOpenDeal ? ` כדאי לדחוף את "${topOpenDeal.clientName}" (יתרה ${fmt(getDealRemaining(topOpenDeal))}) לביצוע.` : '';
-    return {
-      headline: `בקצב הנוכחי הגעתם ל-${targetPct}% מהיעד החודשי`,
-      detail: `${fmt(totalGross)} מתוך ${fmt(monthlyGrossTarget)}. עוד כ-${dealsNeeded} עסק${dealsNeeded > 1 ? 'אות' : 'ה'} בגודל ממוצע (${fmt(size)}) יסגרו את הפער שנותר (${fmt(monthlyGrossTargetGap)}).${push}`,
-    };
-  }, [monthlyGrossTargetGap, monthlyGrossTargetOver, totalGross, monthlyGrossTarget, targetPct, avgDealSize, openDeals]);
-
   const selectCls = "w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring";
-  const quickAddDisabled = captureType === 'income'
-    ? (newIncomeCategory === 'מילואים' ? !newIncomeDays : !newIncome)
-    : captureType === 'payment'
-    ? (!selectedDealId || !newIncome)
-    : (!quickExpenseName || !quickExpenseAmount);
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
 
@@ -642,189 +561,28 @@ export default function AdminBusiness() {
 
       {/* ===== TABS ===== */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
-        {/* Tab bar + notes */}
-        <div className="flex items-center justify-between border-b border-border bg-muted/20">
-          <div className="flex overflow-x-auto scrollbar-hide">
-            {TABS.map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.id ? 'border-primary text-primary bg-background' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'}`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-          <Popover>
-            <PopoverTrigger asChild>
+        {/* Tab bar */}
+        <div className="flex overflow-x-auto border-b border-border bg-muted/20 scrollbar-hide">
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            return (
               <button
+                key={tab.id}
                 type="button"
-                title="הערות חופשיות"
-                className="shrink-0 mx-2 w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.id ? 'border-primary text-primary bg-background' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'}`}
               >
-                <StickyNote className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
               </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-80" dir="rtl">
-              <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5"><StickyNote className="w-3.5 h-3.5 text-amber-500" />הערות חופשיות</p>
-              <textarea
-                value={freeNotes}
-                onChange={e => { setFreeNotes(e.target.value); persist({ freeNotes: e.target.value }); }}
-                placeholder="כתוב כאן הערות, רשימות, תזכורות... הכל נשמר אוטומטית"
-                className="w-full min-h-40 resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm text-right leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
-                dir="rtl"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Quick-capture bar — visible on every tab; the daily habit lives here, not in a dedicated form */}
-        <div className="bg-muted/20 border-b border-border p-3 space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex bg-card border border-border rounded-lg p-0.5 gap-0.5 shrink-0">
-              {CAPTURE_TYPES.map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => switchCaptureType(t.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors ${captureType === t.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {captureType === 'income' && (
-              <>
-                {newIncomeCategory === 'מילואים' ? (
-                  <Input type="number" value={newIncomeDays} onChange={e => setNewIncomeDays(e.target.value)} placeholder="מס' ימי מילואים" dir="ltr" className="w-36 h-9" min="0" />
-                ) : (
-                  <Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="סכום ₪" dir="ltr" className="w-32 h-9" />
-                )}
-                <select value={newIncomeCategory} onChange={e => setNewIncomeCategory(e.target.value)} className={`${selectCls} w-32`}>
-                  {INCOME_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
-                {newIncomeCategory !== 'מילואים' && (
-                  <>
-                    <Input value={newIncomeSource} onChange={e => setNewIncomeSource(e.target.value)} placeholder="שם לקוח / מקור" className="flex-1 min-w-[140px] h-9" />
-                    <select value={selectedDealId} onChange={e => setSelectedDealId(e.target.value)} className={`${selectCls} w-40`}>
-                      <option value="">ללא קישור לעסקה</option>
-                      {openDealsOptions.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-                    </select>
-                  </>
-                )}
-              </>
-            )}
-
-            {captureType === 'expense' && (
-              <>
-                <Input value={quickExpenseName} onChange={e => setQuickExpenseName(e.target.value)} placeholder="שם ההוצאה" className="flex-1 min-w-[160px] h-9" />
-                <Input type="number" value={quickExpenseAmount} onChange={e => setQuickExpenseAmount(e.target.value)} placeholder="סכום ₪" dir="ltr" className="w-32 h-9" />
-              </>
-            )}
-
-            {captureType === 'payment' && (
-              <>
-                <select value={selectedDealId} onChange={e => setSelectedDealId(e.target.value)} className={`${selectCls} flex-1 min-w-[200px]`}>
-                  <option value="">בחר עסקה פתוחה...</option>
-                  {openDealsOptions.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-                </select>
-                <Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="סכום ששולם ₪" dir="ltr" className="w-36 h-9" />
-              </>
-            )}
-
-            <Button onClick={handleQuickAdd} disabled={quickAddDisabled} className="gap-1.5 h-9 shrink-0">
-              <Plus className="w-4 h-4" />הוסף
-            </Button>
-          </div>
-          {captureType === 'income' && newIncomeCategory === 'מילואים' && (
-            <p className="text-xs text-muted-foreground">
-              {newIncomeDays && miluimDayValue ? `${newIncomeDays} × ${fmt(miluimDayValue)} = ${fmt(Number(newIncomeDays) * miluimDayValue)} · פטור ממס ומע"ם` : miluimDayValue ? `שווי יום: ${fmt(miluimDayValue)} · פטור ממס ומע"ם` : 'הגדר שווי יום מילואים בטאב "הוצאות והגדרות"'}
-            </p>
-          )}
+            );
+          })}
         </div>
 
         <div className="p-4">
 
-          {/* ===== TODAY TAB ===== */}
-          {activeTab === 'today' && (
-            <div className="space-y-5">
-              {/* Synthesized insight */}
-              <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/[0.06] p-4">
-                <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">{insight.headline}</p>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{insight.detail}</p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* What to do today */}
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center gap-2">
-                    <ListTodo className="w-4 h-4 text-primary" />
-                    <h3 className="font-bold text-foreground text-sm">מה לעשות היום</h3>
-                  </div>
-                  <div className="divide-y divide-border">
-                    {overdueDeals.length > 0 && (
-                      <div className="flex items-center gap-3 px-4 py-3">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                        <span className="flex-1 text-sm font-medium">{overdueDeals.length} עסקאות ממתינות לתשלום מעל {OVERDUE_DAYS} יום</span>
-                        <span className="text-xs text-muted-foreground shrink-0">{fmt(overdueDealsTotal)}</span>
-                      </div>
-                    )}
-                    {recentActiveStages.map(s => (
-                      <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                        <span className="flex-1 text-sm font-medium truncate">{s.client_email} · {s.current_stage}</span>
-                      </div>
-                    ))}
-                    {isHighWorkload && (
-                      <div className="flex items-center gap-3 px-4 py-3">
-                        <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                        <span className="flex-1 text-sm font-medium">עומס גבוה — {activeCount} תיקים פעילים</span>
-                        <span className="text-xs text-muted-foreground shrink-0">מומלץ לתעדף</span>
-                      </div>
-                    )}
-                    {overdueDeals.length === 0 && recentActiveStages.length === 0 && !isHighWorkload && (
-                      <p className="text-sm text-muted-foreground text-center py-6">הכל נקי כרגע ✓</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Recorded today */}
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center gap-2">
-                    <CalendarClock className="w-4 h-4 text-primary" />
-                    <h3 className="font-bold text-foreground text-sm">נרשם היום</h3>
-                  </div>
-                  {todaysIncomeLog.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-6">עדיין לא נרשמה הכנסה היום — אפשר להוסיף למעלה</p>
-                  ) : (
-                    <div className="divide-y divide-border">
-                      {[...todaysIncomeLog].reverse().map(entry => (
-                        <div key={entry.id} className="flex items-center gap-3 px-4 py-3">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS[entry.category] || CATEGORY_COLORS['אחר'] }} />
-                          <span className="flex-1 text-sm font-medium truncate">{entry.source && entry.source !== 'לא צוין' ? entry.source : entry.category}</span>
-                          <span className="text-sm font-bold shrink-0">{fmt(entry.gross)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ===== MONTH TAB (overview + income log + history) ===== */}
-          {activeTab === 'month' && (
+          {/* ===== OVERVIEW TAB ===== */}
+          {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Chart */}
               {monthlyChart.length > 0 && (
@@ -875,6 +633,51 @@ export default function AdminBusiness() {
                   </div>
                 </div>
               )}
+
+              {/* What to do */}
+              <div>
+                <h3 className="font-bold text-foreground text-sm mb-3">מה לעשות עכשיו?</h3>
+                <div className="space-y-2 text-sm">
+                  {totalGross < monthlyGrossTarget * 0.5 && <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-950/25 p-3 text-red-700 dark:text-red-300"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /><span>עדיין רחוק מהיעד — לתעדף סגירות.</span></div>}
+                  {totalGross >= monthlyGrossTarget * 0.5 && totalGross < monthlyGrossTarget && <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/25 p-3 text-amber-700 dark:text-amber-300"><Info className="w-4 h-4 mt-0.5 shrink-0" /><span>מתקרב ליעד — להמשיך על הצנרת.</span></div>}
+                  {totalGross >= monthlyGrossTarget && <div className="flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/25 p-3 text-emerald-700 dark:text-emerald-300"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /><span>יעד הושג ✓ — להתמקד בצמיחה.</span></div>}
+                  {pipelineCount > 0 && <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/25 p-3 text-blue-700 dark:text-blue-300"><TrendingUp className="w-4 h-4 mt-0.5 shrink-0" /><span>{pipelineCount} תיקים בשלב סגירה — לדחוף לסיום.</span></div>}
+                </div>
+              </div>
+
+              {/* AI */}
+              <AccountantAI incomeLog={incomeLog} fixedExpenses={fixedExpenses} variableExpenses={variableExpenses} taxBufferRate={taxBufferRate} hitechTaxRate={hitechTaxRate} totalMonthlyExpenses={totalMonthlyExpenses} />
+
+              {/* Simulation */}
+              <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} taxBufferRate={taxBufferRate} hitechTaxRate={hitechTaxRate} />
+            </div>
+          )}
+
+          {/* ===== INCOME TAB ===== */}
+          {activeTab === 'income' && (
+            <div className="space-y-5">
+              {/* Add income form */}
+              <div className="bg-muted/20 rounded-xl p-4 space-y-3 border border-border">
+                <h3 className="font-bold text-foreground text-sm">קליטת הכנסה</h3>
+                <p className="text-xs text-muted-foreground">הייטק: {Math.round(hitechTaxRate * 100)}% מס · שאר: {Math.round(taxBufferRate * 100)}% · מילואים: פטור ממס ומע"ם</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {newIncomeCategory === 'מילואים' ? (
+                    <>
+                      <div><Label className="text-xs mb-1">מספר ימי מילואים</Label><Input type="number" value={newIncomeDays} onChange={e => setNewIncomeDays(e.target.value)} placeholder="5" dir="ltr" className="mt-1" min="0" /></div>
+                      <div><Label className="text-xs mb-1">חישוב אוטומטי</Label><div className="h-9 rounded-md border border-input bg-muted/30 px-3 flex items-center text-sm text-foreground mt-1">{newIncomeDays && miluimDayValue ? `${newIncomeDays} × ${fmt(miluimDayValue)} = ${fmt(Number(newIncomeDays) * miluimDayValue)}` : miluimDayValue ? `שווי יום: ${fmt(miluimDayValue)}` : 'הגדר שווי יום בהגדרות'}</div></div>
+                    </>
+                  ) : (
+                    <>
+                      <div><Label className="text-xs mb-1">סכום גולמי (₪)</Label><Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="15000" dir="ltr" className="mt-1" /></div>
+                      <div><Label className="text-xs mb-1">שם הלקוח / מקור</Label><Input value={newIncomeSource} onChange={e => setNewIncomeSource(e.target.value)} placeholder="ישראל ישראלי" className="mt-1" /></div>
+                      <div><Label className="text-xs mb-1">שייך לעסקה</Label><select value={selectedDealId} onChange={e => setSelectedDealId(e.target.value)} className={`${selectCls} mt-1`}><option value="">ללא קישור</option>{openDealsOptions.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}</select></div>
+                    </>
+                  )}
+                  <div><Label className="text-xs mb-1">קטגוריה</Label><select value={newIncomeCategory} onChange={e => setNewIncomeCategory(e.target.value)} className={`${selectCls} mt-1`}>{INCOME_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
+                  <div className="sm:col-span-2"><Label className="text-xs mb-1">חודש</Label><input type="month" value={newIncomeMonthKey} onChange={e => setNewIncomeMonthKey(e.target.value)} className={`${selectCls} mt-1`} dir="ltr" /></div>
+                </div>
+                <Button className="w-full gap-2" onClick={handleAddIncome} disabled={newIncomeCategory === 'מילואים' ? !newIncomeDays : !newIncome}><Plus className="w-4 h-4" />הוסף הכנסה</Button>
+              </div>
 
               {/* Current month log */}
               {currentMonthIncomeLog.length > 0 && (
@@ -942,12 +745,6 @@ export default function AdminBusiness() {
                   </div>
                 </div>
               )}
-
-              {/* AI */}
-              <AccountantAI incomeLog={incomeLog} fixedExpenses={fixedExpenses} variableExpenses={variableExpenses} taxBufferRate={taxBufferRate} hitechTaxRate={hitechTaxRate} totalMonthlyExpenses={totalMonthlyExpenses} />
-
-              {/* Simulation */}
-              <SimulationPanel fixedExpenses={fixedExpenses} monthlyFixedTotal={monthlyFixedTotal} variableExpenses={variableExpenses} activeVariableMonthly={activeVariableMonthly} taxBufferRate={taxBufferRate} hitechTaxRate={hitechTaxRate} />
             </div>
           )}
 
@@ -1045,9 +842,9 @@ export default function AdminBusiness() {
             </div>
           )}
 
-          {/* ===== EXPENSES & SETTINGS TAB ===== */}
+          {/* ===== EXPENSES TAB ===== */}
           {activeTab === 'expenses' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Summary */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl border border-border bg-muted/20 p-3 text-center"><p className="text-xs text-muted-foreground">קבועות</p><p className="text-lg font-bold text-red-600">{fmt(monthlyFixedTotal)}</p></div>
@@ -1084,7 +881,6 @@ export default function AdminBusiness() {
               {/* Variable */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-orange-500" /><h3 className="font-bold text-foreground text-sm">משתנות (תשלומים)</h3></div>
-                <p className="text-xs text-muted-foreground -mt-1">הוצאה חד-פעמית? מהיר יותר להוסיף אותה מסרגל "הוספה מהירה" למעלה. הטופס כאן מיועד להוצאות בפריסת תשלומים.</p>
                 <div className="space-y-2">
                   <Input value={newVarName} onChange={e => setNewVarName(e.target.value)} placeholder="שם ההוצאה" />
                   <div className="flex gap-2">
@@ -1116,7 +912,20 @@ export default function AdminBusiness() {
                   })}
                 </div>
               </div>
+            </div>
+          )}
 
+          {/* ===== NOTES TAB ===== */}
+          {activeTab === 'notes' && (
+            <div className="space-y-3">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2"><StickyNote className="w-4 h-4 text-amber-500" />הערות חופשיות</h3>
+              <textarea value={freeNotes} onChange={e => { setFreeNotes(e.target.value); persist({ freeNotes: e.target.value }); }} placeholder="כתוב כאן הערות, רשימות, תזכורות... הכל נשמר אוטומטית" className="w-full min-h-64 resize-y rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm text-right leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground" dir="rtl" />
+            </div>
+          )}
+
+          {/* ===== SETTINGS TAB ===== */}
+          {activeTab === 'settings' && (
+            <div className="space-y-5">
               {/* Notion Sync */}
               <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold"><Link2 className="w-4 h-4 text-muted-foreground" />סנכרון נושן</div>
@@ -1128,22 +937,19 @@ export default function AdminBusiness() {
               </div>
 
               {/* Settings fields */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2"><Settings className="w-4 h-4 text-muted-foreground" /><h3 className="font-bold text-foreground text-sm">הגדרות מס ויעדים</h3></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><Label>יעד ברוטו חודשי (₪)</Label><Input type="number" value={monthlyGrossTarget} onChange={e => { const v = Math.max(0, Number(e.target.value)); setMonthlyGrossTarget(v); persist({ monthlyGrossTarget: v }); }} dir="ltr" className="mt-1" /></div>
-                  <div><Label>עמלה ממוצעת לתיק (₪)</Label><Input type="number" value={avgDealSize} onChange={e => { setAvgDealSize(e.target.value); persist({ avgDealSize: Number(e.target.value) }); }} dir="ltr" className="mt-1" /></div>
-                  <div><Label>צנרת ידנית (₪) — מבטל אוטומטי</Label><Input type="number" value={manualPipeline} onChange={e => { setManualPipeline(e.target.value); persist({ manualPipeline: Number(e.target.value) }); }} dir="ltr" className="mt-1" placeholder="0 = אוטומטי" /></div>
-                  <div><Label>שווי נכסים מניבים (₪)</Label><Input type="number" value={assetsValue} onChange={e => { setAssetsValue(e.target.value); persist({ assetsValue: Number(e.target.value) }); }} dir="ltr" className="mt-1" /></div>
-                  <div><Label>תיקים פעילים (ידני)</Label><Input type="number" value={manualActiveCount} onChange={e => { setManualActiveCount(e.target.value); persist({ manualActiveCount: e.target.value }); }} dir="ltr" className="mt-1" placeholder="ריק = אוטומטי" min="0" /></div>
-                  <div><Label>שווי יום מילואים אחד (₪)</Label><Input type="number" value={miluimDayValue} onChange={e => { const v = Math.max(0, Number(e.target.value)); setMiluimDayValue(v); persist({ miluimDayValue: v }); }} dir="ltr" className="mt-1" placeholder="0" min="0" /><p className="text-xs text-muted-foreground mt-1">משמש לחישוב אוטומטי של הכנסת מילואים — פטור ממס הכנסה ומע"ם</p></div>
-                </div>
-                <div className="rounded-xl border border-border p-4 space-y-3">
-                  <p className="text-sm font-semibold text-foreground">שיעורי מס</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">מס רגיל (%)</Label><Input type="number" value={Math.round(taxBufferRate * 100)} onChange={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))) / 100; setTaxBufferRate(v); persist({ taxBufferRate: v }); }} dir="ltr" className="mt-1" min="0" max="100" /></div>
-                    <div><Label className="text-xs">מס הייטק (%)</Label><Input type="number" value={Math.round(hitechTaxRate * 100)} onChange={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))) / 100; setHitechTaxRate(v); persist({ hitechTaxRate: v }); }} dir="ltr" className="mt-1" min="0" max="100" /></div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><Label>יעד ברוטו חודשי (₪)</Label><Input type="number" value={monthlyGrossTarget} onChange={e => { const v = Math.max(0, Number(e.target.value)); setMonthlyGrossTarget(v); persist({ monthlyGrossTarget: v }); }} dir="ltr" className="mt-1" /></div>
+                <div><Label>עמלה ממוצעת לתיק (₪)</Label><Input type="number" value={avgDealSize} onChange={e => { setAvgDealSize(e.target.value); persist({ avgDealSize: Number(e.target.value) }); }} dir="ltr" className="mt-1" /></div>
+                <div><Label>צנרת ידנית (₪) — מבטל אוטומטי</Label><Input type="number" value={manualPipeline} onChange={e => { setManualPipeline(e.target.value); persist({ manualPipeline: Number(e.target.value) }); }} dir="ltr" className="mt-1" placeholder="0 = אוטומטי" /></div>
+                <div><Label>שווי נכסים מניבים (₪)</Label><Input type="number" value={assetsValue} onChange={e => { setAssetsValue(e.target.value); persist({ assetsValue: Number(e.target.value) }); }} dir="ltr" className="mt-1" /></div>
+                <div><Label>תיקים פעילים (ידני)</Label><Input type="number" value={manualActiveCount} onChange={e => { setManualActiveCount(e.target.value); persist({ manualActiveCount: e.target.value }); }} dir="ltr" className="mt-1" placeholder="ריק = אוטומטי" min="0" /></div>
+                <div><Label>שווי יום מילואים אחד (₪)</Label><Input type="number" value={miluimDayValue} onChange={e => { const v = Math.max(0, Number(e.target.value)); setMiluimDayValue(v); persist({ miluimDayValue: v }); }} dir="ltr" className="mt-1" placeholder="0" min="0" /><p className="text-xs text-muted-foreground mt-1">משמש לחישוב אוטומטי של הכנסת מילואים — פטור ממס הכנסה ומע"ם</p></div>
+              </div>
+              <div className="rounded-xl border border-border p-4 space-y-3">
+                <p className="text-sm font-semibold text-foreground">שיעורי מס</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">מס רגיל (%)</Label><Input type="number" value={Math.round(taxBufferRate * 100)} onChange={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))) / 100; setTaxBufferRate(v); persist({ taxBufferRate: v }); }} dir="ltr" className="mt-1" min="0" max="100" /></div>
+                  <div><Label className="text-xs">מס הייטק (%)</Label><Input type="number" value={Math.round(hitechTaxRate * 100)} onChange={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))) / 100; setHitechTaxRate(v); persist({ hitechTaxRate: v }); }} dir="ltr" className="mt-1" min="0" max="100" /></div>
                 </div>
               </div>
             </div>
