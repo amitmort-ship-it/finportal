@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import ClientSearchFilter from '@/components/ClientSearchFilter';
 import AdminClients from '@/components/admin/AdminClients';
 import AdminUpdates from '@/components/admin/AdminUpdates';
@@ -28,32 +29,55 @@ import {
   FileText,
   Package,
   Lock,
-  ListChecks,
   LayoutDashboard,
   TrendingUp,
   X,
   GitBranch,
   UserPlus,
+  ChevronDown,
 } from 'lucide-react';
 
-const TAB_CONFIG = [
-  { id: 'dashboard', label: 'דף ראשי', icon: LayoutDashboard },
-  { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
-  { id: 'clients', label: 'לקוחות', icon: Users },
-  { id: 'updates', label: 'עדכונים', icon: Bell },
-  { id: 'approvals', label: 'אישורים', icon: Building2 },
-  { id: 'documents', label: 'מסמכים', icon: FileText },
-  { id: 'packages', label: 'תמהיל', icon: Package },
-  { id: 'collaterals', label: 'בטחונות', icon: Lock },
-  { id: 'timeline', label: 'טיימליין', icon: GitBranch },
-  { id: 'leads', label: 'לידומט', icon: UserPlus },
+// 10 flat tabs, reorganized into 3 focused groups — same tab ids/components as before,
+// just a clearer information architecture (desktop: collapsible rail, mobile: section sheet).
+const GROUPS = [
+  {
+    id: 'overview',
+    label: 'סקירה',
+    items: [
+      { id: 'dashboard', label: 'דף ראשי', icon: LayoutDashboard },
+      { id: 'business', label: 'ניהול עסק', icon: TrendingUp },
+    ],
+  },
+  {
+    id: 'clients',
+    label: 'לקוחות',
+    items: [
+      { id: 'clients', label: 'לקוחות', icon: Users },
+      { id: 'updates', label: 'עדכונים', icon: Bell },
+      { id: 'leads', label: 'לידומט', icon: UserPlus },
+    ],
+  },
+  {
+    id: 'process',
+    label: 'תהליך משכנתא',
+    items: [
+      { id: 'approvals', label: 'אישורים', icon: Building2 },
+      { id: 'documents', label: 'מסמכים', icon: FileText },
+      { id: 'packages', label: 'תמהיל', icon: Package },
+      { id: 'collaterals', label: 'בטחונות', icon: Lock },
+      { id: 'timeline', label: 'טיימליין', icon: GitBranch },
+    ],
+  },
 ];
+const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
 
 export default function AdminPanel() {
   const { user } = useAuth();
   const [globalClient, setGlobalClient] = useState('');
   const [globalClientName, setGlobalClientName] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [openGroups, setOpenGroups] = useState({ overview: true, clients: true, process: true });
+  const [sectionSheetOpen, setSectionSheetOpen] = useState(false);
 
   useAdminPalette();
 
@@ -72,6 +96,17 @@ export default function AdminPanel() {
   };
 
   const selectedClient = globalClient || null;
+  const activeItem = ALL_ITEMS.find((item) => item.id === activeTab) || ALL_ITEMS[0];
+  const ActiveIcon = activeItem.icon;
+
+  const toggleGroup = (groupId) => {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  const selectSection = (id) => {
+    setActiveTab(id);
+    setSectionSheetOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -111,85 +146,135 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* Mobile: horizontal scroll tabs */}
-        <div className="lg:hidden overflow-x-auto pb-1 -mx-1 px-1">
-          <div className="flex gap-1 w-max">
-            {TAB_CONFIG.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* Mobile: single "current section" bar that opens a grouped picker sheet */}
+        <div className="lg:hidden space-y-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setSectionSheetOpen(true)}
+            className="w-full flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <ActiveIcon className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-semibold truncate">{activeItem.label}</span>
+            </div>
+            <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90 shrink-0" />
+          </button>
+          <MobileQuickLinks />
         </div>
 
-        {/* Desktop: grid tabs */}
-        <TabsList className="hidden lg:grid w-full grid-cols-11">
-          {TAB_CONFIG.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <TabsTrigger key={tab.id} value={tab.id} className="text-xs lg:text-sm">
-                {Icon && <Icon className="w-4 h-4 lg:mr-2" />}
-                <span className="hidden lg:inline">{tab.label}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+        <Sheet open={sectionSheetOpen} onOpenChange={setSectionSheetOpen}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[75vh] overflow-y-auto pb-8" dir="rtl">
+            <SheetHeader className="mb-3 text-right">
+              <SheetTitle>בחר מקטע ניהול</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4">
+              {GROUPS.map((group) => (
+                <div key={group.id}>
+                  <p className="text-[11px] font-bold tracking-wide text-muted-foreground px-1 mb-1.5">{group.label}</p>
+                  <div className="flex flex-col gap-1">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => selectSection(item.id)}
+                          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'}`}
+                        >
+                          <Icon className="w-[18px] h-[18px] shrink-0" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
 
-        {/* Mobile quick links — collapsed by default */}
-        <MobileQuickLinks />
+        {/* Desktop: collapsible grouped rail beside the content */}
+        <div className="lg:flex lg:gap-6 lg:items-start">
+          <TabsList className="hidden lg:flex lg:flex-col lg:w-60 lg:shrink-0 lg:h-fit lg:items-stretch lg:justify-start lg:bg-transparent lg:p-0 lg:gap-0 lg:sticky lg:top-4">
+            {GROUPS.map((group) => (
+              <div key={group.id} className="mb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.id)}
+                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-bold tracking-wide text-muted-foreground hover:bg-muted/60 transition-colors"
+                >
+                  <span>{group.label}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openGroups[group.id] ? 'rotate-180' : ''}`} />
+                </button>
+                {openGroups[group.id] && (
+                  <div className="flex flex-col gap-0.5 mt-0.5 mb-2">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <TabsTrigger
+                          key={item.id}
+                          value={item.id}
+                          className="w-full justify-start gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          {item.label}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6">
-          <AdminNotifications />
-          <TelegramSummary />
-          <RefinanceMonitor />
-          <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); }} />
-        </TabsContent>
+          <div className="flex-1 min-w-0">
+            <TabsContent value="dashboard" className="space-y-6 mt-0">
+              <AdminNotifications />
+              <TelegramSummary />
+              <RefinanceMonitor />
+              <ClientsByStageTable onSelectClient={(email) => { handleSelectClient(email); }} />
+            </TabsContent>
 
-        <TabsContent value="business" className="space-y-6">
-          <AdminBusiness />
-        </TabsContent>
+            <TabsContent value="business" className="space-y-6 mt-0">
+              <AdminBusiness />
+            </TabsContent>
 
-        <TabsContent value="clients" className="space-y-6">
-          <AdminClients />
-        </TabsContent>
+            <TabsContent value="clients" className="space-y-6 mt-0">
+              <AdminClients />
+            </TabsContent>
 
-        <TabsContent value="updates" className="space-y-6">
-          <AdminUpdates selectedClient={selectedClient} />
-        </TabsContent>
+            <TabsContent value="updates" className="space-y-6 mt-0">
+              <AdminUpdates selectedClient={selectedClient} />
+            </TabsContent>
 
-        <TabsContent value="approvals" className="space-y-6">
-          <AdminBankApprovals selectedClient={selectedClient} />
-        </TabsContent>
+            <TabsContent value="approvals" className="space-y-6 mt-0">
+              <AdminBankApprovals selectedClient={selectedClient} />
+            </TabsContent>
 
-        <TabsContent value="documents" className="space-y-6">
-          <AdminViewDocuments selectedClient={selectedClient} />
-        </TabsContent>
+            <TabsContent value="documents" className="space-y-6 mt-0">
+              <AdminViewDocuments selectedClient={selectedClient} />
+            </TabsContent>
 
-        <TabsContent value="packages" className="space-y-6">
-          <AdminPackages selectedClient={selectedClient} />
-        </TabsContent>
+            <TabsContent value="packages" className="space-y-6 mt-0">
+              <AdminPackages selectedClient={selectedClient} />
+            </TabsContent>
 
-        <TabsContent value="collaterals" className="space-y-6">
-          <AdminCollaterals selectedClient={selectedClient} />
-        </TabsContent>
+            <TabsContent value="collaterals" className="space-y-6 mt-0">
+              <AdminCollaterals selectedClient={selectedClient} />
+            </TabsContent>
 
-        <TabsContent value="timeline" className="space-y-6">
-          <AdminTimelineEditor selectedClient={selectedClient} />
-        </TabsContent>
+            <TabsContent value="timeline" className="space-y-6 mt-0">
+              <AdminTimelineEditor selectedClient={selectedClient} />
+            </TabsContent>
 
-        <TabsContent value="leads" className="space-y-6">
-          <AdminLeads />
-        </TabsContent>
+            <TabsContent value="leads" className="space-y-6 mt-0">
+              <AdminLeads />
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
     </div>
   );
