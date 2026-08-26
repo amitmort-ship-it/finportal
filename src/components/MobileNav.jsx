@@ -29,9 +29,10 @@ export default function MobileNav() {
   const [notesOpen, setNotesOpen] = useState(false);
 
   const items = isAdmin
-    ? [...navItems, { path: '/document-analyzer', label: 'ניתוח AI', icon: ScanSearch }, { path: '/admin', label: 'ניהול', icon: Settings }]
+    ? [navItems[0], { path: '/admin', label: 'ניהול', icon: Settings }, ...navItems.slice(1), { path: '/document-analyzer', label: 'ניתוח AI', icon: ScanSearch }]
     : navItems;
-  // document-analyzer is inside the admin-only array above, so non-admins never see it
+  // "ניהול" is placed right after "ראשי" (not appended at the end) since it's the
+  // admin's most-used destination and the row scrolls horizontally on mobile.
 
   return (
     <div
