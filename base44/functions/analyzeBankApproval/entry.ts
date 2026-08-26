@@ -193,7 +193,12 @@ function normalizeAnalysis(raw: any) {
 
 Deno.serve(async (req) => {
   try {
-    createClientFromRequest(req);
+    const base44 = createClientFromRequest(req);
+
+    const user = await base44.auth.me();
+    if (user?.role !== 'admin') {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {

@@ -2,9 +2,7 @@ import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
-
-const DEFAULT_TAX_BUFFER_RATE = 0.29;
-const DEFAULT_HITECH_TAX_RATE = 0.16;
+import { DEFAULT_TAX_BUFFER_RATE, DEFAULT_HITECH_TAX_RATE } from '@/lib/business-config';
 const TARGET_NET_AFTER_EXPENSES = 25000;
 const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'אחר'];
 

@@ -9,101 +9,27 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
   Droplets, TrendingUp, AlertTriangle, Wallet, Plus, CheckCircle2,
-  Clock, Info, Trash2, Repeat, CreditCard, Power, ChevronDown,
+  Clock, Info, Trash2, Repeat, CreditCard, Power,
   Download, Upload, RefreshCw, Link2, Settings, BarChart2,
-  FileText, Briefcase, StickyNote,
+  Briefcase, StickyNote,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts';
+import {
+  SALARY_TARGET, DEFAULT_MONTHLY_GROSS_TARGET, DEFAULT_TAX_BUFFER_RATE, DEFAULT_HITECH_TAX_RATE,
+  ACTIVE_STAGES, PIPELINE_STAGES, INCOME_CATEGORIES, CATEGORY_COLORS, DEAL_BUCKETS,
+} from '@/lib/business-config';
+import {
+  getCurrentMonthKey, getMonthLabelFromDate, getEntryMonthKey, getEntryMonthLabel,
+  fmt, getTaxRateForCategory, getDealStatus, escapeCsvValue, parseCsvLine,
+} from './business/businessUtils';
+import { KpiCard, GaugeBar } from './business/BusinessMetricWidgets';
 
-const SALARY_TARGET = 25000;
-const DEFAULT_MONTHLY_GROSS_TARGET = 51500;
-const DEFAULT_TAX_BUFFER_RATE = 0.29;
-const DEFAULT_HITECH_TAX_RATE = 0.16;
-const ACTIVE_STAGES = ['מכרז ריביות', 'בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
-const PIPELINE_STAGES = ['בנק מנצח', 'ביטוחות וחתימות', 'המתנה לביצוע'];
 const HIGH_WORKLOAD_THRESHOLD = 5;
-const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'מילואים', 'אחר'];
-const CATEGORY_COLORS = { 'משכנתאות': '#3b82f6', 'כ.ד': '#10b981', 'הייטק': '#8b5cf6', 'מילואים': '#06b6d4', 'אחר': '#64748b' };
-const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
 const DB_KEY = 'main';
 const DEAL_LOG_STORAGE_KEY = 'admin_business_deal_log_v1';
-
-function getCurrentMonthKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-function getMonthLabelFromDate(date) {
-  return date.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
-}
-function getEntryMonthKey(entry) {
-  if (entry?.monthKey) return entry.monthKey;
-  if (entry?.createdAt) {
-    const p = new Date(entry.createdAt);
-    if (!Number.isNaN(p.getTime())) return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}`;
-  }
-  return null;
-}
-function getEntryMonthLabel(entry) {
-  if (entry?.month) return entry.month;
-  if (entry?.createdAt) {
-    const p = new Date(entry.createdAt);
-    if (!Number.isNaN(p.getTime())) return getMonthLabelFromDate(p);
-  }
-  return 'חודש לא ידוע';
-}
-function fmt(n) { return `₪${Math.round(n || 0).toLocaleString('he-IL')}`; }
-function getTaxRateForCategory(cat, tbr, htr) { return cat === 'הייטק' ? htr : cat === 'מילואים' ? 0 : tbr; }
-function getDealStatus(deal) {
-  if (deal?.isFrozen) return 'מוקפאת';
-  const r = Math.max(0, Number(deal?.totalAmount || 0) - Number(deal?.paidAmount || 0));
-  return r === 0 ? 'שולם מלא' : Number(deal?.paidAmount || 0) > 0 ? 'שולם חלקית' : 'ממתין לתשלום';
-}
-function escapeCsvValue(v) {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-function parseCsvLine(line) {
-  const vals = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i], n = line[i + 1];
-    if (c === '"' && inQ && n === '"') { cur += '"'; i++; continue; }
-    if (c === '"') { inQ = !inQ; continue; }
-    if (c === ',' && !inQ) { vals.push(cur); cur = ''; continue; }
-    cur += c;
-  }
-  vals.push(cur);
-  return vals.map(v => v.trim());
-}
-
-function KpiCard({ icon, label, value, sub, gradient }) {
-  return (
-    <div className={`rounded-2xl border border-border shadow-sm p-4 space-y-1 ${gradient}`}>
-      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">{icon}<span>{label}</span></div>
-      <p className="text-xl font-bold text-foreground">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground leading-tight">{sub}</p>}
-    </div>
-  );
-}
-
-function GaugeBar({ value, max, color, label, sublabel, valueLabel }) {
-  const pct = Math.min(100, Math.max(0, ((value || 0) / (max || 1)) * 100));
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-foreground">{label}</span>
-        <span className="font-semibold text-foreground">{valueLabel || fmt(value)}</span>
-      </div>
-      {sublabel && <p className="text-xs text-muted-foreground">{sublabel}</p>}
-      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <p className="text-xs text-muted-foreground text-left">{Math.round(pct)}%</p>
-    </div>
-  );
-}
 
 const TABS = [
   { id: 'overview', label: 'סקירה', icon: BarChart2 },
