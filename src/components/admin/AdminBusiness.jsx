@@ -6,12 +6,13 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import {
   Droplets, TrendingUp, AlertTriangle, Wallet, Plus, CheckCircle2,
   Clock, Info, Trash2, Repeat, CreditCard, Power,
   Download, Upload, RefreshCw, Link2, Settings, BarChart2,
-  Briefcase, StickyNote,
+  Briefcase, StickyNote, MoreHorizontal,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -36,6 +37,8 @@ const TABS = [
   { id: 'income', label: 'הכנסות', icon: Wallet },
   { id: 'deals', label: 'עסקאות', icon: Briefcase },
   { id: 'expenses', label: 'הוצאות', icon: CreditCard },
+];
+const OVERFLOW_TABS = [
   { id: 'notes', label: 'הערות', icon: StickyNote },
   { id: 'settings', label: 'הגדרות', icon: Settings },
 ];
@@ -488,7 +491,7 @@ export default function AdminBusiness() {
       {/* ===== TABS ===== */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         {/* Tab bar */}
-        <div className="flex overflow-x-auto border-b border-border bg-muted/20 scrollbar-hide">
+        <div className="flex items-center overflow-x-auto border-b border-border bg-muted/20 scrollbar-hide">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
@@ -503,6 +506,29 @@ export default function AdminBusiness() {
               </button>
             );
           })}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${OVERFLOW_TABS.some(t => t.id === activeTab) ? 'border-primary text-primary bg-background' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'}`}
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+                עוד
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {OVERFLOW_TABS.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <DropdownMenuItem key={tab.id} onClick={() => setActiveTab(tab.id)} className="gap-2">
+                    <Icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="p-4">
