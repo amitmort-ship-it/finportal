@@ -31,12 +31,14 @@ export const STAGE_BADGE_COLORS = {
 
 export const INCOME_CATEGORIES = ['משכנתאות', 'כ.ד', 'הייטק', 'מילואים', 'אחר'];
 
+// ממופה למשתני העיצוב (--chart-1 עד --chart-5 ב-index.css) במקום hex ישיר,
+// כדי שהצבעים יתאימו אוטומטית גם ל-dark mode. "אחר" מקבל גוון ניטרלי בכוונה.
 export const CATEGORY_COLORS = {
-  'משכנתאות': '#3b82f6',
-  'כ.ד': '#10b981',
-  'הייטק': '#8b5cf6',
-  'מילואים': '#06b6d4',
-  'אחר': '#64748b',
+  'משכנתאות': 'hsl(var(--chart-1))',
+  'כ.ד': 'hsl(var(--chart-4))',
+  'הייטק': 'hsl(var(--chart-2))',
+  'מילואים': 'hsl(var(--chart-3))',
+  'אחר': 'hsl(var(--muted-foreground))',
 };
 
 export const DEAL_BUCKETS = ['חדש', 'בתהליך', 'ממתין לתשלום', 'שולם חלקית', 'שולם מלא'];
