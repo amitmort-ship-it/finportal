@@ -8,6 +8,7 @@ import { LogOut, MessageCircle, Package, Calculator, ChevronDown, FolderOpen, Us
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, Shield, LayoutDashboard, Settings } from 'lucide-react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import ThemeToggle from './ThemeToggle';
 import AdminClientViewPicker from './AdminClientViewPicker';
 import SidebarNotes from './SidebarNotes';
@@ -109,6 +110,7 @@ export default function ResponsiveLayout() {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
+          <p className="px-4 pb-1 text-[11px] font-semibold text-muted-foreground/70 tracking-wide">התיק שלי</p>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -134,6 +136,7 @@ export default function ResponsiveLayout() {
               <div className="pt-4 pb-2">
                 <div className="border-t border-border" />
               </div>
+              <p className="px-4 pb-1 text-[11px] font-semibold text-muted-foreground/70 tracking-wide">ניהול</p>
               {adminItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
@@ -165,29 +168,34 @@ export default function ResponsiveLayout() {
         {isAdmin && <SidebarNotes />}
 
         {isAdmin && (
-          <div className="px-4 pb-3 space-y-1">
-            <p className="text-xs text-muted-foreground font-medium mb-2">כלים חיצוניים</p>
-            {[
-              { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618' },
-              { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
-              { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
-              { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
-              { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09' },
-              { label: 'עוגנים', url: 'https://www.snpv.co.il/anchors' },
-              { label: 'יומן', url: 'https://calendar.google.com/calendar/u/3/r/week' },
-            ].map(({ label, url }) => (
-              <a
-                key={label}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                {label}
-              </a>
-            ))}
-          </div>
+          <Collapsible className="px-4 pb-3">
+            <CollapsibleTrigger className="w-full flex items-center justify-between gap-2 text-xs text-muted-foreground font-medium mb-1 py-1.5 group">
+              <span>כלים חיצוניים</span>
+              <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1">
+              {[
+                { label: 'ביטוח ישיר', url: 'https://www.555.co.il/pearl/apps/cooperation-landing-page/homeStep?attentionCode=406&cooperationCode=3618' },
+                { label: 'Notion', url: 'https://www.notion.so/304051ce360080539d38c4a852b964cb?v=304051ce360081b2a665000cdc320bfc' },
+                { label: 'SmartNPV', url: 'https://www.snpv.co.il/clients' },
+                { label: 'Paperless', url: 'https://www.paperless.tax/admin/dashboard;sUserID=nhgp95igmi' },
+                { label: 'הסכם ליווי', url: 'https://www.snpv.co.il/documents/edit/RVlveUtWUk9CaldHTXJBL3lYV0lpZz09' },
+                { label: 'עוגנים', url: 'https://www.snpv.co.il/anchors' },
+                { label: 'יומן', url: 'https://calendar.google.com/calendar/u/3/r/week' },
+              ].map(({ label, url }) => (
+                <a
+                  key={label}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  {label}
+                </a>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         <div className="p-4 border-t border-border space-y-2">
