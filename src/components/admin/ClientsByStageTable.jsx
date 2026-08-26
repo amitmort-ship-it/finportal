@@ -1,26 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Users } from 'lucide-react';
-
-const STAGES = [
-  'איסוף מסמכים',
-  'בניית תמהיל',
-  'מכרז ריביות',
-  'בנק מנצח',
-  'בטחונות וחתימות',
-  'המתנה לביצוע',
-  'סיום טיפול',
-];
-
-const STAGE_COLORS = {
-  'איסוף מסמכים':     'bg-slate-100 text-slate-700 border-slate-200',
-  'בניית תמהיל':      'bg-blue-50 text-blue-700 border-blue-200',
-  'מכרז ריביות':      'bg-violet-50 text-violet-700 border-violet-200',
-  'בנק מנצח':         'bg-amber-50 text-amber-700 border-amber-200',
-  'בטחונות וחתימות':  'bg-orange-50 text-orange-700 border-orange-200',
-  'המתנה לביצוע':     'bg-emerald-50 text-emerald-700 border-emerald-200',
-  'סיום טיפול':       'bg-gray-100 text-gray-500 border-gray-200',
-};
+import { PROCESS_STAGES as STAGES, STAGE_BADGE_COLORS as STAGE_COLORS } from '@/lib/business-config';
 
 export default function ClientsByStageTable({ onSelectClient }) {
   const [stageMap, setStageMap] = useState({});
