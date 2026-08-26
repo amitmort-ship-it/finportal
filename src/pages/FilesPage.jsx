@@ -95,7 +95,7 @@ export default function FilesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">המסמכים שלך</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">המסמכים שלך</h1>
         <p className="text-muted-foreground mt-1">העלה מסמכים דרושים לתיק שלך</p>
       </div>
 
