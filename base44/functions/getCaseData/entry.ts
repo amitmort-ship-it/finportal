@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
       Collateral: base44.asServiceRole.entities.Collateral,
       SelectedPackage: base44.asServiceRole.entities.SelectedPackage,
       BankApproval: base44.asServiceRole.entities.BankApproval,
+      ProcessStage: base44.asServiceRole.entities.ProcessStage,
     };
 
     const entityClient = entityMap[entity];
