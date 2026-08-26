@@ -8,6 +8,7 @@ import ApprovalsInsightsPanel from '../components/ApprovalsInsightsPanel';
 import ApprovalSummaryCards from '../components/ApprovalSummaryCards';
 import { getSharedApprovalInsights } from '@/lib/approvalInsights';
 import { BANK_LOGOS } from '../components/BankApprovalCard';
+import MiniProcessProgress from '../components/MiniProcessProgress';
 
 export default function ApprovalsPage() {
   const { caseEmail } = useAuth();
@@ -21,6 +22,17 @@ export default function ApprovalsPage() {
     staleTime: 0,
     gcTime: 0,
   });
+  const { data: stageRecords = [] } = useQuery({
+    queryKey: ['process-stage', caseEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'ProcessStage' });
+      return res.data.data || [];
+    },
+    enabled: !!caseEmail,
+    staleTime: 0,
+    gcTime: 0,
+  });
+  const currentStage = stageRecords?.[0]?.current_stage || null;
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -42,6 +54,8 @@ export default function ApprovalsPage() {
         <h1 className="text-2xl md:text-3xl font-bold">אישורי בנקים</h1>
         <p className="text-muted-foreground mt-1">ריכוז והשוואת הצעות מחיר</p>
       </div>
+
+      <MiniProcessProgress currentStage={currentStage} />
 
       {approvals.length === 0 ? (
         <div className="bg-card rounded-xl border border-dashed border-border p-12 text-center">
