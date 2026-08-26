@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import CollateralCard from '../components/CollateralCard';
 import { Shield, Users, Scale, Building2, Plus } from 'lucide-react';
+import MiniProcessProgress from '../components/MiniProcessProgress';
 
 const CATEGORIES = [
   {
@@ -56,6 +57,18 @@ export default function CollateralsPage() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['collaterals', caseEmail] });
 
+  const { data: stageRecords = [] } = useQuery({
+    queryKey: ['process-stage', caseEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getCaseData', { case_email: caseEmail, entity: 'ProcessStage' });
+      return res.data.data || [];
+    },
+    enabled: !!caseEmail,
+    staleTime: 0,
+    gcTime: 0,
+  });
+  const currentStage = stageRecords?.[0]?.current_stage || null;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -70,6 +83,8 @@ export default function CollateralsPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">בטחונות</h1>
         <p className="text-muted-foreground mt-1">מסמכים הדורשים חתימה</p>
       </div>
+
+      <MiniProcessProgress currentStage={currentStage} />
 
       {collaterals.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
