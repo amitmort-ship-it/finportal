@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Users2, Eye, Pencil } from 'lucide-react';
+import { Plus, Trash2, Users2, Eye, Pencil, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -16,6 +16,7 @@ import LeadomatDetail from '@/components/leadomat/LeadomatDetail';
 import PricingStrategyCard from '@/components/leadomat/PricingStrategyCard';
 import PipelineStepper, { PipelineBadge, PIPELINE_STAGES } from '@/components/leadomat/PipelineStepper';
 import FollowUpManager, { FollowupBadge } from '@/components/leadomat/FollowUpManager';
+import { exportLeadToPdf } from '@/components/leadomat/exportLeadPdf';
 
 const STATUS_COLORS = {
   'חדש': 'bg-blue-100 text-blue-700',
@@ -42,6 +43,7 @@ export default function AdminLeads() {
   const [statusFilter, setStatusFilter] = useState('');
   const [pipelineFilter, setPipelineFilter] = useState('');
   const [updatingStage, setUpdatingStage] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -157,6 +159,18 @@ export default function AdminLeads() {
       toast.error('שגיאה בעדכון התזכורת');
     } finally {
       setUpdatingStage(false);
+    }
+  };
+
+  const handleExportPdf = async (lead) => {
+    setExporting(true);
+    try {
+      await exportLeadToPdf(lead);
+      toast.success('ה-PDF נוצר');
+    } catch {
+      toast.error('שגיאה ביצירת ה-PDF');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -323,6 +337,9 @@ export default function AdminLeads() {
               <FollowUpManager lead={viewLead} onUpdate={(patch) => handleFollowupUpdate(viewLead, patch)} saving={updatingStage} />
               <LeadomatDetail lead={viewLead} />
               <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => handleExportPdf(viewLead)} disabled={exporting} className="gap-1.5">
+                  <FileDown className="w-3.5 h-3.5" /> {exporting ? 'מייצא...' : 'ייצא PDF'}
+                </Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => { const l = viewLead; setViewLead(null); handleEdit(l); }} className="gap-1.5">
                   <Pencil className="w-3.5 h-3.5" /> ערוך
                 </Button>
