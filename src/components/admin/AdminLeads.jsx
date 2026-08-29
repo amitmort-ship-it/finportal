@@ -90,7 +90,7 @@ export default function AdminLeads() {
         }));
       }
       // Clean additional numeric fields
-      ['current_rent', 'requested_monthly_payment', 'monthly_savings_amount'].forEach(f => {
+      ['current_rent', 'requested_monthly_payment', 'monthly_savings_amount', 'deal_value'].forEach(f => {
         payload[f] = cleanNumber(payload[f]);
       });
 

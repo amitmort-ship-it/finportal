@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DEAL_TYPES, selectClass, calcLTV, fmt } from './leadomatConfig';
 
-export default function DealStep({ deal, onChange }) {
+export default function DealStep({ deal, onChange, dealValue, onDealValueChange }) {
   const set = (field, value) => onChange({ ...deal, [field]: value });
   const ltv = calcLTV(deal);
 
@@ -41,7 +41,7 @@ export default function DealStep({ deal, onChange }) {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <Label className="text-xs">גובה עסקה — שווי תיק (₪)</Label>
-            <Input type="number" value={deal.deal_value || ''} onChange={e => set('deal_value', e.target.value)} className="mt-1" dir="ltr" placeholder="עמלה צפויה" />
+            <Input type="number" value={dealValue || ''} onChange={e => onDealValueChange(e.target.value)} className="mt-1" dir="ltr" placeholder="עמלה צפויה" />
           </div>
         </div>
       </div>

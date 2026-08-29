@@ -82,7 +82,7 @@ export default function LeadomatForm({ initialData, onSave, onCancel, saving }) 
       case 'borrower2':
         return <BorrowerStep title="לווה 2" borrower={data.borrower2} onChange={b => set('borrower2', b)} />;
       case 'deal':
-        return <DealStep deal={data.deal} onChange={d => set('deal', d)} />;
+        return <DealStep deal={data.deal} onChange={d => set('deal', d)} dealValue={data.deal_value} onDealValueChange={v => set('deal_value', v)} />;
       case 'commitments':
         return <CommitmentsStep commitments={data.commitments} financialWealth={data.financial_wealth} onChange={({ commitments, financial_wealth }) => { set('commitments', commitments); set('financial_wealth', financial_wealth); }} />;
       case 'banks':
