@@ -37,6 +37,16 @@ export default function DealStep({ deal, onChange }) {
       </div>
 
       <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">תמחור התיק</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div>
+            <Label className="text-xs">גובה עסקה — שווי תיק (₪)</Label>
+            <Input type="number" value={deal.deal_value || ''} onChange={e => set('deal_value', e.target.value)} className="mt-1" dir="ltr" placeholder="עמלה צפויה" />
+          </div>
+        </div>
+      </div>
+
+      <div>
         <p className="text-xs font-semibold text-muted-foreground mb-2">מימון ומשכנתה</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>

@@ -264,7 +264,7 @@ export default function AdminLeads() {
                       <td className="px-4 py-2.5">
                         <FollowupBadge lead={lead} />
                       </td>
-                      <td className="px-4 py-2.5 text-xs font-medium text-foreground">{lead.deal?.purchase_cost > 0 ? fmt(lead.deal.purchase_cost) : '—'}</td>
+                      <td className="px-4 py-2.5 text-xs font-bold text-primary">{lead.deal_value > 0 ? fmt(lead.deal_value) : '—'}</td>
                       <td className="px-4 py-2.5 text-xs font-medium text-primary">{ltv > 0 ? `${ltv}%` : '—'}</td>
                       <td className="px-4 py-2.5 text-xs font-medium text-emerald-700">{totalInc > 0 ? fmt(totalInc) : '—'}</td>
                       <td className="px-4 py-2.5 text-xs font-medium text-amber-700">{totalComm > 0 ? fmt(totalComm) : '—'}</td>
