@@ -14,6 +14,7 @@ import { STATUSES, selectClass, calcLTV, calcTotalIncome, calcTotalCommitments, 
 import LeadomatForm from '@/components/leadomat/LeadomatForm';
 import LeadomatDetail from '@/components/leadomat/LeadomatDetail';
 import PricingStrategyCard from '@/components/leadomat/PricingStrategyCard';
+import PipelineStepper, { PipelineBadge, PIPELINE_STAGES } from '@/components/leadomat/PipelineStepper';
 
 const STATUS_COLORS = {
   'חדש': 'bg-blue-100 text-blue-700',
@@ -38,6 +39,8 @@ export default function AdminLeads() {
   const [editLead, setEditLead] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [pipelineFilter, setPipelineFilter] = useState('');
+  const [updatingStage, setUpdatingStage] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -128,11 +131,31 @@ export default function AdminLeads() {
     setShowForm(true);
   };
 
+  const handleStageChange = async (lead, newStage) => {
+    setUpdatingStage(true);
+    try {
+      await base44.entities.Leadomat.update(lead.id, { pipeline_stage: newStage });
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, pipeline_stage: newStage } : l));
+      setViewLead(prev => prev && prev.id === lead.id ? { ...prev, pipeline_stage: newStage } : prev);
+      toast.success(`עבר לשלב: ${newStage}`);
+    } catch {
+      toast.error('שגיאה בעדכון השלב');
+    } finally {
+      setUpdatingStage(false);
+    }
+  };
+
   const filtered = leads.filter(l => {
     const matchesSearch = !search || (l.lead_name || '').includes(search) || (l.phone || '').includes(search);
     const matchesStatus = !statusFilter || l.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesPipeline = !pipelineFilter || (l.pipeline_stage || 'ליד') === pipelineFilter;
+    return matchesSearch && matchesStatus && matchesPipeline;
   });
+
+  const pipelineCounts = PIPELINE_STAGES.reduce((acc, s) => {
+    acc[s] = leads.filter(l => (l.pipeline_stage || 'ליד') === s).length;
+    return acc;
+  }, {});
 
   if (loading) {
     return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
@@ -152,12 +175,34 @@ export default function AdminLeads() {
         </Button>
       </div>
 
+      {/* Pipeline summary */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        {PIPELINE_STAGES.map((stage, i) => (
+          <button
+            key={stage}
+            type="button"
+            onClick={() => setPipelineFilter(pipelineFilter === stage ? '' : stage)}
+            className={`rounded-xl border p-3 text-center transition-all ${pipelineFilter === stage ? 'border-primary bg-primary/10 shadow-sm' : 'border-border bg-card hover:bg-muted/30'}`}
+          >
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-primary/15 text-primary">{i + 1}</span>
+              <p className="text-xs font-semibold text-foreground">{stage}</p>
+            </div>
+            <p className="text-xl font-bold text-foreground">{pipelineCounts[stage] || 0}</p>
+          </button>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="חיפוש לפי שם או טלפון..." className="sm:max-w-xs" />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectClass + ' sm:max-w-xs'}>
           <option value="">כל הסטטוסים</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={pipelineFilter} onChange={e => setPipelineFilter(e.target.value)} className={selectClass + ' sm:max-w-xs'}>
+          <option value="">כל השלבים</option>
+          {PIPELINE_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
@@ -173,6 +218,7 @@ export default function AdminLeads() {
                 <tr className="border-b border-border bg-muted/20 text-xs text-muted-foreground">
                   <th className="px-4 py-2.5 text-right font-medium">שם הליד</th>
                   <th className="px-4 py-2.5 text-right font-medium">טלפון</th>
+                  <th className="px-4 py-2.5 text-right font-medium">צינור</th>
                   <th className="px-4 py-2.5 text-right font-medium">סטטוס</th>
                   <th className="px-4 py-2.5 text-right font-medium">LTV</th>
                   <th className="px-4 py-2.5 text-right font-medium">סך הכנסות</th>
@@ -192,6 +238,9 @@ export default function AdminLeads() {
                     <tr key={lead.id} className={`border-b border-border last:border-0 ${idx % 2 === 0 ? '' : 'bg-muted/10'}`}>
                       <td className="px-4 py-2.5 font-medium whitespace-nowrap">{lead.lead_name || '—'}</td>
                       <td className="px-4 py-2.5 text-xs text-muted-foreground" dir="ltr">{lead.phone || '—'}</td>
+                      <td className="px-4 py-2.5">
+                        <PipelineBadge stage={lead.pipeline_stage} />
+                      </td>
                       <td className="px-4 py-2.5">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'}`}>{lead.status || '—'}</span>
                       </td>
@@ -249,6 +298,7 @@ export default function AdminLeads() {
                 {viewLead.phone && <span className="text-muted-foreground" dir="ltr">{viewLead.phone}</span>}
                 {viewLead.referrer_name && <span className="text-muted-foreground">ממליץ: {viewLead.referrer_name}</span>}
               </div>
+              <PipelineStepper lead={viewLead} onStageChange={(stage) => handleStageChange(viewLead, stage)} saving={updatingStage} />
               <LeadomatDetail lead={viewLead} />
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => { const l = viewLead; setViewLead(null); handleEdit(l); }} className="gap-1.5">
