@@ -1,0 +1,451 @@
+{
+  "name": "Leadomat",
+  "type": "object",
+  "properties": {
+    "lead_name": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05dc\u05d9\u05d3 \u05dc\u05ea\u05e6\u05d5\u05d2\u05d4"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "\u05d7\u05d3\u05e9",
+        "\u05d1\u05d8\u05d9\u05e4\u05d5\u05dc",
+        "\u05de\u05d5\u05db\u05e9\u05e8",
+        "\u05dc\u05d0 \u05de\u05d5\u05db\u05e9\u05e8",
+        "\u05e0\u05e1\u05d2\u05e8"
+      ],
+      "default": "\u05d7\u05d3\u05e9",
+      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05d4\u05dc\u05d9\u05d3"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "\u05d4\u05de\u05dc\u05e6\u05d5\u05ea",
+        "\u05dc\u05e7\u05d5\u05d7 \u05d7\u05d5\u05d6\u05e8",
+        "\u05e4\u05e8\u05e1\u05d5\u05dd",
+        "\u05d4\u05d9\u05db\u05e8\u05d5\u05ea \u05d0\u05d9\u05e9\u05d9\u05ea",
+        "\u05d0\u05d7\u05e8"
+      ],
+      "description": "\u05de\u05e7\u05d5\u05e8 \u05d4\u05dc\u05d9\u05d3"
+    },
+    "referrer_name": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05de\u05de\u05dc\u05d9\u05e5"
+    },
+    "phone": {
+      "type": "string",
+      "description": "\u05d8\u05dc\u05e4\u05d5\u05df \u05d0\u05d9\u05e9 \u05e7\u05e9\u05e8 \u05e8\u05d0\u05e9\u05d9"
+    },
+    "borrower1": {
+      "type": "object",
+      "description": "\u05e4\u05e8\u05d8\u05d9 \u05dc\u05d5\u05d5\u05d4 1",
+      "properties": {
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "id_number": {
+          "type": "string"
+        },
+        "birth_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "id_issue_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "id_expiry_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "foreign_citizenship": {
+          "type": "boolean"
+        },
+        "passport": {
+          "type": "string"
+        },
+        "gender": {
+          "type": "string",
+          "enum": [
+            "\u05d6\u05db\u05e8",
+            "\u05e0\u05e7\u05d1\u05d4",
+            "\u05d0\u05d7\u05e8"
+          ]
+        },
+        "mobile_phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "employment_status": {
+          "type": "string",
+          "enum": [
+            "\u05e9\u05db\u05d9\u05e8",
+            "\u05e2\u05e6\u05de\u05d0\u05d9",
+            "\u05d1\u05e2\u05dc \u05e9\u05dc\u05d9\u05d8\u05d4",
+            "\u05d0\u05d7\u05e8"
+          ]
+        },
+        "marital_status": {
+          "type": "string",
+          "enum": [
+            "\u05e8\u05d5\u05d5\u05e7/\u05d4",
+            "\u05e0\u05e9\u05d5\u05d9/\u05d4",
+            "\u05d2\u05e8\u05d5\u05e9/\u05d4",
+            "\u05d0\u05dc\u05de\u05df/\u05d4",
+            "\u05d9\u05d3\u05d5\u05e2/\u05d4 \u05d1\u05e6\u05d9\u05d1\u05d5\u05e8"
+          ]
+        },
+        "children_under_18": {
+          "type": "number",
+          "default": 0
+        },
+        "children_ages": {
+          "type": "string"
+        },
+        "maternity_leave": {
+          "type": "boolean"
+        },
+        "city": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "zip_code": {
+          "type": "string"
+        },
+        "education": {
+          "type": "string"
+        },
+        "public_figure": {
+          "type": "boolean"
+        },
+        "incomes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "income_type": {
+                "type": "string"
+              },
+              "employer": {
+                "type": "string"
+              },
+              "net_amount": {
+                "type": "number"
+              },
+              "gross_amount": {
+                "type": "number"
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "borrower2": {
+      "type": "object",
+      "description": "\u05e4\u05e8\u05d8\u05d9 \u05dc\u05d5\u05d5\u05d4 2",
+      "properties": {
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "id_number": {
+          "type": "string"
+        },
+        "birth_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "id_issue_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "id_expiry_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "foreign_citizenship": {
+          "type": "boolean"
+        },
+        "passport": {
+          "type": "string"
+        },
+        "gender": {
+          "type": "string",
+          "enum": [
+            "\u05d6\u05db\u05e8",
+            "\u05e0\u05e7\u05d1\u05d4",
+            "\u05d0\u05d7\u05e8"
+          ]
+        },
+        "mobile_phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "employment_status": {
+          "type": "string",
+          "enum": [
+            "\u05e9\u05db\u05d9\u05e8",
+            "\u05e2\u05e6\u05de\u05d0\u05d9",
+            "\u05d1\u05e2\u05dc \u05e9\u05dc\u05d9\u05d8\u05d4",
+            "\u05d0\u05d7\u05e8"
+          ]
+        },
+        "marital_status": {
+          "type": "string",
+          "enum": [
+            "\u05e8\u05d5\u05d5\u05e7/\u05d4",
+            "\u05e0\u05e9\u05d5\u05d9/\u05d4",
+            "\u05d2\u05e8\u05d5\u05e9/\u05d4",
+            "\u05d0\u05dc\u05de\u05df/\u05d4",
+            "\u05d9\u05d3\u05d5\u05e2/\u05d4 \u05d1\u05e6\u05d9\u05d1\u05d5\u05e8"
+          ]
+        },
+        "children_under_18": {
+          "type": "number",
+          "default": 0
+        },
+        "children_ages": {
+          "type": "string"
+        },
+        "maternity_leave": {
+          "type": "boolean"
+        },
+        "city": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "zip_code": {
+          "type": "string"
+        },
+        "education": {
+          "type": "string"
+        },
+        "public_figure": {
+          "type": "boolean"
+        },
+        "incomes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "income_type": {
+                "type": "string"
+              },
+              "employer": {
+                "type": "string"
+              },
+              "net_amount": {
+                "type": "number"
+              },
+              "gross_amount": {
+                "type": "number"
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "relationship_between_borrowers": {
+      "type": "string",
+      "description": "\u05e7\u05e9\u05e8 \u05d1\u05d9\u05df \u05d4\u05dc\u05d5\u05d5\u05d9\u05dd"
+    },
+    "deal": {
+      "type": "object",
+      "description": "\u05e4\u05e8\u05d8\u05d9 \u05d4\u05e2\u05e1\u05e7\u05d4",
+      "properties": {
+        "deal_type": {
+          "type": "string",
+          "enum": [
+            "\u05d9\u05d3 \u05e9\u05e0\u05d9\u05d9\u05d4",
+            "\u05e8\u05db\u05d9\u05e9\u05d4 \u05de\u05e7\u05d1\u05dc\u05df",
+            "\u05de\u05d7\u05d9\u05e8 \u05dc\u05de\u05e9\u05ea\u05db\u05df",
+            "\u05d1\u05e0\u05d9\u05d9\u05d4 \u05e2\u05e6\u05de\u05d9\u05ea",
+            "\u05de\u05d9\u05d7\u05d6\u05d5\u05e8",
+            "\u05d0\u05d7\u05e8"
+          ]
+        },
+        "purchase_cost": {
+          "type": "number"
+        },
+        "appraisal_value": {
+          "type": "number"
+        },
+        "representative_value": {
+          "type": "number"
+        },
+        "requested_mortgage": {
+          "type": "number"
+        },
+        "equity": {
+          "type": "number"
+        },
+        "additional_payments": {
+          "type": "number"
+        },
+        "equity_completion_loan": {
+          "type": "number"
+        },
+        "contract_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "delivery_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "deal_description": {
+          "type": "string"
+        }
+      }
+    },
+    "commitments": {
+      "type": "array",
+      "description": "\u05d4\u05ea\u05d7\u05d9\u05d9\u05d1\u05d5\u05d9\u05d5\u05ea \u05e7\u05d9\u05d9\u05de\u05d5\u05ea",
+      "items": {
+        "type": "object",
+        "properties": {
+          "current_balance": {
+            "type": "number"
+          },
+          "monthly_payment": {
+            "type": "number"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "commitment_type": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "financial_wealth": {
+      "type": "string",
+      "description": "\u05e2\u05d5\u05e9\u05e8 \u05e4\u05d9\u05e0\u05e0\u05e1\u05d9 \u05d5\u05e0\u05db\u05e1\u05d9\u05dd \u05e0\u05d5\u05e1\u05e4\u05d9\u05dd (\u05e4\u05d9\u05e7\u05d3\u05d5\u05e0\u05d5\u05ea, \u05e7\u05e8\u05e0\u05d5\u05ea, \u05d7\u05e1\u05db\u05d5\u05e0\u05d5\u05ea)"
+    },
+    "bank_accounts": {
+      "type": "array",
+      "description": "\u05d7\u05e9\u05d1\u05d5\u05e0\u05d5\u05ea \u05d1\u05e0\u05e7",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bank_name": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "account_number": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "equity_sources": {
+      "type": "string",
+      "description": "\u05de\u05e7\u05d5\u05e8\u05d5\u05ea \u05d4\u05d5\u05df \u05e2\u05e6\u05de\u05d9"
+    },
+    "current_rent": {
+      "type": "number",
+      "description": "\u05e9\u05db\u05e8 \u05d3\u05d9\u05e8\u05d4 \u05d7\u05d5\u05d3\u05e9\u05d9 \u05db\u05d9\u05d5\u05dd"
+    },
+    "clean_credit_report": {
+      "type": "boolean",
+      "description": "\u05d3\u05d5\u05d7 \u05d0\u05e9\u05e8\u05d0\u05d9 \u05e6\u05e8\u05db\u05e0\u05d9 \u05e0\u05e7\u05d9"
+    },
+    "financial_issues": {
+      "type": "boolean",
+      "description": "\u05d4\u05d0\u05dd \u05d4\u05d9\u05d9\u05ea\u05d4 \u05d1\u05e2\u05d9\u05d4 \u05d1\u05d4\u05ea\u05e0\u05d4\u05dc\u05d5\u05ea \u05d4\u05e4\u05d9\u05e0\u05e0\u05e1\u05d9\u05ea"
+    },
+    "requested_monthly_payment": {
+      "type": "number",
+      "description": "\u05d4\u05d7\u05d6\u05e8 \u05d7\u05d5\u05d3\u05e9\u05d9 \u05de\u05d1\u05d5\u05e7\u05e9"
+    },
+    "preferred_payment_day": {
+      "type": "string",
+      "description": "\u05d9\u05d5\u05dd \u05d4\u05d7\u05d6\u05e8 \u05de\u05d5\u05e2\u05d3\u05e3"
+    },
+    "grace": {
+      "type": "boolean",
+      "description": "\u05d2\u05e8\u05d9\u05d9\u05e1"
+    },
+    "grace_duration": {
+      "type": "string",
+      "description": "\u05de\u05e9\u05da \u05d2\u05e8\u05d9\u05d9\u05e1"
+    },
+    "monthly_savings": {
+      "type": "boolean",
+      "description": "\u05d7\u05d5\u05e1\u05db\u05d9\u05dd \u05db\u05dc \u05d7\u05d5\u05d3\u05e9"
+    },
+    "monthly_savings_amount": {
+      "type": "number",
+      "description": "\u05e1\u05db\u05d5\u05dd \u05d7\u05d9\u05e1\u05db\u05d5\u05df \u05d7\u05d5\u05d3\u05e9\u05d9"
+    },
+    "bank_employee_benefits": {
+      "type": "boolean",
+      "description": "\u05d4\u05d8\u05d1\u05ea \u05e8\u05d9\u05d1\u05d9\u05d5\u05ea \u05e2\u05d5\u05d1\u05d3\u05d9 \u05d1\u05e0\u05e7"
+    },
+    "expected_prepayments": {
+      "type": "string",
+      "description": "\u05e4\u05e8\u05e2\u05d5\u05e0\u05d5\u05ea \u05e2\u05ea\u05d9\u05d3\u05d9\u05d9\u05dd \u05e6\u05e4\u05d5\u05d9\u05d9\u05dd"
+    },
+    "health_issues": {
+      "type": "boolean",
+      "description": "\u05d1\u05e2\u05d9\u05d4 \u05d1\u05e8\u05d9\u05d0\u05d5\u05ea\u05d9\u05ea \u05de\u05d9\u05d5\u05d7\u05d3\u05ea"
+    },
+    "personal_notes": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d5\u05ea \u05d0\u05d9\u05e9\u05d9\u05d5\u05ea"
+    }
+  },
+  "required": [
+    "lead_name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
