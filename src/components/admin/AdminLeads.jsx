@@ -13,6 +13,7 @@ import {
 import { STATUSES, selectClass, calcLTV, calcTotalIncome, calcTotalCommitments, fmt } from '@/components/leadomat/leadomatConfig';
 import LeadomatForm from '@/components/leadomat/LeadomatForm';
 import LeadomatDetail from '@/components/leadomat/LeadomatDetail';
+import PricingStrategyCard from '@/components/leadomat/PricingStrategyCard';
 
 const STATUS_COLORS = {
   'חדש': 'bg-blue-100 text-blue-700',
@@ -139,6 +140,7 @@ export default function AdminLeads() {
 
   return (
     <div dir="rtl">
+      <PricingStrategyCard />
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users2 className="w-5 h-5 text-primary" />
