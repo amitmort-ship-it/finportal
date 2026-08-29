@@ -36,12 +36,12 @@ export default function DealStep({ deal, onChange, dealValue, onDealValueChange 
         </div>
       </div>
 
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-2">תמחור התיק</p>
+      <div className="rounded-lg border border-red-300 bg-red-50/50 p-3">
+        <p className="text-xs font-semibold text-red-600 mb-2">תמחור התיק</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
-            <Label className="text-xs">גובה עסקה — שווי תיק (₪)</Label>
-            <Input type="number" value={dealValue || ''} onChange={e => onDealValueChange(e.target.value)} className="mt-1" dir="ltr" placeholder="עמלה צפויה" />
+            <Label className="text-xs text-red-600">גובה עסקה — שווי תיק (₪)</Label>
+            <Input type="number" value={dealValue || ''} onChange={e => onDealValueChange(e.target.value)} className="mt-1 border-red-300 text-red-600 placeholder:text-red-400/70" dir="ltr" placeholder="עמלה צפויה" />
           </div>
         </div>
       </div>
