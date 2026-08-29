@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Send, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 
-const CHAT_ID = '-5485105895';
+const CHAT_ID = '-1003701654849';
 
 export default function TelegramSummary() {
   const [message, setMessage] = useState('');

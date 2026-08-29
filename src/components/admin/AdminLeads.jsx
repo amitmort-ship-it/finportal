@@ -15,6 +15,7 @@ import LeadomatForm from '@/components/leadomat/LeadomatForm';
 import LeadomatDetail from '@/components/leadomat/LeadomatDetail';
 import PricingStrategyCard from '@/components/leadomat/PricingStrategyCard';
 import PipelineStepper, { PipelineBadge, PIPELINE_STAGES } from '@/components/leadomat/PipelineStepper';
+import FollowUpManager, { FollowupBadge } from '@/components/leadomat/FollowUpManager';
 
 const STATUS_COLORS = {
   'חדש': 'bg-blue-100 text-blue-700',
@@ -145,6 +146,20 @@ export default function AdminLeads() {
     }
   };
 
+  const handleFollowupUpdate = async (lead, patch) => {
+    setUpdatingStage(true);
+    try {
+      await base44.entities.Leadomat.update(lead.id, patch);
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...patch } : l));
+      setViewLead(prev => prev && prev.id === lead.id ? { ...prev, ...patch } : prev);
+      toast.success('תזכורת עודכנה');
+    } catch {
+      toast.error('שגיאה בעדכון התזכורת');
+    } finally {
+      setUpdatingStage(false);
+    }
+  };
+
   const filtered = leads.filter(l => {
     const matchesSearch = !search || (l.lead_name || '').includes(search) || (l.phone || '').includes(search);
     const matchesStatus = !statusFilter || l.status === statusFilter;
@@ -220,6 +235,7 @@ export default function AdminLeads() {
                   <th className="px-4 py-2.5 text-right font-medium">טלפון</th>
                   <th className="px-4 py-2.5 text-right font-medium">צינור</th>
                   <th className="px-4 py-2.5 text-right font-medium">סטטוס</th>
+                  <th className="px-4 py-2.5 text-right font-medium">מעקב</th>
                   <th className="px-4 py-2.5 text-right font-medium">LTV</th>
                   <th className="px-4 py-2.5 text-right font-medium">סך הכנסות</th>
                   <th className="px-4 py-2.5 text-right font-medium">התחייבויות חודשי</th>
@@ -243,6 +259,9 @@ export default function AdminLeads() {
                       </td>
                       <td className="px-4 py-2.5">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-600'}`}>{lead.status || '—'}</span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <FollowupBadge lead={lead} />
                       </td>
                       <td className="px-4 py-2.5 text-xs font-medium text-primary">{ltv > 0 ? `${ltv}%` : '—'}</td>
                       <td className="px-4 py-2.5 text-xs font-medium text-emerald-700">{totalInc > 0 ? fmt(totalInc) : '—'}</td>
@@ -299,6 +318,7 @@ export default function AdminLeads() {
                 {viewLead.referrer_name && <span className="text-muted-foreground">ממליץ: {viewLead.referrer_name}</span>}
               </div>
               <PipelineStepper lead={viewLead} onStageChange={(stage) => handleStageChange(viewLead, stage)} saving={updatingStage} />
+              <FollowUpManager lead={viewLead} onUpdate={(patch) => handleFollowupUpdate(viewLead, patch)} saving={updatingStage} />
               <LeadomatDetail lead={viewLead} />
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => { const l = viewLead; setViewLead(null); handleEdit(l); }} className="gap-1.5">
