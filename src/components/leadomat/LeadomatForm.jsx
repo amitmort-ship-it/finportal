@@ -88,7 +88,7 @@ export default function LeadomatForm({ initialData, onSave, onCancel, saving }) 
       case 'banks':
         return <BankAccountsStep bankAccounts={data.bank_accounts} onChange={val => set('bank_accounts', val)} />;
       case 'additional':
-        return <AdditionalDataStep data={data} onChange={set} />;
+        return <AdditionalDataStep data={data} onChange={(patch) => setData(prev => ({ ...prev, ...patch }))} />;
       default:
         return null;
     }

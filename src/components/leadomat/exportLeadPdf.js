@@ -90,11 +90,10 @@ function buildHtml(lead) {
       </div>
     </div>
 
-    <div class="summary">
+    <div class="summary three">
       <div class="card primary"><span>LTV</span><strong>${ltv > 0 ? `${ltv}%` : '—'}</strong></div>
       <div class="card green"><span>סך הכנסות נטו</span><strong>${fmt(totalIncome)}</strong></div>
       <div class="card amber"><span>החזר התחייבויות חודשי</span><strong>${fmt(totalCommitments)}</strong></div>
-      <div class="card red"><span>גובה עסקה — שווי תיק</span><strong>${fmt(lead.deal_value)}</strong></div>
     </div>
 
     ${borrowerHtml(lead.borrower1, 'לווה 1')}
@@ -167,6 +166,7 @@ const STYLES = `
   .header h1 { margin: 0 0 6px 0; font-size: 26px; color: #0D2137; }
   .meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #64748b; }
   .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+  .summary.three { grid-template-columns: repeat(3, 1fr); }
   .card { border-radius: 10px; padding: 10px 12px; border: 1px solid #e2e8f0; }
   .card span { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; }
   .card strong { font-size: 18px; }
