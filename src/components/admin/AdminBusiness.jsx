@@ -12,7 +12,7 @@ import {
   Droplets, TrendingUp, AlertTriangle, Wallet, Plus, CheckCircle2,
   Clock, Info, Trash2, Repeat, CreditCard, Power,
   Download, Upload, RefreshCw, Link2, Settings, BarChart2,
-  Briefcase, StickyNote, MoreHorizontal,
+  Briefcase, StickyNote, MoreHorizontal, PiggyBank,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -536,6 +536,31 @@ export default function AdminBusiness() {
           {/* ===== OVERVIEW TAB ===== */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Net after expenses & tax */}
+              {(() => {
+                const netAfterAll = totalNet - totalMonthlyExpenses;
+                const positive = netAfterAll >= 0;
+                return (
+                  <div className={`rounded-2xl border p-5 ${positive ? 'border-emerald-300 bg-gradient-to-l from-emerald-50 to-background dark:from-emerald-950/20 dark:to-background dark:border-emerald-900/50' : 'border-red-300 bg-gradient-to-l from-red-50 to-background dark:from-red-950/20 dark:to-background dark:border-red-900/50'}`}>
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${positive ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
+                          <PiggyBank className={`w-5 h-5 ${positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">נטו אחרי הוצאות ומיסים</p>
+                          <p className="text-xs text-muted-foreground">החודש — {currentMonthLabel}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-3xl font-extrabold ${positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{fmt(netAfterAll)}</p>
+                        <p className="text-xs text-muted-foreground">נטו {fmt(totalNet)} − הוצאות {fmt(totalMonthlyExpenses)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Chart */}
               {monthlyChart.length > 0 && (
                 <div>
