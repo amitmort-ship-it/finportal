@@ -30,9 +30,9 @@ export default function AdminFinalMortgage({ selectedClient }) {
   const load = async () => {
     const [data, clientRes] = await Promise.all([
       base44.entities.FinalMortgage.filter({}, '-created_date'),
-      base44.functions.invoke('getAllClients', {}),
+      base44.entities.ClientProfile.list('-created_date', 1000),
     ]);
-    setUsers(clientRes.data?.profiles || []);
+    setUsers(Array.isArray(clientRes) ? clientRes : []);
     setMortgages(selectedClient ? data.filter(m => m.client_email === selectedClient) : data);
     setLoading(false);
   };

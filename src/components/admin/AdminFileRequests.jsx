@@ -20,12 +20,12 @@ export default function AdminFileRequests({ selectedClient }) {
   const load = async () => {
     const [data, clientRes] = await Promise.all([
       base44.entities.FileRequest.filter({}, '-created_date'),
-      base44.functions.invoke('getAllClients', {}),
+      base44.entities.ClientProfile.list('-created_date', 1000),
     ]);
     const filtered = selectedClient ? data.filter((r) => r.client_email === selectedClient) : data;
     setRequests(filtered);
     setReviewNotes(Object.fromEntries(filtered.map((request) => [request.id, request.admin_notes || ''])));
-    const userList = clientRes.data?.profiles || [];
+    const userList = Array.isArray(clientRes) ? clientRes : [];
     setUsers(userList);
     setLoading(false);
   };

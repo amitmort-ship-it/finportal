@@ -99,7 +99,7 @@ export default function AdminBankApprovals({ selectedClient }) {
     try {
       const [data, clientRes] = await Promise.all([
         base44.entities.BankApproval.filter({}, '-created_date'),
-        base44.functions.invoke('getAllClients', {}),
+        base44.entities.ClientProfile.list('-created_date', 1000),
       ]);
 
       if (!isActive()) {
@@ -107,7 +107,7 @@ export default function AdminBankApprovals({ selectedClient }) {
       }
 
       const approvalsList = Array.isArray(data) ? data : [];
-      const userList = clientRes?.data?.profiles || clientRes?.profiles || [];
+      const userList = Array.isArray(clientRes) ? clientRes : [];
       const filtered = normalizedSelectedClient
         ? approvalsList.filter((approval) => String(approval?.client_email || '').toLowerCase() === normalizedSelectedClient)
         : approvalsList;

@@ -54,8 +54,8 @@ export default function AdminCollaterals({ selectedClient }) {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const res = await base44.functions.invoke('getAllClients', {});
-        setUsers((res.data?.profiles || []).filter(p => p.email));
+        const res = await base44.entities.ClientProfile.list('-created_date', 1000);
+        setUsers((Array.isArray(res) ? res : []).filter(p => p.email));
       } catch {}
     };
     loadUsers();

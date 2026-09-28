@@ -22,9 +22,9 @@ export default function AdminPackages({ selectedClient }) {
     const load = async () => {
       const [pkgs, clientRes] = await Promise.all([
         base44.entities.SelectedPackage.filter({}, '-created_date'),
-        base44.functions.invoke('getAllClients', {}),
+        base44.entities.ClientProfile.list('-created_date', 1000),
       ]);
-      const userList = clientRes.data?.profiles || [];
+      const userList = Array.isArray(clientRes) ? clientRes : [];
       setPackages(selectedClient ? pkgs.filter(p => p.client_email === selectedClient) : pkgs);
       setUsers(userList);
       setLoading(false);

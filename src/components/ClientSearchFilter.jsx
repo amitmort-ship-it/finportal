@@ -23,9 +23,9 @@ export default function ClientSearchFilter({ onSelect, placeholder, selectedValu
 
     const loadClients = async () => {
       try {
-        const response = await base44.functions.invoke('getAllClients', {});
-        const profiles = response?.data?.profiles || response?.profiles || [];
-        const sortedProfiles = [...profiles]
+        const profiles = await base44.entities.ClientProfile.list('-created_date', 1000);
+        const list = Array.isArray(profiles) ? profiles : [];
+        const sortedProfiles = [...list]
           .filter((client) => client?.email)
           .sort((a, b) =>
             String(a.full_name || a.email || '').localeCompare(

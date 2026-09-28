@@ -97,7 +97,7 @@ export default function AdminViewDocuments({ selectedClient }) {
 
       const [data, clientRes, driveFolders] = await Promise.all([
         base44.entities.FileRequest.filter({}, '-created_date'),
-        base44.functions.invoke('getAllClients', {}),
+        base44.entities.ClientProfile.list('-created_date', 1000),
         normalizedSelectedClient
           ? base44.entities.DriveFolder.filter({ client_email: normalizedSelectedClient })
           : Promise.resolve([]),
@@ -120,7 +120,7 @@ export default function AdminViewDocuments({ selectedClient }) {
           normalizedRequests.map((request) => [request.id, splitDescriptionAndReviewNotes(request).reviewNotes]),
         ),
       );
-      setUsers(clientRes.data?.profiles || []);
+      setUsers(Array.isArray(clientRes) ? clientRes : []);
       setDriveFolderUrl(
         driveFolder?.folder_id
           ? `https://drive.google.com/drive/folders/${driveFolder.folder_id}`
