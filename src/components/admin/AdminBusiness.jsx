@@ -187,15 +187,21 @@ export default function AdminBusiness() {
     }
     const taxRate = getTaxRateForCategory(newIncomeCategory, taxBufferRate, hitechTaxRate);
     const linkedDeal = (!isMiluim && selectedDealId) ? dealLog.find(d => String(d.id) === String(selectedDealId)) : null;
+    const opFee = Number(linkedDeal?.operationFee || 0);
+    const dealTotal = Number(linkedDeal?.totalAmount || 0);
+    const hasOp = !isMiluim && linkedDeal && opFee > 0 && dealTotal > 0;
+    const cashAmount = amount;
+    const taxableGross = hasOp ? Math.max(0, Math.round(cashAmount * (1 - opFee / dealTotal))) : cashAmount;
     const now = new Date();
     const targetMonthKey = newIncomeMonthKey || getCurrentMonthKey();
     const [mY, mM] = targetMonthKey.split('-').map(Number);
     const entry = {
-      id: Date.now(), gross: amount, net: amount * (1 - taxRate), tax: amount * taxRate,
+      id: Date.now(), gross: taxableGross, net: taxableGross * (1 - taxRate), tax: taxableGross * taxRate,
       source: isMiluim ? 'שירות מילואים' : (linkedDeal?.clientName || newIncomeSource.trim() || 'לא צוין'),
       category: linkedDeal?.category || newIncomeCategory,
       date: now.toLocaleDateString('he-IL'), month: getMonthLabelFromDate(new Date(mY, mM - 1, 1)),
       monthKey: targetMonthKey, createdAt: now.toISOString(), dealId: linkedDeal?.id || null,
+      ...(hasOp ? { cashAmount, operationFee: opFee, dealTotal } : {}),
       ...(miluimDays ? { miluimDays } : {}),
     };
     const nextIncome = [...incomeLog, entry];
@@ -223,7 +229,7 @@ export default function AdminBusiness() {
     if (cur?.dealId) {
       nextDeals = dealLog.map(d => {
         if (d.id !== cur.dealId) return d;
-        const nextPaid = Math.max(0, Number(d.paidAmount || 0) - Number(cur.gross || 0));
+        const nextPaid = Math.max(0, Number(d.paidAmount || 0) - Number(cur.cashAmount ?? cur.gross ?? 0));
         return { ...d, paidAmount: nextPaid, bucket: d.isFrozen ? d.bucket : nextPaid === 0 ? 'ממתין לתשלום' : 'שולם חלקית', updatedAt: new Date().toISOString() };
       });
       setDealLog(nextDeals);
@@ -239,10 +245,13 @@ export default function AdminBusiness() {
     const taxRate = getTaxRateForCategory(editIncomeCategory, taxBufferRate, hitechTaxRate);
     const targetMonthKey = editIncomeMonthKey || getCurrentMonthKey();
     const [mY, mM] = targetMonthKey.split('-').map(Number);
-    const next = incomeLog.map(e => e.id === id ? { ...e, gross: amount, net: amount * (1 - taxRate), tax: amount * taxRate, source: editIncomeSource.trim() || 'לא צוין', category: editIncomeCategory, monthKey: targetMonthKey, month: getMonthLabelFromDate(new Date(mY, mM - 1, 1)) } : e);
+    const hasOp = cur?.operationFee > 0 && cur?.dealTotal > 0;
+    const cashAmount = amount;
+    const taxableGross = hasOp ? Math.max(0, Math.round(cashAmount * (1 - cur.operationFee / cur.dealTotal))) : cashAmount;
+    const next = incomeLog.map(e => e.id === id ? { ...e, gross: taxableGross, net: taxableGross * (1 - taxRate), tax: taxableGross * taxRate, ...(hasOp ? { cashAmount } : {}), source: editIncomeSource.trim() || 'לא צוין', category: editIncomeCategory, monthKey: targetMonthKey, month: getMonthLabelFromDate(new Date(mY, mM - 1, 1)) } : e);
     let nextDeals = dealLog;
     if (cur?.dealId) {
-      const delta = amount - Number(cur.gross || 0);
+      const delta = amount - Number(cur.cashAmount ?? cur.gross ?? 0);
       nextDeals = dealLog.map(d => {
         if (d.id !== cur.dealId) return d;
         const np = Math.min(Number(d.totalAmount || 0), Math.max(0, Number(d.paidAmount || 0) + delta));
@@ -286,6 +295,13 @@ export default function AdminBusiness() {
   const handleToggleFrozen = (id) => {
     const next = dealLog.map(d => d.id === id ? { ...d, isFrozen: !d.isFrozen, updatedAt: new Date().toISOString() } : d);
     setDealLog(next); persist({ dealLog: next });
+  };
+
+  const handleSetOperationFee = (id, operationFee) => {
+    const fee = Math.max(0, Number(operationFee) || 0);
+    const next = dealLog.map(d => d.id === id ? { ...d, operationFee: fee, updatedAt: new Date().toISOString() } : d);
+    setDealLog(next); persist({ dealLog: next });
+    toast.success(fee > 0 ? `עמלת תפעול נקבעה: ${fmt(fee)}` : 'עמלת תפעול הוסרה');
   };
 
   // === Expense handlers ===
@@ -370,6 +386,13 @@ export default function AdminBusiness() {
 
   // === Derived ===
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
+  const selectedDealObj = useMemo(() => dealLog.find(d => String(d.id) === String(selectedDealId)) || null, [dealLog, selectedDealId]);
+  const newIncomeProfit = useMemo(() => {
+    if (!selectedDealObj?.operationFee || !selectedDealObj?.totalAmount || !newIncome) return null;
+    const cash = Number(String(newIncome).replace(/,/g, ''));
+    if (!cash) return null;
+    return Math.max(0, Math.round(cash * (1 - selectedDealObj.operationFee / selectedDealObj.totalAmount)));
+  }, [selectedDealObj, newIncome]);
   const currentMonthLabel = useMemo(() => getMonthLabelFromDate(new Date()), []);
   const currentMonthIncomeLog = useMemo(() => incomeLog.filter(e => getEntryMonthKey(e) === currentMonthKey || e?.month === currentMonthLabel), [incomeLog, currentMonthKey, currentMonthLabel]);
   const historicalIncomeLog = useMemo(() => incomeLog.filter(e => !(getEntryMonthKey(e) === currentMonthKey || e?.month === currentMonthLabel)), [incomeLog, currentMonthKey, currentMonthLabel]);
@@ -382,7 +405,12 @@ export default function AdminBusiness() {
   const monthlyGrossTargetGap = Math.max(0, monthlyGrossTarget - totalGross);
   const monthlyGrossTargetOver = Math.max(0, totalGross - monthlyGrossTarget);
   const openDeals = useMemo(() => dealLog.filter(d => !d.isFrozen && Number(d.totalAmount || 0) - Number(d.paidAmount || 0) > 0), [dealLog]);
-  const openDealsOptions = useMemo(() => openDeals.map(d => ({ id: d.id, label: `${d.clientName} · יתרה ${fmt(Number(d.totalAmount || 0) - Number(d.paidAmount || 0))}` })), [openDeals]);
+  const openDealsOptions = useMemo(() => openDeals.map(d => {
+    const rem = Number(d.totalAmount || 0) - Number(d.paidAmount || 0);
+    const op = Number(d.operationFee || 0);
+    const profit = op > 0 ? Math.max(0, Number(d.totalAmount || 0) - op) : null;
+    return { id: d.id, label: `${d.clientName} · יתרה ${fmt(rem)}${profit !== null ? ` · רווח ${fmt(profit)}` : ''}` };
+  }), [openDeals]);
   const openDealsTotal = useMemo(() => openDeals.reduce((s, d) => s + Math.max(0, Number(d.totalAmount || 0) - Number(d.paidAmount || 0)), 0), [openDeals]);
   const frozenDealsCount = useMemo(() => dealLog.filter(d => d.isFrozen).length, [dealLog]);
   const paidDealsCount = useMemo(() => dealLog.filter(d => getDealStatus(d) === 'שולם מלא').length, [dealLog]);
@@ -645,7 +673,11 @@ export default function AdminBusiness() {
                     </>
                   ) : (
                     <>
-                      <div><Label className="text-xs mb-1">סכום גולמי (₪)</Label><Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="15000" dir="ltr" className="mt-1" /></div>
+                      <div>
+                        <Label className="text-xs mb-1">{selectedDealObj?.operationFee > 0 ? 'סכום שהתקבל (₪)' : 'סכום גולמי (₪)'}</Label>
+                        <Input type="number" value={newIncome} onChange={e => setNewIncome(e.target.value)} placeholder="15000" dir="ltr" className="mt-1" />
+                        {newIncomeProfit !== null && <p className="text-[11px] text-violet-600 dark:text-violet-300 mt-1">רווח חייב מס: {fmt(newIncomeProfit)} · תפעול {fmt(selectedDealObj.operationFee)}</p>}
+                      </div>
                       <div><Label className="text-xs mb-1">שם הלקוח / מקור</Label><Input value={newIncomeSource} onChange={e => setNewIncomeSource(e.target.value)} placeholder="ישראל ישראלי" className="mt-1" /></div>
                       <div><Label className="text-xs mb-1">שייך לעסקה</Label><select value={selectedDealId} onChange={e => setSelectedDealId(e.target.value)} className={`${selectCls} mt-1`}><option value="">ללא קישור</option>{openDealsOptions.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}</select></div>
                     </>
@@ -681,7 +713,9 @@ export default function AdminBusiness() {
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-foreground">{fmt(entry.gross)}</span>
+                                {entry.cashAmount && entry.cashAmount !== entry.gross && <span className="text-xs text-muted-foreground">התקבל {fmt(entry.cashAmount)}</span>}
                                 <span className="text-xs rounded-full bg-muted px-2 py-0.5">{entry.category}</span>
+                                {entry.operationFee > 0 && <span className="text-xs rounded-full bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 px-2 py-0.5">תפעול {fmt(entry.operationFee)}</span>}
                                 {entry.miluimDays && <span className="text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.5">{entry.miluimDays} ימים</span>}
                               </div>
                               {entry.source && entry.source !== 'לא צוין' && <p className="text-sm text-primary mt-0.5">{entry.source}</p>}
@@ -689,7 +723,7 @@ export default function AdminBusiness() {
                             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                               <span className="text-emerald-600 font-medium">נטו {fmt(entry.net)}</span>
                               <span className="text-red-500">מס {fmt(entry.tax)}</span>
-                              <button onClick={() => { setEditingIncomeId(entry.id); setEditIncomeValue(String(entry.gross)); setEditIncomeSource(entry.source === 'לא צוין' ? '' : entry.source || ''); setEditIncomeCategory(entry.category || 'משכנתאות'); setEditIncomeMonthKey(entry.monthKey || getCurrentMonthKey()); }} className="text-primary hover:underline">ערוך</button>
+                              <button onClick={() => { setEditingIncomeId(entry.id); setEditIncomeValue(String(entry.cashAmount ?? entry.gross)); setEditIncomeSource(entry.source === 'לא צוין' ? '' : entry.source || ''); setEditIncomeCategory(entry.category || 'משכנתאות'); setEditIncomeMonthKey(entry.monthKey || getCurrentMonthKey()); }} className="text-primary hover:underline">ערוך</button>
                               <button onClick={() => handleRemoveIncome(entry.id)} className="text-destructive hover:underline">הסר</button>
                             </div>
                           </div>
@@ -790,7 +824,7 @@ export default function AdminBusiness() {
                 ? <p className="text-center text-muted-foreground py-8 text-sm">אין עסקאות להצגה</p>
                 : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {filteredDeals.map((deal, i) => (
-                      <DealCard key={deal.id} deal={deal} index={i} onEdit={handleEditDeal} onRemove={handleRemoveDeal} onToggleFrozen={handleToggleFrozen} />
+                      <DealCard key={deal.id} deal={deal} index={i} onEdit={handleEditDeal} onRemove={handleRemoveDeal} onToggleFrozen={handleToggleFrozen} onSetOperationFee={handleSetOperationFee} />
                     ))}
                   </div>
               }

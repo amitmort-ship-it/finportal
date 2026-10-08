@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Power } from 'lucide-react';
+import { Pencil, Trash2, Power, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -25,7 +25,7 @@ const STATUS_STYLES = {
 
 const RAG_EMOJI = { green: '🟢', yellow: '🟡', red: '🔴' };
 
-export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen }) {
+export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen, onSetOperationFee }) {
   const [editing, setEditing] = useState(false);
   const [editClient, setEditClient] = useState('');
   const [editTotal, setEditTotal] = useState('');
@@ -33,10 +33,16 @@ export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen
   const [editCategory, setEditCategory] = useState('משכנתאות');
   const [editBucket, setEditBucket] = useState(DEAL_BUCKETS[0]);
   const [editRag, setEditRag] = useState('');
+  const [editOpFee, setEditOpFee] = useState('');
+  const [opEditing, setOpEditing] = useState(false);
+  const [opValue, setOpValue] = useState('');
 
-  const remaining = Math.max(0, Number(deal.totalAmount || 0) - Number(deal.paidAmount || 0));
+  const operationFee = Math.max(0, Number(deal.operationFee || 0));
+  const totalAmount = Number(deal.totalAmount || 0);
+  const profit = Math.max(0, totalAmount - operationFee);
+  const remaining = Math.max(0, totalAmount - Number(deal.paidAmount || 0));
   const status = getDealStatus(deal);
-  const paidPct = deal.totalAmount > 0 ? Math.min(100, Math.round((Number(deal.paidAmount || 0) / Number(deal.totalAmount)) * 100)) : 0;
+  const paidPct = totalAmount > 0 ? Math.min(100, Math.round((Number(deal.paidAmount || 0) / totalAmount) * 100)) : 0;
 
   const startEdit = () => {
     setEditClient(deal.clientName || '');
@@ -45,6 +51,7 @@ export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen
     setEditCategory(deal.category || 'משכנתאות');
     setEditBucket(deal.bucket || DEAL_BUCKETS[0]);
     setEditRag(deal.rag_status || '');
+    setEditOpFee(String(deal.operationFee || ''));
     setEditing(true);
   };
 
@@ -52,8 +59,27 @@ export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen
     const totalAmount = Number(String(editTotal).replace(/,/g, ''));
     const paidAmount = Number(String(editPaid).replace(/,/g, ''));
     if (!editClient.trim() || !totalAmount || paidAmount < 0) return;
-    onEdit(deal.id, { clientName: editClient.trim(), totalAmount, paidAmount: Math.min(totalAmount, paidAmount), category: editCategory, bucket: editBucket, rag_status: editRag });
+    onEdit(deal.id, {
+      clientName: editClient.trim(),
+      totalAmount,
+      paidAmount: Math.min(totalAmount, paidAmount),
+      category: editCategory,
+      bucket: editBucket,
+      rag_status: editRag,
+      operationFee: Math.max(0, Number(editOpFee) || 0),
+    });
     setEditing(false);
+  };
+
+  const startOpEdit = () => {
+    setOpValue(String(deal.operationFee || ''));
+    setOpEditing(true);
+  };
+
+  const saveOp = () => {
+    const fee = Math.max(0, Number(String(opValue).replace(/,/g, '')) || 0);
+    onSetOperationFee(deal.id, fee);
+    setOpEditing(false);
   };
 
   if (editing) {
@@ -71,6 +97,10 @@ export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">נגבה</label>
             <Input type="number" value={editPaid} onChange={(e) => setEditPaid(e.target.value)} dir="ltr" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">עמלת תפעול</label>
+            <Input type="number" value={editOpFee} onChange={(e) => setEditOpFee(e.target.value)} placeholder="0" dir="ltr" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">קטגוריה</label>
@@ -124,6 +154,26 @@ export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen
         </div>
       </div>
 
+      {/* Operation fee / profit */}
+      {operationFee > 0 && !opEditing && (
+        <div className="flex items-center justify-between rounded-lg bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-900/40 px-3 py-1.5">
+          <span className="text-[11px] text-violet-700 dark:text-violet-300">תפעול: {fmt(operationFee)}</span>
+          <span className="text-[11px] font-bold text-violet-800 dark:text-violet-200">רווח: {fmt(profit)}</span>
+        </div>
+      )}
+
+      {/* Quick operation editor */}
+      {opEditing && (
+        <div className="rounded-lg border border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20 p-3 space-y-2">
+          <label className="text-xs text-violet-700 dark:text-violet-300 block">עמלת תפעול (₪) — תרד מהרווח לחישוב מס</label>
+          <Input type="number" value={opValue} onChange={(e) => setOpValue(e.target.value)} placeholder="0" dir="ltr" autoFocus />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={saveOp} className="flex-1">שמור תפעול</Button>
+            <Button size="sm" variant="outline" onClick={() => setOpEditing(false)} className="flex-1">ביטול</Button>
+          </div>
+        </div>
+      )}
+
       {/* Progress bar */}
       {deal.totalAmount > 0 && (
         <div className="space-y-1">
@@ -142,6 +192,10 @@ export default function DealCard({ deal, index, onEdit, onRemove, onToggleFrozen
         <button onClick={() => onToggleFrozen(deal.id)} className={`flex-1 flex items-center justify-center gap-1 rounded-lg border py-1.5 text-xs font-medium transition-colors ${deal.isFrozen ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'}`}>
           <Power className="w-3 h-3" />
           {deal.isFrozen ? 'הפעל' : 'הקפא'}
+        </button>
+        <button onClick={startOpEdit} className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 py-1.5 text-xs font-medium hover:bg-violet-100 transition-colors">
+          <Wrench className="w-3 h-3" />
+          תפעול
         </button>
         <button onClick={startEdit} className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-primary/20 bg-primary/5 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
           <Pencil className="w-3 h-3" />
